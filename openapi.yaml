@@ -8175,6 +8175,9 @@ components:
               cpc: { type: number, description: "Cost per click in native currency." }
               cpm: { type: number, description: "Cost per 1000 impressions in native currency." }
               conversions: { type: number, description: "Sum of conversion events over the range. Fractional values are normal (attribution splitting + Google modeled conversions). Meta: events matching the campaign optimization goal. Google: tracked conversions. X / LinkedIn: reported website/lead conversions (added 2026-07)." }
+              allConversions:
+                type: number
+                description: 'All conversions, including actions excluded from the Conversions column (Google metrics.all_conversions). 0 on platforms without the concept.'
               costPerConversion: { type: number }
               actions:
                 type: object
@@ -8268,6 +8271,9 @@ components:
         conversions:
           type: number
           description: "Count of conversion events over the requested date range. FRACTIONAL: attribution splits one conversion across touchpoints and Google additionally reports modeled conversions, so values like 0.347 are normal. Meta: events matching the campaign's promoted_object.custom_event_type (PURCHASE, LEAD, etc.). Google: the account's tracked conversions. X and LinkedIn: their reported website/lead conversions (added 2026-07). 0 for non-conversion campaigns or when no events have fired."
+        allConversions:
+          type: number
+          description: 'All conversions, including actions excluded from the Conversions column (Google metrics.all_conversions). 0 on platforms without the concept.'
         costPerConversion:
           type: number
           description: "Derived spend / conversions in the same currency as spend. 0 when conversions is 0."
@@ -30092,6 +30098,18 @@ paths:
                     type: "platform_error"
                     code: "platform_api_error"
                     platform: "instagram"
+                declinedByMeta:
+                  summary: "Meta declined the private reply on this media (subcode 2534066, reply NOT consumed)"
+                  value:
+                    error: "Instagram declined this private reply (Meta error 2534066). Despite Meta's wording, the token and permissions are fine and the comment ID is valid, so reconnecting the account or retrying this comment will not change the result."
+                    type: "platform_error"
+                    code: "platform_api_error"
+                    platform: "instagram"
+                    platformError:
+                      code: 200
+                      error_subcode: 2534066
+                      type: "IGApiException"
+                      message: "Please check if access token has enough IG permissions granular scopes for IG private reply. Or, verify if the comment ID is valid"
                 missingMessage:
                   summary: Missing message
                   value:
@@ -42283,6 +42301,8 @@ paths:
         than the ingested history return a `202` immediately with the covered part
         and `backfillPending: true` while the rest is backfilled in the background;
         repeat the request shortly until it returns 200 with full data.
+
+        With adAccountId set to a Google customer id this is the customer-level performance report (clicks, cost, impressions, conversions, all conversions per day).
       security:
         - bearerAuth: []
       parameters:
