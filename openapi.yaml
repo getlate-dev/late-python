@@ -31,7 +31,7 @@ info:
 
     Key features: Unified posting to 16 platforms, ads management on 7 ad networks (via /v1/ads), aggregated analytics, unified inbox (DMs, comments, reviews), webhooks, OAuth connect, queue scheduling, and white-label support for agencies managing unlimited accounts.
 
-    Supported posting platforms: Twitter/X, Instagram, WhatsApp, Facebook, LinkedIn, TikTok, YouTube, Pinterest, Reddit, Bluesky, Threads, Google Business, Telegram, Snapchat, Discord, Slack. Supported ad platforms: Meta Ads, Google Ads, TikTok Ads, LinkedIn Ads, Pinterest Ads, X Ads, OpenAI Ads.
+    Supported posting platforms: Twitter/X, Instagram, WhatsApp, Facebook, LinkedIn, TikTok, YouTube, Pinterest, Reddit, Bluesky, Threads, Google Business, Telegram, Snapchat, Discord, Slack. Supported ad platforms: Meta Ads, Google Ads, TikTok Ads, LinkedIn Ads, Pinterest Ads, X Ads, OpenAI Ads. Snapchat is a closed beta with no public release date: connections are gated behind approval and return 403 `PLATFORM_BETA_RESTRICTED` until then.
   x-category: Social
   x-website: https://zernio.com
   x-thumbnail: https://rapidapi-prod-apis.s3.amazonaws.com/b24d3df5-563c-4a50-9e1e-1ad3eb1fce69.png
@@ -120,6 +120,8 @@ x-documentation:
     | Google Business | Yes | - | - | Yes |
     | Telegram | Yes | - | - | - |
     | Snapchat | Yes | - | - | - |
+
+    > **Snapchat Note:** Snapchat is a closed beta with no public release date. Connecting a Snapchat account is gated behind approval and returns 403 `PLATFORM_BETA_RESTRICTED` until then.
 
     > **LinkedIn Analytics Note:** For personal LinkedIn accounts, analytics are only available for posts published through Zernio. This is a LinkedIn API limitation: the `memberCreatorPostAnalytics` endpoint only returns metrics for posts authored by the authenticated user. Company/organization page analytics are not affected and work for all posts.
 
@@ -15018,6 +15020,10 @@ paths:
         Create and optionally publish a post. Immediate posts (`publishNow: true`) include `platformPostUrl` in the response.
         Content is optional when media is attached, all platforms have `customContent`, every platform entry is an X Article (`platformSpecificData.article`), or every platform entry is a LinkedIn text-free reshare (`platformSpecificData.reshareUrl` with no text). See each platform's schema for media constraints.
 
+        ## Scheduling
+
+        Pick one of `scheduledFor` (schedule), `publishNow: true` (publish synchronously) or `queuedFromProfile` (next queue slot). With none of them and `isDraft` unset, the post is saved as a draft. `platforms` is required unless the post is a draft. `isDraft: true` wins over `publishNow` and `scheduledFor` (the post is saved, never published); `publishNow: true` wins over `scheduledFor`. A `scheduledFor` already in the past is not rejected: the post is published synchronously in the same request, exactly like `publishNow`.
+
         ## Idempotency
 
         Two layers of duplicate-protection apply, so safe-to-retry callers (network blips, n8n / Zapier retries, etc.) don't accidentally double-post.
@@ -15055,6 +15061,7 @@ paths:
                   description: 'Post caption/text. Optional when media is attached, all platforms have customContent, every platform entry is an X Article (platformSpecificData.article), or every platform entry is a LinkedIn text-free reshare (platformSpecificData.reshareUrl with no text). Required for other text-only posts.'
                 mediaItems:
                   type: array
+                  description: 'Media attached to every platform in the request (a platform entry can override it with `customMedia`). Each entry needs a publicly reachable HTTPS `url`; `type` (image, video, gif, document) is inferred from the URL extension when omitted and a `type` that contradicts the extension is rejected with 400. Upload files with `POST /v1/media/presign` first; per-platform size, duration and format limits are listed on each platform schema.'
                   items: { $ref: '#/components/schemas/MediaItem' }
                 platforms:
                   type: array
@@ -15092,13 +15099,22 @@ paths:
                           - $ref: '#/components/schemas/BlueskyPlatformData'
                           - $ref: '#/components/schemas/DiscordPlatformData'
                           - $ref: '#/components/schemas/SlackPlatformData'
-                scheduledFor: { type: string, format: date-time }
-                publishNow: { type: boolean, default: false }
+                scheduledFor:
+                  type: string
+                  format: date-time
+                  description: 'When to publish. Required unless `publishNow` is true, `queuedFromProfile` is set, or the post is a draft. An ISO 8601 value with a `Z` or offset (`2026-01-15T10:00:00Z`, `2026-01-15T11:00:00+01:00`) is taken as-is; a value without one (`2026-01-15T10:00:00` or `2026-01-15 10:00`) is read as local time in `timezone`. A value already in the past is published synchronously in the same request. Ignored when `publishNow` is true.'
+                publishNow:
+                  type: boolean
+                  default: false
+                  description: 'Publish to every platform synchronously in this request instead of scheduling; the response then carries each platform result and `platformPostUrl`, with HTTP 207 when some platforms failed. Takes precedence over `scheduledFor`; ignored when `isDraft` is true.'
                 isDraft:
                   type: boolean
                   default: false
                   description: When true, saves the post as a draft. When none of scheduledFor, publishNow, or queuedFromProfile are provided, the post defaults to draft automatically.
-                timezone: { type: string, default: UTC }
+                timezone:
+                  type: string
+                  default: UTC
+                  description: 'IANA timezone (`Europe/Madrid`, `America/New_York`) used to interpret a `scheduledFor` (root or per-platform) that carries no `Z` or offset. Has no effect on values that already carry one. An unknown name returns 400 when `scheduledFor` is set.'
                 tags:
                   type: array
                   description: "Tags/keywords. YouTube constraints: each tag max 100 chars, combined max 500 chars, duplicates auto-removed."
@@ -15111,8 +15127,14 @@ paths:
                   type: array
                   description: "Stored for reference only. This field does NOT automatically create @mentions when publishing. For LinkedIn @mentions, use the /v1/accounts/{accountId}/linkedin-mentions endpoint to resolve profile URLs to URNs, then embed the returned mentionFormat directly in the post content field."
                   items: { type: string }
-                crosspostingEnabled: { type: boolean, default: true }
-                metadata: { type: object, additionalProperties: true }
+                crosspostingEnabled:
+                  type: boolean
+                  default: true
+                  description: 'Stored on the post and echoed back on reads. Publishing does not branch on it: every entry in `platforms` is published regardless, so treat it as a label for your own tooling.'
+                metadata:
+                  type: object
+                  additionalProperties: true
+                  description: 'Free-form key/value pairs of your own, stored on the post and returned on reads and in webhook payloads. Zernio also writes the bookkeeping keys `usageCounted`, `usageRefunded` and `hidden` into this object; do not set them, and they are stripped from webhook payloads.'
                 tiktokSettings:
                   $ref: '#/components/schemas/TikTokPlatformData'
                   description: 'Root-level TikTok settings applied to the TikTok platforms sent in the same request. Merged into each platform''s platformSpecificData, with platform-specific settings taking precedence.'
@@ -18011,7 +18033,7 @@ paths:
           schema:
             type: string
             enum: [facebook, instagram, linkedin, twitter, tiktok, youtube, threads, reddit, pinterest, bluesky, googlebusiness, telegram, snapchat, discord, slack, whatsapp]
-          description: Social media platform to connect
+          description: 'Social media platform to connect. `snapchat` is a closed beta with no public release date: it returns 403 `PLATFORM_BETA_RESTRICTED` until the account is approved.'
         - name: profileId
           in: query
           required: true
@@ -18126,7 +18148,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '402': { $ref: '#/components/responses/PaymentRequired' }
         '403':
-          description: "No access to profile, or BYOK required for AppSumo Twitter"
+          description: "No access to profile, BYOK required for AppSumo Twitter, or Snapchat closed beta (code PLATFORM_BETA_RESTRICTED)"
         '404':
           description: Profile not found
     post:
@@ -21734,6 +21756,10 @@ paths:
                   value:
                     error: "Cannot connect to this profile. It exceeds your Pro plan limit of 5 profiles."
                     code: "PROFILE_LIMIT_EXCEEDED"
+                betaRestricted:
+                  value:
+                    error: "Snapchat integration is currently in beta. Please wait until it is publicly released."
+                    code: "PLATFORM_BETA_RESTRICTED"
         '500':
           description: Failed to connect Snapchat account
 
@@ -25959,7 +25985,7 @@ paths:
 
         `name`, `url` and `events` are required. `url` must be a valid URL and `events` must contain at least one event. Whitespace is trimmed from `url` before validation.
 
-        Webhooks are automatically disabled after 10 consecutive delivery failures.
+        Webhooks are auto-disabled only once the endpoint has had no successful delivery for 3 days AND has either reached 20 consecutive terminal failures (each one an event that exhausted the full retry ladder) or been failing continuously for 3 days. The owner is emailed; re-enable it with `isActive: true`.
 
         A restricted (zrk_) API key can only subscribe to events whose resource group
         the key holds; an event outside the key's groups is rejected with 403, so a
@@ -26071,7 +26097,7 @@ paths:
 
         When provided, `name` must be 1-50 characters, `url` must be a valid URL, and `events` must contain at least one event. Whitespace is trimmed from `url` before validation.
 
-        Webhooks are automatically disabled after 10 consecutive delivery failures.
+        Webhooks are auto-disabled only once the endpoint has had no successful delivery for 3 days AND has either reached 20 consecutive terminal failures (each one an event that exhausted the full retry ladder) or been failing continuously for 3 days. The owner is emailed; re-enable it with `isActive: true`.
 
         A restricted (zrk_) API key can only set `events` to events whose resource
         group the key holds; an event outside the key's groups is rejected with 403.
@@ -49010,7 +49036,8 @@ paths:
         pixel.
 
         NOT idempotent on either platform: each call creates a new pixel (and,
-        for OpenAI, a new Conversions API key). Do not retry blindly on
+        for OpenAI, a new Conversions API key plus, with `defaultEventType`, a
+        new conversion event setting). Do not retry blindly on
         timeout. Meta (platform `metaads`) and OpenAI Ads (platform
         `openaiads`); other platforms return 405.
       security:
@@ -49027,6 +49054,10 @@ paths:
               properties:
                 adAccountId: { type: string, description: 'Meta ad account id, e.g. `act_123456789`. Required by this endpoint but ignored for OpenAI Ads.' }
                 name: { type: string, minLength: 1, maxLength: 200 }
+                defaultEventType:
+                  type: string
+                  enum: [order_created, lead_created, items_added, contents_viewed, checkout_started, registration_completed, subscription_created, trial_started, appointment_scheduled, page_viewed, app_installed, app_opened]
+                  description: 'OpenAI Ads only (ignored by Meta). When set, also provisions a standard conversion event setting wired to the new pixel, so `goal: conversions` ad creates on `POST /v1/ads/create` have an event to reference immediately.'
       responses:
         '201':
           description: Tracking tag created

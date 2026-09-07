@@ -111,12 +111,18 @@ class TrackingTagsResource:
         )
 
     def create_tracking_tag(
-        self, account_id: str, ad_account_id: str, name: str
+        self,
+        account_id: str,
+        ad_account_id: str,
+        name: str,
+        *,
+        default_event_type: str | None = None,
     ) -> dict[str, Any]:
         """Create a tracking tag"""
         payload = self._build_payload(
             ad_account_id=ad_account_id,
             name=name,
+            default_event_type=default_event_type,
         )
         return self._client._post(
             f"/v1/accounts/{account_id}/tracking-tags", data=payload
@@ -240,12 +246,18 @@ class TrackingTagsResource:
         )
 
     async def acreate_tracking_tag(
-        self, account_id: str, ad_account_id: str, name: str
+        self,
+        account_id: str,
+        ad_account_id: str,
+        name: str,
+        *,
+        default_event_type: str | None = None,
     ) -> dict[str, Any]:
         """Create a tracking tag (async)"""
         payload = self._build_payload(
             ad_account_id=ad_account_id,
             name=name,
+            default_event_type=default_event_type,
         )
         return await self._client._apost(
             f"/v1/accounts/{account_id}/tracking-tags", data=payload
