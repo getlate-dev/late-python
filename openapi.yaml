@@ -27015,14 +27015,14 @@ paths:
                         type: [string, "null"]
                         description: Twitter username of the recipient
         '400':
-          description: 'Validation error, platform not supported, category combined with templateName or used on a non-WhatsApp account, or the WhatsApp Business Account is not eligible for Direct Send'
+          description: 'Validation error, platform not supported, an attachment the platform does not accept (PLATFORM_LIMITATION), template required to start a WhatsApp conversation (TEMPLATE_REQUIRED), template variables that do not match the approved definition (INVALID_TEMPLATE_PARAMS, INVALID_TEMPLATE_BUTTON_PARAM), category combined with templateName or used on a non-WhatsApp account, or the WhatsApp Business Account is not eligible for Direct Send: DIRECT_SEND_NOT_ELIGIBLE and DIRECT_SEND_BLOCKED require Meta to grant or restore Direct Send access, while DIRECT_SEND_LIMITED is temporary and lifts on its own'
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   error: { type: string }
-                  code: { type: string, enum: [PLATFORM_NOT_SUPPORTED] }
+                  code: { type: string, enum: [PLATFORM_NOT_SUPPORTED, PLATFORM_LIMITATION, TEMPLATE_REQUIRED, INVALID_TEMPLATE_PARAMS, INVALID_TEMPLATE_BUTTON_PARAM, DIRECT_SEND_NOT_ELIGIBLE, DIRECT_SEND_LIMITED, DIRECT_SEND_BLOCKED] }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Inbox addon required or profile limit reached
@@ -28247,8 +28247,8 @@ paths:
                   error: { type: string }
                   code:
                     type: string
-                    description: "Stable machine-readable reason. PLATFORM_LIMITATION covers a capability the platform does not offer (e.g. Bluesky and Reddit DMs reject media); MISSING_PARTICIPANT means the stored conversation has no recipient to send to."
-                    enum: [PLATFORM_LIMITATION, MISSING_PARTICIPANT]
+                    description: "Stable machine-readable reason. PLATFORM_LIMITATION covers a capability the platform does not offer (e.g. Bluesky and Reddit DMs reject media); MISSING_PARTICIPANT means the stored conversation has no recipient to send to; DIRECT_SEND_NOT_ELIGIBLE and DIRECT_SEND_BLOCKED mean the WhatsApp Business Account needs Meta to grant or restore Direct Send access; DIRECT_SEND_LIMITED is temporary, Meta lifts it on its own."
+                    enum: [PLATFORM_LIMITATION, MISSING_PARTICIPANT, DIRECT_SEND_NOT_ELIGIBLE, DIRECT_SEND_LIMITED, DIRECT_SEND_BLOCKED]
                   platformError:
                     type: object
                     description: "Instagram/Facebook only. Meta's own diagnostic fields for the rejected send, passed through verbatim so you can tell failure classes apart and quote them to Meta. Absent when the failure did not come from Meta."
