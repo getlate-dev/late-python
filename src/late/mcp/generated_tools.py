@@ -2309,6 +2309,120 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
+            title="List Google Ads portfolio bid strategies",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_campaigns_list_bid_strategies(
+        account_id: str,
+        customer_id: str | None = None,
+        from_date: str | None = None,
+        to_date: str | None = None,
+    ) -> str:
+        """List Google Ads portfolio bid strategies
+
+        Args:
+            account_id: Google ads SocialAccount id. (required)
+            customer_id: Numeric Google Ads customer id (no dashes). Defaults to the account's connected customer.
+            from_date: Defaults to 30 days ago.
+            to_date: Defaults to today."""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.list_bid_strategies(
+                account_id=account_id,
+                customer_id=customer_id,
+                from_date=from_date,
+                to_date=to_date,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Create a Google Ads portfolio bid strategy",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_create_bid_strategy(
+        account_id: str,
+        name: str,
+        type: str,
+        customer_id: str | None = None,
+        target_cpa: float | None = None,
+        target_roas: float | None = None,
+    ) -> str:
+        """Create a Google Ads portfolio bid strategy
+
+        Args:
+            account_id: Google ads SocialAccount id. (required)
+            customer_id: Numeric Google Ads customer id (no dashes). Defaults to the account's connected customer.
+            name: (required)
+            type: (required)
+            target_cpa: Required when type is TARGET_CPA, in the account's currency units.
+            target_roas: Required when type is TARGET_ROAS; a multiplier (2.0 = 2.0x)."""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.create_bid_strategy(
+                account_id=account_id,
+                customer_id=customer_id,
+                name=name,
+                type=type,
+                target_cpa=target_cpa,
+                target_roas=target_roas,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Update a Google Ads portfolio bid strategy",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_update_bid_strategy(
+        strategy_id: str,
+        account_id: str,
+        customer_id: str | None = None,
+        name: str | None = None,
+        type: str | None = None,
+        target_cpa: float | None = None,
+        target_roas: float | None = None,
+    ) -> str:
+        """Update a Google Ads portfolio bid strategy
+
+        Args:
+            strategy_id: Numeric Google Ads bid strategy id. (required)
+            account_id: Google ads SocialAccount id. (required)
+            customer_id: Numeric Google Ads customer id (no dashes). Defaults to the account's connected customer.
+            name
+            type
+            target_cpa
+            target_roas"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.update_bid_strategy(
+                strategy_id=strategy_id,
+                account_id=account_id,
+                customer_id=customer_id,
+                name=name,
+                type=type,
+                target_cpa=target_cpa,
+                target_roas=target_roas,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
             title="List Search keywords",
             readOnlyHint=True,
             destructiveHint=False,
@@ -2520,6 +2634,7 @@ def register_generated_tools(mcp, _get_client):
         bid_strategy: str | None = None,
         bid_amount: float | None = None,
         roas_average_floor: float | None = None,
+        portfolio_bid_strategy_id: str | None = None,
     ) -> str:
         """Create a standalone campaign
 
@@ -2532,9 +2647,10 @@ def register_generated_tools(mcp, _get_client):
             budget_amount: Campaign-level (CBO) budget in WHOLE currency units (USD: 50 = $50.00), NOT cents — Meta's own Marketing API takes this same number in minor units, so it is an easy and expensive mix-up. Requires budgetType.
             budget_type
             status
-            bid_strategy: Campaign bid strategy. Meta stores `bid_strategy` alongside the budget, so this REQUIRES `budgetAmount` + `budgetType` on the same request; sending it without a campaign budget is a 400. A campaign carrying a strategy without its `bid_amount` makes every ad set created under it fail with an error that names the ad set (code 100, subcode 1815857), so the bad state is rejected up front rather than accepted. To bid at ad-set level, set the strategy there instead.
-            bid_amount: Whole currency units (USD: 5 = $5.00). Required for LOWEST_COST_WITH_BID_CAP and COST_CAP; ignored otherwise. Validated here but NOT stored by Meta: the campaign object has no bid_amount field, only bid_strategy lives on it. The amount takes effect once an ad set joins this campaign (existingCampaignId on POST /v1/ads/create) and supplies its own bidAmount there.
-            roas_average_floor: Decimal ROAS multiplier (2.0 = 2.0x). Required for LOWEST_COST_WITH_MIN_ROAS."""
+            bid_strategy: Campaign bid strategy. Meta stores `bid_strategy` alongside the budget, so this REQUIRES `budgetAmount` + `budgetType` on the same request; sending it without a campaign budget is a 400. A campaign carrying a strategy without its `bid_amount` makes every ad set created under it fail with an error that names the ad set (code 100, subcode 1815857), so the bad state is rejected up front rather than accepted. To bid at ad-set level on Meta, set the strategy there instead. On Google: LOWEST_COST_WITHOUT_CAP = Maximize Conversions, COST_CAP + bidAmount = Target CPA, LOWEST_COST_WITH_MIN_ROAS + roasAverageFloor = Target ROAS, LOWEST_COST_WITH_BID_CAP + bidAmount = Maximize Clicks with a CPC ceiling; portfolioBidStrategyId attaches a portfolio strategy instead.
+            bid_amount: Whole currency units (USD: 5 = $5.00). Required for LOWEST_COST_WITH_BID_CAP and COST_CAP; ignored otherwise. On Meta, validated here but NOT stored: the campaign object has no bid_amount field, only bid_strategy lives on it, and the amount takes effect once an ad set joins this campaign (existingCampaignId on POST /v1/ads/create) and supplies its own bidAmount there. On Google, stored directly on the campaign's bidding strategy.
+            roas_average_floor: Decimal ROAS multiplier (2.0 = 2.0x). Required for LOWEST_COST_WITH_MIN_ROAS.
+            portfolio_bid_strategy_id: Google only. Attach an existing portfolio bid strategy (numeric id from GET /v1/ads/bid-strategies) to the new campaign instead of a standard one. Exclusive with bidStrategy."""
         client = _get_client()
         try:
             response = client.ad_campaigns.create_ad_campaign(
@@ -2549,6 +2665,7 @@ def register_generated_tools(mcp, _get_client):
                 bid_strategy=bid_strategy,
                 bid_amount=bid_amount,
                 roas_average_floor=roas_average_floor,
+                portfolio_bid_strategy_id=portfolio_bid_strategy_id,
             )
             return _format_response(response)
         except Exception as e:
@@ -2582,6 +2699,36 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
+            title="Read a campaign's current bidding",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_campaigns_get_campaign_bidding(
+        campaign_id: str, account_id: str, platform: str, customer_id: str | None = None
+    ) -> str:
+        """Read a campaign's current bidding
+
+        Args:
+            campaign_id: Numeric Google platform campaign id. (required)
+            account_id: Zernio Google Ads SocialAccount id: resolves the customer id + refresh token. (required)
+            platform: Required: campaign IDs are not globally unique. Only "google" is supported today. (required)
+            customer_id: Numeric Google Ads customer id (no dashes). Required when the connection has multiple Google Ads accounts; optional (and inferred) when it has only one."""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.get_campaign_bidding(
+                campaign_id=campaign_id,
+                account_id=account_id,
+                platform=platform,
+                customer_id=customer_id,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
             title="Update a campaign",
             readOnlyHint=False,
             destructiveHint=True,
@@ -2595,6 +2742,7 @@ def register_generated_tools(mcp, _get_client):
         bid_strategy: str | None = None,
         bid_amount: float | None = None,
         roas_average_floor: float | None = None,
+        portfolio_bid_strategy_id: str | None = None,
         budget: dict[str, Any] | None = None,
         name: str | None = None,
         platform_specific_data: dict[str, Any] | None = None,
@@ -2605,9 +2753,10 @@ def register_generated_tools(mcp, _get_client):
             campaign_id: Platform campaign ID (required)
             platform: Required: platform campaign IDs are not globally unique. (required)
             account_id: **Meta only.** Zernio SocialAccount id owning the ad account. Needed only for an EMPTY campaign (zero ads); ignored otherwise.
-            bid_strategy: **Meta + Google.** On Meta, the campaign default that ad sets inherit unless they override it. On Google, the campaign's own bidding strategy.
+            bid_strategy: **Meta + Google.** On Meta, the campaign default that ad sets inherit unless they override it. On Google, the campaign's own bidding strategy. On Google: LOWEST_COST_WITHOUT_CAP = Maximize Conversions, COST_CAP + bidAmount = Target CPA, LOWEST_COST_WITH_MIN_ROAS + roasAverageFloor = Target ROAS, LOWEST_COST_WITH_BID_CAP + bidAmount = Maximize Clicks with a CPC ceiling; portfolioBidStrategyId attaches a portfolio strategy instead.
             bid_amount: **Google only.** Whole currency units (USD: 12 = $12.00). Max CPC for LOWEST_COST_WITH_BID_CAP, CPA target for COST_CAP; required for both.
             roas_average_floor: **Google only.** Decimal ROAS multiplier (2.0 = 2.0x), required for LOWEST_COST_WITH_MIN_ROAS.
+            portfolio_bid_strategy_id: **Google only.** Attach an existing portfolio bid strategy (numeric id from GET /v1/ads/bid-strategies) instead of setting bidStrategy. Exclusive with bidStrategy.
             budget: **Meta only.** The CBO budget.
             name: **Meta only.** Rename the campaign.
             platform_specific_data: **Meta only.** Platform implied by the `platform` body param, same convention as POST /v1/ads/create."""
@@ -2620,6 +2769,7 @@ def register_generated_tools(mcp, _get_client):
                 bid_strategy=bid_strategy,
                 bid_amount=bid_amount,
                 roas_average_floor=roas_average_floor,
+                portfolio_bid_strategy_id=portfolio_bid_strategy_id,
                 budget=budget,
                 name=name,
                 platform_specific_data=platform_specific_data,
@@ -3293,8 +3443,9 @@ def register_generated_tools(mcp, _get_client):
                 ad_id: (required)
                 status
                 budget
-                targeting: Meta + TikTok (demographics/interests), Google (keyword edits only),
-        and LinkedIn (geo countries). Pinterest / X return 501.
+                targeting: Meta + TikTok (demographics/interests), Google (keyword and device
+        bid adjustment edits only), and LinkedIn (geo countries). Pinterest / X
+        return 501.
                 creative: Replace or patch the ad's creative. Meta, TikTok, and LinkedIn.
 
         - **Meta**: patch-style. Pass any subset — fields you omit are preserved from the
@@ -3703,6 +3854,7 @@ def register_generated_tools(mcp, _get_client):
         bid_strategy: str | None = None,
         bid_amount: float | None = None,
         roas_average_floor: float | None = None,
+        portfolio_bid_strategy_id: str | None = None,
         value_rule_set_id: str | None = None,
         value_rules_applied: bool | None = None,
         platform_specific_data: dict[str, Any] | None = None,
@@ -4026,6 +4178,8 @@ def register_generated_tools(mcp, _get_client):
         Meta bid strategy applied to the ad set.
 
         OpenAI Ads: required on every ad group via this flat field, the only channel it supports (`platformSpecificData` is Meta/LinkedIn-only and returns 400 for OpenAI). No auto-bid option exists; send `LOWEST_COST_WITH_BID_CAP` or `COST_CAP` together with `bidAmount`, omitting it returns 400.
+
+        Google (not deprecated there, this shared flat field is Google's only shape): applied to the campaign this call creates. On Google: LOWEST_COST_WITHOUT_CAP = Maximize Conversions, COST_CAP + bidAmount = Target CPA, LOWEST_COST_WITH_MIN_ROAS + roasAverageFloor = Target ROAS, LOWEST_COST_WITH_BID_CAP + bidAmount = Maximize Clicks with a CPC ceiling; portfolioBidStrategyId attaches a portfolio strategy instead. Omitted, the campaign falls back to a goal-based default.
                 bid_amount: Deprecated: send it inside `platformSpecificData` instead (Meta today; TikTok's nested shape is planned). The flat field keeps working during the deprecation window; sending both shapes returns a 400.
 
         Bid cap in WHOLE currency units (USD: 5 = $5.00; JPY: 100 = ¥100). Required when
@@ -4045,6 +4199,7 @@ def register_generated_tools(mcp, _get_client):
         `bid_constraints.roas_average_floor` × 10000. Known gap: a CBO campaign's
         ROAS floor lives on the campaign only (set via `POST /v1/ads/campaigns`);
         there is no supported way to set it while joining a CBO campaign here.
+                portfolio_bid_strategy_id: Google only. Attach an existing portfolio bid strategy (numeric id from GET /v1/ads/bid-strategies) to the new campaign instead of a standard one. Exclusive with bidStrategy.
                 value_rule_set_id: Meta only (facebook, instagram; other platforms return 400). Value rule set
         to attach to the new ad set, from `/v1/ads/value-rule-sets`. Attachment is
         driven by this id, so `valueRulesApplied` is optional alongside it.
@@ -4236,6 +4391,7 @@ def register_generated_tools(mcp, _get_client):
                 bid_strategy=bid_strategy,
                 bid_amount=bid_amount,
                 roas_average_floor=roas_average_floor,
+                portfolio_bid_strategy_id=portfolio_bid_strategy_id,
                 value_rule_set_id=value_rule_set_id,
                 value_rules_applied=value_rules_applied,
                 platform_specific_data=platform_specific_data,

@@ -8551,6 +8551,43 @@ components:
           - `LOWEST_COST_WITH_MIN_ROAS`: requires `roasAverageFloor` (decimal multiplier, 2.0 = 2.0x).
         Source: facebook-business-sdk-codegen api_specs/specs/enum_types.json (`AdSet_bid_strategy`,
         `Campaign_bid_strategy`).
+    PortfolioBidStrategy:
+      type: object
+      description: "A Google Ads portfolio bid strategy: a named bidding strategy shared across campaigns, with its R.130 report metrics over the queried date range."
+      properties:
+        id: { type: string, description: "Numeric bid strategy id; pass as portfolioBidStrategyId or in the {strategyId} path." }
+        name: { type: string }
+        type: { type: string, enum: [TARGET_CPA, TARGET_ROAS, MAXIMIZE_CONVERSIONS, MAXIMIZE_CONVERSION_VALUE] }
+        status: { type: string, description: "ENABLED or REMOVED." }
+        campaignCount: { type: integer, description: "Number of campaigns currently attached." }
+        clicks: { type: integer }
+        cost: { type: number, description: "Cost in the account's currency units (converted from micros)." }
+        costPerConversion: { type: number, description: "Cost per conversion in the account's currency units." }
+        impressions: { type: integer }
+        averageCpc: { type: number, description: "Average CPC in the account's currency units." }
+        conversions: { type: number }
+        targetCpa: { type: [number, "null"], description: "Current target, in the account's currency units. Null for a ROAS-family type (TARGET_ROAS, MAXIMIZE_CONVERSION_VALUE), or a Maximize type with no target set. Pre-fills the edit form's target field." }
+        targetRoas: { type: [number, "null"], description: "Current target as a decimal multiplier (2.0 = 2.0x). Null for a CPA-family type (TARGET_CPA, MAXIMIZE_CONVERSIONS), or a Maximize type with no target set." }
+    CampaignBidding:
+      type: object
+      description: "A Google campaign's current bidding, mapped onto the same triplet PUT /v1/ads/campaigns/{campaignId} accepts."
+      properties:
+        channel: { type: string, enum: [SEARCH, DISPLAY], description: "campaign.advertising_channel_type. COST_CAP's underlying Google field differs by channel; see bidStrategy on PUT." }
+        biddingStrategyType: { type: string, description: "Google's raw enum: MAXIMIZE_CONVERSIONS, TARGET_CPA, MAXIMIZE_CONVERSION_VALUE, TARGET_ROAS, TARGET_SPEND, MANUAL_CPC, TARGET_IMPRESSION_SHARE, or another Google adds later." }
+        bidSpec:
+          type: [object, "null"]
+          description: "Null when the campaign is on a strategy PUT does not model (Manual CPC, Target Impression Share, ...); show biddingStrategyType instead in that case."
+          properties:
+            bidStrategy: { $ref: '#/components/schemas/BidStrategy' }
+            bidAmount: { type: number, description: "Whole currency units. Present for COST_CAP and LOWEST_COST_WITH_BID_CAP, and omitted when the campaign is on a bare TARGET_SPEND with no CPC ceiling set." }
+            roasAverageFloor: { type: number, description: "Decimal ROAS multiplier (2.0 = 2.0x). Present for LOWEST_COST_WITH_MIN_ROAS." }
+            portfolioBidStrategyId: { type: string, description: "Present alone (bidStrategy omitted) when the campaign is on a portfolio strategy; see portfolio." }
+        portfolio:
+          type: [object, "null"]
+          description: "Set only when the campaign is on a portfolio bid strategy (campaign.bidding_strategy); null otherwise."
+          properties:
+            id: { type: string }
+            name: { type: string }
     AdBudget:
       type: object
       description: Budget amount in the ad account's native currency (see the campaign's `currency` field for the code).
@@ -41339,6 +41376,141 @@ paths:
         '429': { description: "Google Ads operations budget exhausted; retry later." }
         '501': { description: Only available on Google Ads accounts }
 
+  /v1/ads/bid-strategies:
+    get:
+      x-resource-group: "ads"
+      operationId: listBidStrategies
+      tags: ["Ad Campaigns"]
+      x-platforms: ["google"]
+      summary: List Google Ads portfolio bid strategies
+      description: >-
+        Bidding strategy report: type, status, campaign count, clicks, cost, cost per
+        conversion, impressions, average CPC and conversions over the date range (default
+        last 30 days). Reads Google's `bidding_strategy` resource live. Draws on the shared
+        Google Ads operations budget.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: string }, description: "Google ads SocialAccount id." }
+        - { name: customerId, in: query, schema: { type: string }, description: "Numeric Google Ads customer id (no dashes). Defaults to the account's connected customer." }
+        - { name: fromDate, in: query, schema: { type: string, format: date }, description: "Defaults to 30 days ago." }
+        - { name: toDate, in: query, schema: { type: string, format: date }, description: "Defaults to today." }
+      responses:
+        '200':
+          description: Portfolio bid strategies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customerId: { type: string }
+                  currency: { type: string, description: "Account currency code; money fields are in this currency's units." }
+                  strategies:
+                    type: array
+                    items: { $ref: '#/components/schemas/PortfolioBidStrategy' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { description: "Google Ads operations budget exhausted; retry later." }
+        '501': { description: Only available on Google Ads accounts }
+    post:
+      x-resource-group: "ads"
+      operationId: createBidStrategy
+      tags: ["Ad Campaigns"]
+      x-platforms: ["google"]
+      summary: Create a Google Ads portfolio bid strategy
+      description: >-
+        Creates a standalone bid strategy shared across campaigns. Attach it to a campaign
+        with `portfolioBidStrategyId` on POST /v1/ads/create, PUT /v1/ads/campaigns/{campaignId},
+        or PUT /v1/ads/ad-sets/{adSetId}. Attaching a strategy aligned to a shared budget fails
+        there with a 400 (Google's `BIDDING_STRATEGY_AND_BUDGET_MUST_BE_ALIGNED`); this is not retryable.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountId, name, type]
+              properties:
+                accountId: { type: string, description: "Google ads SocialAccount id." }
+                customerId: { type: string, description: "Numeric Google Ads customer id (no dashes). Defaults to the account's connected customer." }
+                name: { type: string, minLength: 1, maxLength: 255 }
+                type: { type: string, enum: [TARGET_CPA, TARGET_ROAS, MAXIMIZE_CONVERSIONS, MAXIMIZE_CONVERSION_VALUE] }
+                targetCpa: { type: number, exclusiveMinimum: 0, description: "Required when type is TARGET_CPA, in the account's currency units." }
+                targetRoas: { type: number, exclusiveMinimum: 0, description: "Required when type is TARGET_ROAS; a multiplier (2.0 = 2.0x)." }
+      responses:
+        '201':
+          description: Bid strategy created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  strategy:
+                    type: object
+                    properties:
+                      customerId: { type: string }
+                      id: { type: string, description: "Numeric bid strategy id; pass as portfolioBidStrategyId or in the {strategyId} path." }
+                      resourceName: { type: string }
+        '400': { description: "Invalid input, or Google rejected the strategy (e.g. shared-budget alignment). The message carries Google's error." }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { description: "No Google Ads customer accounts on this connection. Reconnect Google Ads." }
+        '429': { description: "Google Ads operations budget exhausted; retry later." }
+        '501': { description: Only available on Google Ads accounts }
+
+  /v1/ads/bid-strategies/{strategyId}:
+    patch:
+      x-resource-group: "ads"
+      operationId: updateBidStrategy
+      tags: ["Ad Campaigns"]
+      x-platforms: ["google"]
+      summary: Update a Google Ads portfolio bid strategy
+      description: >-
+        Renames or retargets a portfolio bid strategy. The strategy's status is output only
+        on Google's side, so it cannot be changed here; remove a strategy in Google Ads.
+        `type` is only needed alongside `targetCpa`/`targetRoas` to disambiguate the field
+        Google writes to (TARGET_CPA and MAXIMIZE_CONVERSIONS both take a target CPA;
+        TARGET_ROAS and MAXIMIZE_CONVERSION_VALUE both take a target ROAS); the strategy's
+        family is otherwise immutable once created.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: strategyId, in: path, required: true, schema: { type: string }, description: "Numeric Google Ads bid strategy id." }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountId]
+              properties:
+                accountId: { type: string, description: "Google ads SocialAccount id." }
+                customerId: { type: string, description: "Numeric Google Ads customer id (no dashes). Defaults to the account's connected customer." }
+                name: { type: string, minLength: 1, maxLength: 255 }
+                type: { type: string, enum: [TARGET_CPA, TARGET_ROAS, MAXIMIZE_CONVERSIONS, MAXIMIZE_CONVERSION_VALUE] }
+                targetCpa: { type: number, exclusiveMinimum: 0 }
+                targetRoas: { type: number, exclusiveMinimum: 0 }
+      responses:
+        '200':
+          description: Bid strategy updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  strategy:
+                    type: object
+                    properties:
+                      customerId: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { description: "Google Ads operations budget exhausted; retry later." }
+        '501': { description: Only available on Google Ads accounts }
+
   /v1/ads/local-services/leads:
     get:
       x-resource-group: "ads"
@@ -41692,8 +41864,9 @@ paths:
         Creates a campaign WITHOUT its first ad set / ad, on the platform of the given
         `accountId`. Ad sets join it later via `existingCampaignId` on the create endpoints.
         Platform notes: on Meta a budget here is campaign-level (CBO) by definition; omit it
-        for ABO (each ad set carries its own budget), and `specialAdCategories` /
-        `bidStrategy` are Meta-only (400 elsewhere). Google, X and OpenAI require a budget
+        for ABO (each ad set carries its own budget), and `specialAdCategories` is Meta-only
+        (400 elsewhere); `bidStrategy` is Meta and Google (400 elsewhere), and Google also
+        accepts `portfolioBidStrategyId` instead. Google, X and OpenAI require a budget
         (422 without one; OpenAI accepts only `budgetType: lifetime`, Google only
         `budgetType: daily`). LinkedIn creates the
         campaign GROUP (our campaign level) and rejects a budget, which lives on the
@@ -41739,9 +41912,10 @@ paths:
                 bidStrategy:
                   type: string
                   enum: [LOWEST_COST_WITHOUT_CAP, LOWEST_COST_WITH_BID_CAP, COST_CAP, LOWEST_COST_WITH_MIN_ROAS]
-                  description: "Campaign bid strategy. Meta stores `bid_strategy` alongside the budget, so this REQUIRES `budgetAmount` + `budgetType` on the same request; sending it without a campaign budget is a 400. A campaign carrying a strategy without its `bid_amount` makes every ad set created under it fail with an error that names the ad set (code 100, subcode 1815857), so the bad state is rejected up front rather than accepted. To bid at ad-set level, set the strategy there instead."
-                bidAmount: { type: number, description: "Whole currency units (USD: 5 = $5.00). Required for LOWEST_COST_WITH_BID_CAP and COST_CAP; ignored otherwise. Validated here but NOT stored by Meta: the campaign object has no bid_amount field, only bid_strategy lives on it. The amount takes effect once an ad set joins this campaign (existingCampaignId on POST /v1/ads/create) and supplies its own bidAmount there." }
+                  description: "Campaign bid strategy. Meta stores `bid_strategy` alongside the budget, so this REQUIRES `budgetAmount` + `budgetType` on the same request; sending it without a campaign budget is a 400. A campaign carrying a strategy without its `bid_amount` makes every ad set created under it fail with an error that names the ad set (code 100, subcode 1815857), so the bad state is rejected up front rather than accepted. To bid at ad-set level on Meta, set the strategy there instead. On Google: LOWEST_COST_WITHOUT_CAP = Maximize Conversions, COST_CAP + bidAmount = Target CPA, LOWEST_COST_WITH_MIN_ROAS + roasAverageFloor = Target ROAS, LOWEST_COST_WITH_BID_CAP + bidAmount = Maximize Clicks with a CPC ceiling; portfolioBidStrategyId attaches a portfolio strategy instead."
+                bidAmount: { type: number, description: "Whole currency units (USD: 5 = $5.00). Required for LOWEST_COST_WITH_BID_CAP and COST_CAP; ignored otherwise. On Meta, validated here but NOT stored: the campaign object has no bid_amount field, only bid_strategy lives on it, and the amount takes effect once an ad set joins this campaign (existingCampaignId on POST /v1/ads/create) and supplies its own bidAmount there. On Google, stored directly on the campaign's bidding strategy." }
                 roasAverageFloor: { type: number, description: "Decimal ROAS multiplier (2.0 = 2.0x). Required for LOWEST_COST_WITH_MIN_ROAS." }
+                portfolioBidStrategyId: { type: string, pattern: '^\d+$', description: "Google only. Attach an existing portfolio bid strategy (numeric id from GET /v1/ads/bid-strategies) to the new campaign instead of a standard one. Exclusive with bidStrategy." }
       responses:
         '201':
           description: Campaign created
@@ -41814,6 +41988,52 @@ paths:
         '404':
           description: No ads found for this campaign
 
+  /v1/ads/campaigns/{campaignId}/bidding:
+    get:
+      x-resource-group: "ads"
+      operationId: getCampaignBidding
+      tags: ["Ad Campaigns"]
+      x-platforms: ["google"]
+      summary: Read a campaign's current bidding
+      description: |
+        Live read of the campaign's bidding strategy on Google, for pre-filling the bid strategy
+        block before a PUT to /v1/ads/campaigns/{campaignId}. Google Ads only; `platform` is required
+        and rejected when it is anything else, since a `campaignId` is not globally unique.
+
+        Maps Google's bidding strategy onto the same triplet PUT accepts: `LOWEST_COST_WITHOUT_CAP`
+        (Maximize Conversions, no target), `COST_CAP` + `bidAmount` (Target CPA), `LOWEST_COST_WITH_MIN_ROAS`
+        + `roasAverageFloor` (Target ROAS), `LOWEST_COST_WITH_BID_CAP` + `bidAmount` (Maximize Clicks with
+        a CPC ceiling). A campaign on a portfolio strategy returns `portfolio` (id + name) and
+        `bidSpec.portfolioBidStrategyId` instead of the triplet. Anything else (Manual CPC, Target
+        Impression Share, ...) returns `bidSpec: null`; show `biddingStrategyType` as-is.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: campaignId, in: path, required: true, schema: { type: string }, description: "Numeric Google platform campaign id." }
+        - { name: accountId, in: query, required: true, schema: { type: string }, description: "Zernio Google Ads SocialAccount id: resolves the customer id + refresh token." }
+        - { name: platform, in: query, required: true, schema: { type: string, enum: [google] }, description: "Required: campaign IDs are not globally unique. Only \"google\" is supported today." }
+        - { name: customerId, in: query, required: false, schema: { type: string }, description: "Numeric Google Ads customer id (no dashes). Required when the connection has multiple Google Ads accounts; optional (and inferred) when it has only one." }
+      responses:
+        '200':
+          description: Campaign bidding
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    properties:
+                      campaignId: { type: string }
+                  - $ref: '#/components/schemas/CampaignBidding'
+        '400':
+          description: "Invalid input (accountId, customerId, or a non-numeric campaignId), or a platform other than \"google\""
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: "Ads access required. Legacy plans need the Ads add-on; included by default on usage-based plans."
+        '404':
+          description: Campaign not found on Google Ads
+        '501':
+          description: "Not a Google Ads account: the connection behind accountId resolves to another platform."
+
   /v1/ads/campaigns/{campaignId}:
     put:
       x-resource-group: "ads"
@@ -41822,25 +42042,27 @@ paths:
       x-platforms: ["meta", "google", "tiktok", "linkedin", "pinterest", "x", "openai"]
       summary: Update a campaign
       description: |
-        Campaign-level edits. Send at least one of `budget`, `bidStrategy`, `name`
-        or `platformSpecificData`. An unsupported field is always an error, never a
-        silent drop.
+        Campaign-level edits. Send at least one of `budget`, `bidStrategy`,
+        `portfolioBidStrategyId`, `name` or `platformSpecificData`. An unsupported
+        field is always an error, never a silent drop.
 
         | Body field | Meta | Google | Others |
         |---|---|---|---|
         | `bidStrategy` | Yes | Yes | 501 |
         | `bidAmount`, `roasAverageFloor` | 400 — ad-set level | Yes | 400 |
+        | `portfolioBidStrategyId` | 400 | Yes | 400 |
         | `budget` (CBO; ABO returns 409) | Yes | 501 | 501 |
         | `name` | Yes | 501 | 501 |
         | `platformSpecificData.spendCap` | Yes | 400 | 400 |
         | `accountId` (empty campaigns) | Yes | - | - |
 
-        Google maps the shared enum onto its own strategies: `LOWEST_COST_WITHOUT_CAP`
-        to Maximize Clicks, `LOWEST_COST_WITH_BID_CAP` to Maximize Clicks with a max
-        CPC (`bidAmount`), `COST_CAP` to Target CPA (`bidAmount`),
-        `LOWEST_COST_WITH_MIN_ROAS` to Target ROAS (`roasAverageFloor`). A campaign on
-        a PORTFOLIO bidding strategy is rejected: detach it in Google Ads first, since
-        it is shared across campaigns.
+        On Google: `LOWEST_COST_WITHOUT_CAP` = Maximize Conversions, `COST_CAP` +
+        `bidAmount` = Target CPA, `LOWEST_COST_WITH_MIN_ROAS` + `roasAverageFloor` =
+        Target ROAS, `LOWEST_COST_WITH_BID_CAP` + `bidAmount` = Maximize Clicks with a
+        CPC ceiling; `portfolioBidStrategyId` attaches a portfolio strategy instead
+        (exclusive with `bidStrategy`). Setting the standard triplet on a campaign that
+        is currently on a PORTFOLIO strategy is rejected: detach it in Google Ads
+        first, since it is shared across campaigns.
 
         `accountId` forwards the update straight to Meta for a campaign with zero ads,
         which would otherwise 404; the response then carries `updated: 0`.
@@ -41860,9 +42082,10 @@ paths:
                 accountId: { type: string, description: "**Meta only.** Zernio SocialAccount id owning the ad account. Needed only for an EMPTY campaign (zero ads); ignored otherwise." }
                 bidStrategy:
                   allOf: [{ $ref: '#/components/schemas/BidStrategy' }]
-                  description: "**Meta + Google.** On Meta, the campaign default that ad sets inherit unless they override it. On Google, the campaign's own bidding strategy."
+                  description: "**Meta + Google.** On Meta, the campaign default that ad sets inherit unless they override it. On Google, the campaign's own bidding strategy. On Google: LOWEST_COST_WITHOUT_CAP = Maximize Conversions, COST_CAP + bidAmount = Target CPA, LOWEST_COST_WITH_MIN_ROAS + roasAverageFloor = Target ROAS, LOWEST_COST_WITH_BID_CAP + bidAmount = Maximize Clicks with a CPC ceiling; portfolioBidStrategyId attaches a portfolio strategy instead."
                 bidAmount: { type: number, description: "**Google only.** Whole currency units (USD: 12 = $12.00). Max CPC for LOWEST_COST_WITH_BID_CAP, CPA target for COST_CAP; required for both." }
                 roasAverageFloor: { type: number, description: "**Google only.** Decimal ROAS multiplier (2.0 = 2.0x), required for LOWEST_COST_WITH_MIN_ROAS." }
+                portfolioBidStrategyId: { type: string, pattern: '^\d+$', description: "**Google only.** Attach an existing portfolio bid strategy (numeric id from GET /v1/ads/bid-strategies) instead of setting bidStrategy. Exclusive with bidStrategy." }
                 budget:
                   type: object
                   description: "**Meta only.** The CBO budget."
@@ -41891,6 +42114,7 @@ paths:
                   bidStrategy: { $ref: '#/components/schemas/BidStrategy' }
                   bidAmount: { type: number }
                   roasAverageFloor: { type: number }
+                  portfolioBidStrategyId: { type: string, description: "Google only. Echoed back, but NOT mirrored onto local Ad documents (no column for it yet)." }
                   platformSpecificData: { type: object }
         '400': { description: "Invalid input, or a field the resolved platform does not support at the campaign level (see the support table)" }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -43062,11 +43286,12 @@ paths:
         - **Meta** (Facebook + Instagram): all fields supported.
         - **TikTok**: status, budget, targeting (via `/v2/adgroup/update/`), and creative
           (via `/v2/ad/update/` patch-style — `headline` is ignored, `body` becomes `ad_text`).
-        - **Google**: status, budget, and KEYWORD edits via `targeting.keywords` /
-          `targeting.negativeKeywords` — each list you send becomes the FULL new set of its
-          kind on the ad group (criteria not in the list are removed); a kind left out is
-          untouched. Any other `targeting` field returns 400: Google cannot mutate broad
-          targeting post-create without recreating the campaign. `creative` returns 501.
+        - **Google**: status, budget, KEYWORD edits via `targeting.keywords` /
+          `targeting.negativeKeywords`, and DEVICE bid adjustments via `targeting.devices`
+          — each list you send becomes the FULL new set of its kind (criteria not in the
+          list are removed); a kind left out is untouched. Any other `targeting` field
+          returns 400: Google cannot mutate broad targeting post-create without recreating
+          the campaign. `creative` returns 501.
         - **LinkedIn**: status, budget, targeting (geo countries only, applied to the
           LinkedIn Campaign via PARTIAL_UPDATE), and creative (uploads new media, creates a
           replacement inline creative on the same campaign, pauses the old one).
@@ -43093,8 +43318,9 @@ paths:
                 targeting:
                   type: object
                   description: |
-                    Meta + TikTok (demographics/interests), Google (keyword edits only),
-                    and LinkedIn (geo countries). Pinterest / X return 501.
+                    Meta + TikTok (demographics/interests), Google (keyword and device
+                    bid adjustment edits only), and LinkedIn (geo countries). Pinterest / X
+                    return 501.
                   properties:
                     keywords:
                       type: array
@@ -43110,6 +43336,17 @@ paths:
                         oneOf:
                           - { type: string }
                           - { type: object, required: [text], properties: { text: { type: string, maxLength: 80 }, matchType: { type: string, enum: [exact, phrase, broad] } } }
+                    devices:
+                      type: array
+                      description: "Google only. The FULL new set of device criteria for the campaign; devices not listed are excluded. Entries are a device name alone (included, no bid adjustment) or { device, bidModifier }."
+                      items:
+                        oneOf:
+                          - { type: string, enum: [MOBILE, DESKTOP, TABLET, CONNECTED_TV] }
+                          - type: object
+                            required: [device]
+                            properties:
+                              device: { type: string, enum: [MOBILE, DESKTOP, TABLET, CONNECTED_TV] }
+                              bidModifier: { type: number, minimum: 0.1, maximum: 10, description: 'Google device bid modifier, 0.1 to 10 (minus 90% to plus 900%). Omit a device to exclude it.' }
                     ageMin: { type: integer, minimum: 13, maximum: 65 }
                     ageMax: { type: integer, minimum: 13, maximum: 65 }
                     countries: { type: array, items: { type: string } }
@@ -46455,6 +46692,8 @@ paths:
                     Meta bid strategy applied to the ad set.
 
                     OpenAI Ads: required on every ad group via this flat field, the only channel it supports (`platformSpecificData` is Meta/LinkedIn-only and returns 400 for OpenAI). No auto-bid option exists; send `LOWEST_COST_WITH_BID_CAP` or `COST_CAP` together with `bidAmount`, omitting it returns 400.
+
+                    Google (not deprecated there, this shared flat field is Google's only shape): applied to the campaign this call creates. On Google: LOWEST_COST_WITHOUT_CAP = Maximize Conversions, COST_CAP + bidAmount = Target CPA, LOWEST_COST_WITH_MIN_ROAS + roasAverageFloor = Target ROAS, LOWEST_COST_WITH_BID_CAP + bidAmount = Maximize Clicks with a CPC ceiling; portfolioBidStrategyId attaches a portfolio strategy instead. Omitted, the campaign falls back to a goal-based default.
                 bidAmount:
                   type: number
                   deprecated: true
@@ -46482,6 +46721,10 @@ paths:
                     `bid_constraints.roas_average_floor` × 10000. Known gap: a CBO campaign's
                     ROAS floor lives on the campaign only (set via `POST /v1/ads/campaigns`);
                     there is no supported way to set it while joining a CBO campaign here.
+                portfolioBidStrategyId:
+                  type: string
+                  pattern: '^\d+$'
+                  description: "Google only. Attach an existing portfolio bid strategy (numeric id from GET /v1/ads/bid-strategies) to the new campaign instead of a standard one. Exclusive with bidStrategy."
                 valueRuleSetId:
                   type: string
                   pattern: '^\d+$'

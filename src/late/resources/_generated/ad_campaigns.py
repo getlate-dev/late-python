@@ -116,6 +116,68 @@ class AdCampaignsResource:
         )
         return self._client._get("/v1/ads", params=params)
 
+    def list_bid_strategies(
+        self,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        from_date: str | None = None,
+        to_date: str | None = None,
+    ) -> dict[str, Any]:
+        """List Google Ads portfolio bid strategies"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+            from_date=from_date,
+            to_date=to_date,
+        )
+        return self._client._get("/v1/ads/bid-strategies", params=params)
+
+    def create_bid_strategy(
+        self,
+        account_id: str,
+        name: str,
+        type: str,
+        *,
+        customer_id: str | None = None,
+        target_cpa: float | None = None,
+        target_roas: float | None = None,
+    ) -> dict[str, Any]:
+        """Create a Google Ads portfolio bid strategy"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            name=name,
+            type=type,
+            target_cpa=target_cpa,
+            target_roas=target_roas,
+        )
+        return self._client._post("/v1/ads/bid-strategies", data=payload)
+
+    def update_bid_strategy(
+        self,
+        strategy_id: str,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        name: str | None = None,
+        type: str | None = None,
+        target_cpa: float | None = None,
+        target_roas: float | None = None,
+    ) -> dict[str, Any]:
+        """Update a Google Ads portfolio bid strategy"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            name=name,
+            type=type,
+            target_cpa=target_cpa,
+            target_roas=target_roas,
+        )
+        return self._client._patch(
+            f"/v1/ads/bid-strategies/{strategy_id}", data=payload
+        )
+
     def list_ad_keywords(
         self,
         *,
@@ -227,6 +289,7 @@ class AdCampaignsResource:
         bid_strategy: str | None = None,
         bid_amount: float | None = None,
         roas_average_floor: float | None = None,
+        portfolio_bid_strategy_id: str | None = None,
     ) -> dict[str, Any]:
         """Create a standalone campaign"""
         payload = self._build_payload(
@@ -241,6 +304,7 @@ class AdCampaignsResource:
             bid_strategy=bid_strategy,
             bid_amount=bid_amount,
             roas_average_floor=roas_average_floor,
+            portfolio_bid_strategy_id=portfolio_bid_strategy_id,
         )
         headers: dict[str, str] = {}
         if idempotency_key is not None:
@@ -259,6 +323,24 @@ class AdCampaignsResource:
             f"/v1/ads/campaigns/{campaign_id}/status", data=payload
         )
 
+    def get_campaign_bidding(
+        self,
+        campaign_id: str,
+        account_id: str,
+        platform: str,
+        *,
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Read a campaign's current bidding"""
+        params = self._build_params(
+            account_id=account_id,
+            platform=platform,
+            customer_id=customer_id,
+        )
+        return self._client._get(
+            f"/v1/ads/campaigns/{campaign_id}/bidding", params=params
+        )
+
     def update_ad_campaign(
         self,
         campaign_id: str,
@@ -268,6 +350,7 @@ class AdCampaignsResource:
         bid_strategy: Any | None = None,
         bid_amount: float | None = None,
         roas_average_floor: float | None = None,
+        portfolio_bid_strategy_id: str | None = None,
         budget: dict[str, Any] | None = None,
         name: str | None = None,
         platform_specific_data: dict[str, Any] | None = None,
@@ -279,6 +362,7 @@ class AdCampaignsResource:
             bid_strategy=bid_strategy,
             bid_amount=bid_amount,
             roas_average_floor=roas_average_floor,
+            portfolio_bid_strategy_id=portfolio_bid_strategy_id,
             budget=budget,
             name=name,
             platform_specific_data=platform_specific_data,
@@ -820,6 +904,7 @@ class AdCampaignsResource:
         bid_strategy: Any | None = None,
         bid_amount: float | None = None,
         roas_average_floor: float | None = None,
+        portfolio_bid_strategy_id: str | None = None,
         value_rule_set_id: str | None = None,
         value_rules_applied: bool | None = None,
         platform_specific_data: Any | None = None,
@@ -920,6 +1005,7 @@ class AdCampaignsResource:
             bid_strategy=bid_strategy,
             bid_amount=bid_amount,
             roas_average_floor=roas_average_floor,
+            portfolio_bid_strategy_id=portfolio_bid_strategy_id,
             value_rule_set_id=value_rule_set_id,
             value_rules_applied=value_rules_applied,
             platform_specific_data=platform_specific_data,
@@ -972,6 +1058,68 @@ class AdCampaignsResource:
             to_date=to_date,
         )
         return await self._client._aget("/v1/ads", params=params)
+
+    async def alist_bid_strategies(
+        self,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        from_date: str | None = None,
+        to_date: str | None = None,
+    ) -> dict[str, Any]:
+        """List Google Ads portfolio bid strategies (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+            from_date=from_date,
+            to_date=to_date,
+        )
+        return await self._client._aget("/v1/ads/bid-strategies", params=params)
+
+    async def acreate_bid_strategy(
+        self,
+        account_id: str,
+        name: str,
+        type: str,
+        *,
+        customer_id: str | None = None,
+        target_cpa: float | None = None,
+        target_roas: float | None = None,
+    ) -> dict[str, Any]:
+        """Create a Google Ads portfolio bid strategy (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            name=name,
+            type=type,
+            target_cpa=target_cpa,
+            target_roas=target_roas,
+        )
+        return await self._client._apost("/v1/ads/bid-strategies", data=payload)
+
+    async def aupdate_bid_strategy(
+        self,
+        strategy_id: str,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        name: str | None = None,
+        type: str | None = None,
+        target_cpa: float | None = None,
+        target_roas: float | None = None,
+    ) -> dict[str, Any]:
+        """Update a Google Ads portfolio bid strategy (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            name=name,
+            type=type,
+            target_cpa=target_cpa,
+            target_roas=target_roas,
+        )
+        return await self._client._apatch(
+            f"/v1/ads/bid-strategies/{strategy_id}", data=payload
+        )
 
     async def alist_ad_keywords(
         self,
@@ -1086,6 +1234,7 @@ class AdCampaignsResource:
         bid_strategy: str | None = None,
         bid_amount: float | None = None,
         roas_average_floor: float | None = None,
+        portfolio_bid_strategy_id: str | None = None,
     ) -> dict[str, Any]:
         """Create a standalone campaign (async)"""
         payload = self._build_payload(
@@ -1100,6 +1249,7 @@ class AdCampaignsResource:
             bid_strategy=bid_strategy,
             bid_amount=bid_amount,
             roas_average_floor=roas_average_floor,
+            portfolio_bid_strategy_id=portfolio_bid_strategy_id,
         )
         headers: dict[str, str] = {}
         if idempotency_key is not None:
@@ -1120,6 +1270,24 @@ class AdCampaignsResource:
             f"/v1/ads/campaigns/{campaign_id}/status", data=payload
         )
 
+    async def aget_campaign_bidding(
+        self,
+        campaign_id: str,
+        account_id: str,
+        platform: str,
+        *,
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Read a campaign's current bidding (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            platform=platform,
+            customer_id=customer_id,
+        )
+        return await self._client._aget(
+            f"/v1/ads/campaigns/{campaign_id}/bidding", params=params
+        )
+
     async def aupdate_ad_campaign(
         self,
         campaign_id: str,
@@ -1129,6 +1297,7 @@ class AdCampaignsResource:
         bid_strategy: Any | None = None,
         bid_amount: float | None = None,
         roas_average_floor: float | None = None,
+        portfolio_bid_strategy_id: str | None = None,
         budget: dict[str, Any] | None = None,
         name: str | None = None,
         platform_specific_data: dict[str, Any] | None = None,
@@ -1140,6 +1309,7 @@ class AdCampaignsResource:
             bid_strategy=bid_strategy,
             bid_amount=bid_amount,
             roas_average_floor=roas_average_floor,
+            portfolio_bid_strategy_id=portfolio_bid_strategy_id,
             budget=budget,
             name=name,
             platform_specific_data=platform_specific_data,
@@ -1687,6 +1857,7 @@ class AdCampaignsResource:
         bid_strategy: Any | None = None,
         bid_amount: float | None = None,
         roas_average_floor: float | None = None,
+        portfolio_bid_strategy_id: str | None = None,
         value_rule_set_id: str | None = None,
         value_rules_applied: bool | None = None,
         platform_specific_data: Any | None = None,
@@ -1787,6 +1958,7 @@ class AdCampaignsResource:
             bid_strategy=bid_strategy,
             bid_amount=bid_amount,
             roas_average_floor=roas_average_floor,
+            portfolio_bid_strategy_id=portfolio_bid_strategy_id,
             value_rule_set_id=value_rule_set_id,
             value_rules_applied=value_rules_applied,
             platform_specific_data=platform_specific_data,
