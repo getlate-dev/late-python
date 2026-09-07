@@ -491,6 +491,11 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_insights.generate_keyword_ideas()` | Generate keyword ideas (Google Keyword Planner) |
 | `ad_insights.query_ad_insights()` | Flexible live insights query |
 
+### Ad Library
+| Method | Description |
+|--------|-------------|
+| `ad_library.search_ad_library()` | Search the public Ad Library |
+
 ### Ad Targeting
 | Method | Description |
 |--------|-------------|

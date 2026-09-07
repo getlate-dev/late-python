@@ -4862,6 +4862,77 @@ def register_generated_tools(mcp, _get_client):
         except Exception as e:
             return f"Error: {e}"
 
+    # AD_LIBRARY
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Search the public Ad Library",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_library_search_ad_library(
+        account_id: str,
+        q: str | None = None,
+        page_ids: str | None = None,
+        advertiser: str | None = None,
+        countries: str | None = None,
+        ad_type: str = "ALL",
+        status: str = "ACTIVE",
+        platforms: str | None = None,
+        media_type: str | None = None,
+        languages: str | None = None,
+        since: str | None = None,
+        until: str | None = None,
+        search_type: str = "KEYWORD_UNORDERED",
+        fields: str | None = None,
+        limit: int = 25,
+        after: str | None = None,
+    ) -> str:
+        """Search the public Ad Library
+
+        Args:
+            account_id: Zernio SocialAccount id (facebook / instagram / metaads for Meta, linkedin / linkedinads for LinkedIn). Its token is the one that searches. (required)
+            q: Keyword search. Meta does not translate it, so write it in the ads' language. Required unless pageIds (Meta) or advertiser (LinkedIn) is given.
+            page_ids: Meta only. Comma-separated Facebook Page ids (max 10) whose ads to list.
+            advertiser: LinkedIn only. Advertiser (Page) name to search.
+            countries: Comma-separated ISO 3166-1 alpha-2 codes the ads reached. Meta defaults to ALL (an explicit ALL is Meta-only); LinkedIn searches every market when omitted.
+            ad_type: Meta only.
+            status: Meta only. ACTIVE = eligible for delivery right now.
+            platforms: Meta only. Comma-separated publisher platforms: FACEBOOK, INSTAGRAM, AUDIENCE_NETWORK, MESSENGER, WHATSAPP, OCULUS, THREADS, STREAMING_SERVICES.
+            media_type: Meta only.
+            languages: Meta only. Comma-separated ISO 639-1 codes of the ad text.
+            since: Earliest delivery date (YYYY-MM-DD).
+            until: Latest delivery date (YYYY-MM-DD).
+            search_type: Meta only. Whether q matches words in any order or as an exact phrase (comma-separate phrases to match all of them).
+            fields: Meta only. Raw Graph projection override, e.g. add spend,impressions,demographic_distribution for political ads.
+            limit: Rows per page. LinkedIn accepts at most 25.
+            after: paging.after of the previous page."""
+        client = _get_client()
+        try:
+            response = client.ad_library.search_ad_library(
+                account_id=account_id,
+                q=q,
+                page_ids=page_ids,
+                advertiser=advertiser,
+                countries=countries,
+                ad_type=ad_type,
+                status=status,
+                platforms=platforms,
+                media_type=media_type,
+                languages=languages,
+                since=since,
+                until=until,
+                search_type=search_type,
+                fields=fields,
+                limit=limit,
+                after=after,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
     # AD_TARGETING
 
     @mcp.tool(
