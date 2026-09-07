@@ -9182,6 +9182,49 @@ components:
             page_id: { type: string }
         earliestAd: { type: string, format: date-time }
         latestAd: { type: string, format: date-time }
+    AdKeyword:
+      type: object
+      properties:
+        id: { type: string }
+        accountId: { type: string, description: Social account ID owning the sync }
+        profileId: { type: string }
+        platform: { type: string, enum: [google] }
+        adAccountId: { type: string, description: Google customer ID }
+        campaignId: { type: string }
+        campaignName: { type: [string, "null"] }
+        campaignStatus: { type: [string, "null"] }
+        adSetId: { type: string, description: Google ad group ID }
+        adSetName: { type: [string, "null"] }
+        adSetStatus: { type: [string, "null"] }
+        keyword: { type: string }
+        matchType: { type: string, enum: [exact, phrase, broad, unknown] }
+        status: { type: string, enum: [active, paused] }
+        negative: { type: boolean }
+        qualityScore: { type: [integer, "null"], description: 'Google Quality Score, 1-10. Null when unrated.' }
+        syncedAt: { type: [string, "null"], format: date-time }
+        metrics:
+          type: [object, "null"]
+          description: 'Trailing 30-day window. Null on rows synced before the metrics columns existed (re-synced on the keyword''s next weekly sweep).'
+          properties:
+            windowDays: { type: integer }
+            clicks: { type: integer }
+            impressions: { type: integer }
+            cost: { type: number, description: 'Account currency, not USD-normalized' }
+            conversions: { type: number }
+            firstPageCpc: { type: [number, "null"], description: Account currency }
+            firstPositionCpc: { type: [number, "null"], description: Account currency }
+    KeywordEntry:
+      description: 'A Google Search keyword: a bare string (BROAD match), or an object naming the match type.'
+      oneOf:
+        - type: string
+          minLength: 1
+          maxLength: 80
+          description: 'Keyword text; defaults to BROAD match'
+        - type: object
+          required: [text]
+          properties:
+            text: { type: string, minLength: 1, maxLength: 80 }
+            matchType: { type: string, enum: [exact, phrase, broad] }
     ConversionEvent:
       type: object
       description: |
@@ -41308,30 +41351,126 @@ paths:
                 properties:
                   keywords:
                     type: array
-                    items:
-                      type: object
-                      properties:
-                        id: { type: string }
-                        accountId: { type: string, description: Social account ID owning the sync }
-                        profileId: { type: string }
-                        platform: { type: string, enum: [google] }
-                        adAccountId: { type: string, description: Google customer ID }
-                        campaignId: { type: string }
-                        campaignName: { type: [string, "null"] }
-                        campaignStatus: { type: [string, "null"] }
-                        adSetId: { type: string, description: Google ad group ID }
-                        adSetName: { type: [string, "null"] }
-                        adSetStatus: { type: [string, "null"] }
-                        keyword: { type: string }
-                        matchType: { type: string, enum: [exact, phrase, broad, unknown] }
-                        status: { type: string, enum: [active, paused] }
-                        negative: { type: boolean }
-                        syncedAt: { type: [string, "null"], format: date-time }
+                    items: { $ref: '#/components/schemas/AdKeyword' }
                   pagination: { $ref: '#/components/schemas/Pagination' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Ads access required. Legacy plans need the Ads add-on; included by default on usage-based plans.
+    post:
+      x-resource-group: "ads"
+      operationId: addAdKeywords
+      tags: ["Ad Campaigns"]
+      x-platforms: ["google"]
+      summary: Add Search keywords to an ad group
+      description: |
+        Adds one or more keyword criteria to an existing Google Search ad group,
+        without touching the keywords already there (unlike the whole-set diff on
+        `PUT /v1/ads/{adId}`, `keywords`/`negativeKeywords` in `platformSpecificData`,
+        which replaces the set). Set `negative: true` to add ad-group-level negatives
+        instead of positive keywords.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountId, adSetId, keywords]
+              properties:
+                accountId: { type: string, description: Social account ID (Google Ads) }
+                adSetId: { type: string, description: Google ad group ID to add the keywords to }
+                keywords:
+                  type: array
+                  minItems: 1
+                  maxItems: 1000
+                  items:
+                    anyOf:
+                      - type: string
+                        description: 'Keyword text; defaults to BROAD match'
+                      - type: object
+                        required: [text]
+                        properties:
+                          text: { type: string, minLength: 1, maxLength: 80 }
+                          matchType: { type: string, enum: [exact, phrase, broad] }
+                negative: { type: boolean, default: false, description: 'Add as ad-group-level negatives instead of positive keywords' }
+      responses:
+        '201':
+          description: Keywords added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keywords:
+                    type: array
+                    items: { $ref: '#/components/schemas/AdKeyword' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: 'The ad group ("adSetId") was not found for this account.' }
+        '501': { description: Only available on Google Ads accounts }
+
+  /v1/ads/keywords/{keywordId}:
+    patch:
+      x-resource-group: "ads"
+      operationId: updateAdKeyword
+      tags: ["Ad Campaigns"]
+      x-platforms: ["google"]
+      summary: Pause or enable a Search keyword
+      description: |
+        Changes `ad_group_criterion.status` for one keyword criterion (M.140).
+        Negative keywords have no status on Google and cannot be paused or enabled.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: keywordId, in: path, required: true, schema: { type: string }, description: Zernio keyword ID (not the Google criterion ID) }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [active, paused] }
+      responses:
+        '200':
+          description: Keyword updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keyword: { $ref: '#/components/schemas/AdKeyword' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Keyword not found }
+        '422': { description: 'Negative keywords have no status on Google; they cannot be paused or enabled.' }
+    delete:
+      x-resource-group: "ads"
+      operationId: removeAdKeyword
+      tags: ["Ad Campaigns"]
+      x-platforms: ["google"]
+      summary: Remove a Search keyword
+      description: Removes one keyword criterion (positive or negative) from its ad group (M.140).
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: keywordId, in: path, required: true, schema: { type: string }, description: Zernio keyword ID (not the Google criterion ID) }
+      responses:
+        '200':
+          description: Keyword removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  removed: { type: boolean, description: Always true on success }
+                  keywordId: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Keyword not found }
 
   /v1/ads/campaigns:
     get:
@@ -41652,6 +41791,102 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { description: Campaign not found }
         '501': { description: Operation not supported on this platform }
+
+  /v1/ads/campaigns/{campaignId}/negative-keywords:
+    get:
+      x-resource-group: "ads"
+      operationId: listCampaignNegativeKeywords
+      tags: ["Ad Campaigns"]
+      x-platforms: ["google"]
+      summary: List campaign-level negative keywords
+      description: |
+        Returns the campaign-level negative keywords (`campaign_criterion.negative`),
+        distinct from the ad-group-level negatives under `GET /v1/ads/keywords`. Read
+        live from Google on every call (not synced to Postgres), and gated by the
+        shared Google Ads operations budget like every other on-demand Google surface.
+
+        The platform is always discovered from the campaign itself; a non-Google
+        campaign returns 501 rather than 404, whether or not `platform` was passed.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: campaignId, in: path, required: true, schema: { type: string }, description: Platform campaign ID }
+        - { name: platform, in: query, schema: { type: string, enum: [facebook, instagram, tiktok, linkedin, pinterest, google, twitter, openai] }, description: 'Optional and NOT authoritative: the resolved campaign''s own platform decides 200 vs 501, never this hint.' }
+      responses:
+        '200':
+          description: Campaign-level negative keywords
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keywords:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        criterionId: { type: string }
+                        text: { type: string }
+                        matchType: { type: string, enum: [exact, phrase, broad] }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Campaign not found }
+        '429': { description: Google Ads operations budget exhausted; retry later }
+        '501': { description: Only available on Google Ads campaigns }
+    put:
+      x-resource-group: "ads"
+      operationId: replaceCampaignNegativeKeywords
+      tags: ["Ad Campaigns"]
+      x-platforms: ["google"]
+      summary: Replace campaign-level negative keywords
+      description: |
+        Replaces the FULL set of campaign-level negative keywords (C.270): the desired
+        list is diffed against what Google already has, and the difference is applied
+        as one `create`/`remove` mutate. Send an empty array to clear every campaign
+        negative.
+
+        The platform is always discovered from the campaign itself; a non-Google
+        campaign returns 501 rather than 404, whether or not `platform` was sent.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: campaignId, in: path, required: true, schema: { type: string }, description: Platform campaign ID }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keywords]
+              properties:
+                platform: { type: string, enum: [facebook, instagram, tiktok, linkedin, pinterest, google, twitter, openai], description: 'Optional and NOT authoritative: the resolved campaign''s own platform decides 200 vs 501, never this hint.' }
+                keywords:
+                  type: array
+                  maxItems: 1000
+                  items: { $ref: '#/components/schemas/KeywordEntry' }
+      responses:
+        '200':
+          description: Campaign-level negative keywords replaced
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  created: { type: integer, description: Negative criteria newly created on Google }
+                  removed: { type: integer, description: Negative criteria removed from Google }
+                  keywords:
+                    type: array
+                    description: The full negative-keyword set after the replace
+                    items:
+                      type: object
+                      properties:
+                        criterionId: { type: string }
+                        text: { type: string }
+                        matchType: { type: string, enum: [exact, phrase, broad] }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Campaign not found }
+        '429': { description: Google Ads operations budget exhausted; retry later }
+        '501': { description: Only available on Google Ads campaigns }
 
   /v1/ads/campaigns/bulk-status:
     post:
@@ -45586,8 +45821,9 @@ paths:
                                 items: { type: string, enum: [mobile, desktop] }
                 audienceId: { type: string, description: Custom audience ID for targeting }
                 campaignType: { type: string, enum: [display, search], default: display, description: Google only }
-                keywords: { type: array, maxItems: 1000, items: { type: string, maxLength: 80 }, description: "Google Search only. BROAD-match keywords on the new ad group. Editable later via PUT /v1/ads/{adId} targeting.keywords, which also sets match types." }
-                negativeKeywords: { type: array, items: { type: string, maxLength: 80 }, description: "Google Search only; other platforms return 400. BROAD-match negative keywords on the new ad group. Editable later via PUT /v1/ads/{adId} targeting.negativeKeywords." }
+                keywords: { type: array, maxItems: 1000, items: { $ref: '#/components/schemas/KeywordEntry' }, description: "Google Search only. Keywords on the new ad group; entries are strings (BROAD) or { text, matchType }. Editable later via PUT /v1/ads/{adId} targeting.keywords." }
+                negativeKeywords: { type: array, maxItems: 1000, items: { $ref: '#/components/schemas/KeywordEntry' }, description: "Google Search only; other platforms return 400. Ad-group-level negative keywords on the new ad group. Editable later via PUT /v1/ads/{adId} targeting.negativeKeywords." }
+                campaignNegativeKeywords: { type: array, maxItems: 1000, items: { $ref: '#/components/schemas/KeywordEntry' }, description: "Google Search only; other platforms return 400. Campaign-level negative keywords (campaign_criterion.negative), created alongside the ad group. Editable later via PUT /v1/ads/campaigns/{campaignId}/negative-keywords." }
                 additionalHeadlines: { type: array, items: { type: string }, description: "Google Search RSA only. Extra headlines." }
                 additionalDescriptions: { type: array, items: { type: string }, description: "Google Search RSA only. Extra descriptions." }
                 sitelinks:

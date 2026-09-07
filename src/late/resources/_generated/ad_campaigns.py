@@ -147,6 +147,34 @@ class AdCampaignsResource:
         )
         return self._client._get("/v1/ads/keywords", params=params)
 
+    def add_ad_keywords(
+        self,
+        account_id: str,
+        ad_set_id: str,
+        keywords: list[Any],
+        *,
+        negative: bool | None = False,
+    ) -> dict[str, Any]:
+        """Add Search keywords to an ad group"""
+        payload = self._build_payload(
+            account_id=account_id,
+            ad_set_id=ad_set_id,
+            keywords=keywords,
+            negative=negative,
+        )
+        return self._client._post("/v1/ads/keywords", data=payload)
+
+    def update_ad_keyword(self, keyword_id: str, status: str) -> dict[str, Any]:
+        """Pause or enable a Search keyword"""
+        payload = self._build_payload(
+            status=status,
+        )
+        return self._client._patch(f"/v1/ads/keywords/{keyword_id}", data=payload)
+
+    def remove_ad_keyword(self, keyword_id: str) -> dict[str, Any]:
+        """Remove a Search keyword"""
+        return self._client._delete(f"/v1/ads/keywords/{keyword_id}")
+
     def list_ad_campaigns(
         self,
         *,
@@ -262,6 +290,29 @@ class AdCampaignsResource:
     ) -> dict[str, Any]:
         """Delete a campaign"""
         return self._client._delete(f"/v1/ads/campaigns/{campaign_id}")
+
+    def list_campaign_negative_keywords(
+        self, campaign_id: str, *, platform: str | None = None
+    ) -> dict[str, Any]:
+        """List campaign-level negative keywords"""
+        params = self._build_params(
+            platform=platform,
+        )
+        return self._client._get(
+            f"/v1/ads/campaigns/{campaign_id}/negative-keywords", params=params
+        )
+
+    def replace_campaign_negative_keywords(
+        self, campaign_id: str, keywords: list[Any], *, platform: str | None = None
+    ) -> dict[str, Any]:
+        """Replace campaign-level negative keywords"""
+        payload = self._build_payload(
+            platform=platform,
+            keywords=keywords,
+        )
+        return self._client._put(
+            f"/v1/ads/campaigns/{campaign_id}/negative-keywords", data=payload
+        )
 
     def bulk_update_ad_campaign_status(
         self, status: str, campaigns: list[dict[str, Any]]
@@ -692,8 +743,9 @@ class AdCampaignsResource:
         placement_assets: dict[str, Any] | None = None,
         audience_id: str | None = None,
         campaign_type: str | None = "display",
-        keywords: list[str] | None = None,
-        negative_keywords: list[str] | None = None,
+        keywords: list[Any] | None = None,
+        negative_keywords: list[Any] | None = None,
+        campaign_negative_keywords: list[Any] | None = None,
         additional_headlines: list[str] | None = None,
         additional_descriptions: list[str] | None = None,
         sitelinks: list[dict[str, Any]] | None = None,
@@ -793,6 +845,7 @@ class AdCampaignsResource:
             campaign_type=campaign_type,
             keywords=keywords,
             negative_keywords=negative_keywords,
+            campaign_negative_keywords=campaign_negative_keywords,
             additional_headlines=additional_headlines,
             additional_descriptions=additional_descriptions,
             sitelinks=sitelinks,
@@ -887,6 +940,36 @@ class AdCampaignsResource:
             search=search,
         )
         return await self._client._aget("/v1/ads/keywords", params=params)
+
+    async def aadd_ad_keywords(
+        self,
+        account_id: str,
+        ad_set_id: str,
+        keywords: list[Any],
+        *,
+        negative: bool | None = False,
+    ) -> dict[str, Any]:
+        """Add Search keywords to an ad group (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            ad_set_id=ad_set_id,
+            keywords=keywords,
+            negative=negative,
+        )
+        return await self._client._apost("/v1/ads/keywords", data=payload)
+
+    async def aupdate_ad_keyword(self, keyword_id: str, status: str) -> dict[str, Any]:
+        """Pause or enable a Search keyword (async)"""
+        payload = self._build_payload(
+            status=status,
+        )
+        return await self._client._apatch(
+            f"/v1/ads/keywords/{keyword_id}", data=payload
+        )
+
+    async def aremove_ad_keyword(self, keyword_id: str) -> dict[str, Any]:
+        """Remove a Search keyword (async)"""
+        return await self._client._adelete(f"/v1/ads/keywords/{keyword_id}")
 
     async def alist_ad_campaigns(
         self,
@@ -1007,6 +1090,29 @@ class AdCampaignsResource:
     ) -> dict[str, Any]:
         """Delete a campaign (async)"""
         return await self._client._adelete(f"/v1/ads/campaigns/{campaign_id}")
+
+    async def alist_campaign_negative_keywords(
+        self, campaign_id: str, *, platform: str | None = None
+    ) -> dict[str, Any]:
+        """List campaign-level negative keywords (async)"""
+        params = self._build_params(
+            platform=platform,
+        )
+        return await self._client._aget(
+            f"/v1/ads/campaigns/{campaign_id}/negative-keywords", params=params
+        )
+
+    async def areplace_campaign_negative_keywords(
+        self, campaign_id: str, keywords: list[Any], *, platform: str | None = None
+    ) -> dict[str, Any]:
+        """Replace campaign-level negative keywords (async)"""
+        payload = self._build_payload(
+            platform=platform,
+            keywords=keywords,
+        )
+        return await self._client._aput(
+            f"/v1/ads/campaigns/{campaign_id}/negative-keywords", data=payload
+        )
 
     async def abulk_update_ad_campaign_status(
         self, status: str, campaigns: list[dict[str, Any]]
@@ -1439,8 +1545,9 @@ class AdCampaignsResource:
         placement_assets: dict[str, Any] | None = None,
         audience_id: str | None = None,
         campaign_type: str | None = "display",
-        keywords: list[str] | None = None,
-        negative_keywords: list[str] | None = None,
+        keywords: list[Any] | None = None,
+        negative_keywords: list[Any] | None = None,
+        campaign_negative_keywords: list[Any] | None = None,
         additional_headlines: list[str] | None = None,
         additional_descriptions: list[str] | None = None,
         sitelinks: list[dict[str, Any]] | None = None,
@@ -1540,6 +1647,7 @@ class AdCampaignsResource:
             campaign_type=campaign_type,
             keywords=keywords,
             negative_keywords=negative_keywords,
+            campaign_negative_keywords=campaign_negative_keywords,
             additional_headlines=additional_headlines,
             additional_descriptions=additional_descriptions,
             sitelinks=sitelinks,

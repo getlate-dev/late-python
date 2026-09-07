@@ -436,6 +436,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_campaigns.list_ad_campaigns()` | List campaigns |
 | `ad_campaigns.list_ad_keywords()` | List Search keywords |
 | `ad_campaigns.list_ads()` | List ads |
+| `ad_campaigns.list_campaign_negative_keywords()` | List campaign-level negative keywords |
 | `ad_campaigns.bulk_update_ad_campaign_status()` | Pause or resume many campaigns |
 | `ad_campaigns.create_ad_campaign()` | Create a standalone campaign |
 | `ad_campaigns.create_standalone_ad()` | Create standalone ad |
@@ -446,17 +447,21 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_campaigns.update_ad()` | Update ad |
 | `ad_campaigns.update_ad_campaign()` | Update a campaign |
 | `ad_campaigns.update_ad_campaign_status()` | Pause or resume a campaign |
+| `ad_campaigns.update_ad_keyword()` | Pause or enable a Search keyword |
 | `ad_campaigns.update_ad_set()` | Update an ad set |
 | `ad_campaigns.update_ad_set_status()` | Pause or resume a single ad set |
 | `ad_campaigns.update_ad_status()` | Pause or resume a single ad |
 | `ad_campaigns.delete_ad()` | Cancel an ad |
 | `ad_campaigns.delete_ad_campaign()` | Delete a campaign |
 | `ad_campaigns.delete_ad_set()` | Delete an ad set |
+| `ad_campaigns.add_ad_keywords()` | Add Search keywords to an ad group |
 | `ad_campaigns.attach_campaign_assets()` | Attach extension assets to a Google Search campaign |
 | `ad_campaigns.boost_post()` | Boost post as ad |
 | `ad_campaigns.duplicate_ad()` | Duplicate an ad |
 | `ad_campaigns.duplicate_ad_campaign()` | Duplicate a campaign |
 | `ad_campaigns.duplicate_ad_set()` | Duplicate an ad set |
+| `ad_campaigns.remove_ad_keyword()` | Remove a Search keyword |
+| `ad_campaigns.replace_campaign_negative_keywords()` | Replace campaign-level negative keywords |
 
 ### Ad Creatives
 | Method | Description |

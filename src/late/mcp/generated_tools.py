@@ -2286,6 +2286,82 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
+            title="Add Search keywords to an ad group",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_add_ad_keywords(
+        account_id: str,
+        ad_set_id: str,
+        keywords: list[Any] | None,
+        negative: bool = False,
+    ) -> str:
+        """Add Search keywords to an ad group
+
+        Args:
+            account_id: Social account ID (Google Ads) (required)
+            ad_set_id: Google ad group ID to add the keywords to (required)
+            keywords: (required)
+            negative: Add as ad-group-level negatives instead of positive keywords"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.add_ad_keywords(
+                account_id=account_id,
+                ad_set_id=ad_set_id,
+                keywords=keywords,
+                negative=negative,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Pause or enable a Search keyword",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_update_ad_keyword(keyword_id: str, status: str) -> str:
+        """Pause or enable a Search keyword
+
+        Args:
+            keyword_id: Zernio keyword ID (not the Google criterion ID) (required)
+            status: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.update_ad_keyword(
+                keyword_id=keyword_id, status=status
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Remove a Search keyword",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_remove_ad_keyword(keyword_id: str) -> str:
+        """Remove a Search keyword
+
+        Args:
+            keyword_id: Zernio keyword ID (not the Google criterion ID) (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.remove_ad_keyword(keyword_id=keyword_id)
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
             title="List campaigns",
             readOnlyHint=True,
             destructiveHint=False,
@@ -2496,6 +2572,57 @@ def register_generated_tools(mcp, _get_client):
         try:
             response = client.ad_campaigns.delete_ad_campaign(
                 campaign_id=campaign_id, platform=platform, account_id=account_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List campaign-level negative keywords",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_campaigns_list_campaign_negative_keywords(
+        campaign_id: str, platform: str | None = None
+    ) -> str:
+        """List campaign-level negative keywords
+
+        Args:
+            campaign_id: Platform campaign ID (required)
+            platform: Optional and NOT authoritative: the resolved campaign's own platform decides 200 vs 501, never this hint."""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.list_campaign_negative_keywords(
+                campaign_id=campaign_id, platform=platform
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Replace campaign-level negative keywords",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_replace_campaign_negative_keywords(
+        campaign_id: str, keywords: list[Any] | None, platform: str | None = None
+    ) -> str:
+        """Replace campaign-level negative keywords
+
+        Args:
+            campaign_id: Platform campaign ID (required)
+            platform: Optional and NOT authoritative: the resolved campaign's own platform decides 200 vs 501, never this hint.
+            keywords: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.replace_campaign_negative_keywords(
+                campaign_id=campaign_id, platform=platform, keywords=keywords
             )
             return _format_response(response)
         except Exception as e:
@@ -3367,8 +3494,9 @@ def register_generated_tools(mcp, _get_client):
         placement_assets: dict[str, Any] | None = None,
         audience_id: str | None = None,
         campaign_type: str = "display",
-        keywords: list[str] | None = None,
-        negative_keywords: list[str] | None = None,
+        keywords: list[Any] | None = None,
+        negative_keywords: list[Any] | None = None,
+        campaign_negative_keywords: list[Any] | None = None,
         additional_headlines: list[str] | None = None,
         additional_descriptions: list[str] | None = None,
         sitelinks: list[dict[str, Any]] | None = None,
@@ -3666,8 +3794,9 @@ def register_generated_tools(mcp, _get_client):
         posters; Meta auto-generates when omitted). Exactly one catch-all default is required.
                 audience_id: Custom audience ID for targeting
                 campaign_type: Google only
-                keywords: Google Search only. BROAD-match keywords on the new ad group. Editable later via PUT /v1/ads/{adId} targeting.keywords, which also sets match types.
-                negative_keywords: Google Search only; other platforms return 400. BROAD-match negative keywords on the new ad group. Editable later via PUT /v1/ads/{adId} targeting.negativeKeywords.
+                keywords: Google Search only. Keywords on the new ad group; entries are strings (BROAD) or { text, matchType }. Editable later via PUT /v1/ads/{adId} targeting.keywords.
+                negative_keywords: Google Search only; other platforms return 400. Ad-group-level negative keywords on the new ad group. Editable later via PUT /v1/ads/{adId} targeting.negativeKeywords.
+                campaign_negative_keywords: Google Search only; other platforms return 400. Campaign-level negative keywords (campaign_criterion.negative), created alongside the ad group. Editable later via PUT /v1/ads/campaigns/{campaignId}/negative-keywords.
                 additional_headlines: Google Search RSA only. Extra headlines.
                 additional_descriptions: Google Search RSA only. Extra descriptions.
                 sitelinks: Google Search only. Sitelink assets to create and attach at the campaign level.
@@ -3900,6 +4029,7 @@ def register_generated_tools(mcp, _get_client):
                 campaign_type=campaign_type,
                 keywords=keywords,
                 negative_keywords=negative_keywords,
+                campaign_negative_keywords=campaign_negative_keywords,
                 additional_headlines=additional_headlines,
                 additional_descriptions=additional_descriptions,
                 sitelinks=sitelinks,
