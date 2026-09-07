@@ -172,7 +172,7 @@ x-documentation:
     - `referral.received` - Someone opened an existing Instagram/Messenger thread through an ig.me/m.me `ref` link or a returning Messenger ad click; carries Meta's referral object (a referral that rides an inbound message arrives on `message.received` under `metadata.referral` instead)
     - `comment.received` - New comment received on a post
     - `review.new` - New review posted on a connected account (Google Business Profile)
-    - `review.updated` - Review updated or reply added (Google Business Profile, or via reply API)
+    - `review.updated` - A Google Business Profile reviewer edited their review text or rating, or a reply was posted through `POST /v1/inbox/reviews/{reviewId}/reply`. A reply written directly in Google's own interface does NOT fire this event, because Google emits no notification for it.
     - `lead.received` - New lead submitted against a Meta Lead Gen (Instant) Form. `lead.fields` is the question-key → answer map; `lead.formId`/`lead.adId` give provenance.
     - `ad.status_changed` - Ad, ad set, or campaign changed status on the ad platform (Meta: `in_process_ad_objects` entry/exit and `with_issues_ad_objects` violations)
     - `whatsapp.template.status_updated` - WhatsApp Business template completed (re)review by Meta. `template.status` carries the new state (APPROVED, REJECTED, PENDING, PAUSED, DISABLED, IN_APPEAL, PENDING_DELETION); `template.reason` is Meta's free-form reason or "NONE".
@@ -3273,10 +3273,12 @@ components:
     WebhookPayloadReviewUpdated:
       type: object
       description: |
-        Webhook payload for the review.updated event. Fired when the reviewer edits
-        their text or rating, or when a reply is added (via the API or directly on the
-        platform). Same shape as review.new. When a reply is present, review.hasReply
-        is true and review.reply is populated.
+        Webhook payload for the review.updated event. Fired when the reviewer edits their
+        text or rating, or when a reply is posted through POST /v1/inbox/reviews/{reviewId}/reply.
+        A reply written
+        directly in Google's own interface does NOT fire this event: Google emits no
+        notification when a reviewReply is written. Same shape as review.new. When a reply
+        is present, review.hasReply is true and review.reply is populated.
       required: [id, event, review, account, timestamp]
       properties:
         id:
@@ -10040,9 +10042,11 @@ webhooks:
       operationId: onReviewUpdated
       summary: Review updated event
       description: |
-        Fired when a review changes: the reviewer edits their text or rating, or a
-        reply is added (via the API or directly through the Google Business dashboard).
-        Payload shape matches review.new. Requires the Inbox add-on.
+        Fired when a Google Business Profile reviewer edits their review text or rating,
+        or when a reply is posted through POST /v1/inbox/reviews/{reviewId}/reply.
+        A reply written directly in Google's own interface does NOT fire this event,
+        because Google emits no notification for it. Payload shape matches review.new.
+        Requires the Inbox add-on.
       tags: [Webhook Events]
       requestBody:
         required: true
