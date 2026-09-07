@@ -8588,6 +8588,8 @@ components:
           properties:
             id: { type: string }
             name: { type: string }
+        cachedAt: { type: [string, "null"], format: date-time, description: "When this data was fetched from Google. Null when it was never served from cache." }
+        stale: { type: boolean, description: "True when Google's daily API quota was exhausted and this is the last successful fetch, not a live read." }
     AdBudget:
       type: object
       description: Budget amount in the ad account's native currency (see the campaign's `currency` field for the code).
@@ -41328,9 +41330,11 @@ paths:
       description: |-
         The actual search queries that triggered your ads, with matched-keyword
         status and spend metrics — the raw material for wasted-spend analysis and
-        negative-keyword lists. Reads Google's `search_term_view` live; defaults
-        to the last 30 days. Rows are ordered by cost, descending. Draws on the
-        shared Google Ads operations budget.
+        negative-keyword lists. Reads Google's `search_term_view`, cached for
+        the quota window; defaults to the last 30 days. Rows are ordered by
+        cost, descending. Draws on the shared Google Ads operations budget.
+        The response carries `cachedAt` and `stale`, set when a quota-exhausted
+        call falls back to the last-good copy instead of a live read.
       security:
         - bearerAuth: []
       parameters:
@@ -41371,6 +41375,8 @@ paths:
                     type: object
                     properties:
                       nextPageToken: { type: [string, "null"], description: "Null when the last page was returned." }
+                  cachedAt: { type: [string, "null"], format: date-time, description: "When this data was fetched from Google. Null when it was never served from cache." }
+                  stale: { type: boolean, description: "True when Google's daily API quota was exhausted and this is the last successful fetch, not a live read." }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { description: "Google Ads operations budget exhausted; retry later." }
@@ -41386,8 +41392,10 @@ paths:
       description: >-
         Bidding strategy report: type, status, campaign count, clicks, cost, cost per
         conversion, impressions, average CPC and conversions over the date range (default
-        last 30 days). Reads Google's `bidding_strategy` resource live. Draws on the shared
-        Google Ads operations budget.
+        last 30 days). Reads Google's `bidding_strategy` resource, cached for the quota
+        window. Draws on the shared Google Ads operations budget. The response carries
+        `cachedAt` and `stale`, set when a quota-exhausted call falls back to the
+        last-good copy instead of a live read.
       security:
         - bearerAuth: []
       parameters:
@@ -41408,6 +41416,8 @@ paths:
                   strategies:
                     type: array
                     items: { $ref: '#/components/schemas/PortfolioBidStrategy' }
+                  cachedAt: { type: [string, "null"], format: date-time, description: "When this data was fetched from Google. Null when it was never served from cache." }
+                  stale: { type: boolean, description: "True when Google's daily API quota was exhausted and this is the last successful fetch, not a live read." }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -41996,9 +42006,12 @@ paths:
       x-platforms: ["google"]
       summary: Read a campaign's current bidding
       description: |
-        Live read of the campaign's bidding strategy on Google, for pre-filling the bid strategy
-        block before a PUT to /v1/ads/campaigns/{campaignId}. Google Ads only; `platform` is required
-        and rejected when it is anything else, since a `campaignId` is not globally unique.
+        Read of the campaign's bidding strategy on Google, cached for the quota window, for
+        pre-filling the bid strategy block before a PUT to /v1/ads/campaigns/{campaignId}.
+        Google Ads only; `platform` is required and rejected when it is anything else, since
+        a `campaignId` is not globally unique. The response carries `cachedAt` and `stale`,
+        set when a quota-exhausted call falls back to the last-good copy instead of a live
+        read.
 
         Maps Google's bidding strategy onto the same triplet PUT accepts: `LOWEST_COST_WITHOUT_CAP`
         (Maximize Conversions, no target), `COST_CAP` + `bidAmount` (Target CPA), `LOWEST_COST_WITH_MIN_ROAS`
@@ -42179,9 +42192,11 @@ paths:
       summary: List campaign-level negative keywords
       description: |
         Returns the campaign-level negative keywords (`campaign_criterion.negative`),
-        distinct from the ad-group-level negatives under `GET /v1/ads/keywords`. Read
-        live from Google on every call (not synced to Postgres), and gated by the
-        shared Google Ads operations budget like every other on-demand Google surface.
+        distinct from the ad-group-level negatives under `GET /v1/ads/keywords`. Cached
+        for the quota window (not synced to Postgres), and gated by the shared Google
+        Ads operations budget like every other on-demand Google surface. The response
+        carries `cachedAt` and `stale`, set when a quota-exhausted call falls back to
+        the last-good copy instead of a live read.
 
         The platform is always discovered from the campaign itself; a non-Google
         campaign returns 501 rather than 404, whether or not `platform` was passed.
@@ -42206,6 +42221,8 @@ paths:
                         criterionId: { type: string }
                         text: { type: string }
                         matchType: { type: string, enum: [exact, phrase, broad] }
+                  cachedAt: { type: [string, "null"], format: date-time, description: "When this list was fetched from Google. Null when it was never served from cache." }
+                  stale: { type: boolean, description: "True when Google's daily API quota was exhausted and this is the last successful fetch, not a live read." }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { description: Campaign not found }
         '429': { description: Google Ads operations budget exhausted; retry later }
@@ -42435,9 +42452,10 @@ paths:
       summary: Read a Google campaign's device, location, and language targeting
       description: |
         Google Ads compliance requires geo, language, budget, and bidding targeting
-        set at creation to stay editable afterwards; this reads the live campaign
-        state so an integrator can build an editor around it. Google only; every
-        other platform returns 501.
+        set at creation to stay editable afterwards; this reads the campaign state
+        so an integrator can build an editor around it. Cached for the quota window
+        (10 minutes fresh, up to 7 days last-good), not always a live read. Google
+        only; every other platform returns 501.
 
         `devices` always lists all four device types with `included` reflecting
         Google's negative device criteria (a device absent from any negative
@@ -42479,6 +42497,8 @@ paths:
                         code: { type: string, description: "Google's language code (ISO 639-1, plus variants such as `zh_CN`). Empty when the campaign's language_constant id is not in Zernio's checked-in table." }
                         id: { type: string, description: "Google's languageConstants/{id} numeric id." }
                         name: { type: string }
+                  cachedAt: { type: [string, "null"], format: date-time, description: "When this targeting was fetched from Google. Null when it was never served from cache." }
+                  stale: { type: boolean, description: "True when Google's daily API quota was exhausted and this is the last successful fetch, not a live read." }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
@@ -42506,6 +42526,10 @@ paths:
 
         `languages` is an array of Google's language codes (ISO 639-1, plus variants
         such as `zh_CN`); an unknown code returns 400.
+
+        The response includes the refreshed `devices`/`locations`/`languages` state
+        read back from Google after the edit, and invalidates the cached copy
+        `GET` on this campaign would otherwise keep serving.
       security:
         - bearerAuth: []
       parameters:
@@ -42566,6 +42590,29 @@ paths:
                 properties:
                   campaignId: { type: string }
                   updated: { type: array, items: { type: string, enum: [devices, locations, languages] }, description: "Which targeting fields were applied." }
+                  devices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        device: { type: string, enum: [MOBILE, DESKTOP, TABLET, CONNECTED_TV] }
+                        included: { type: boolean }
+                        bidModifier: { type: [number, "null"], description: "Always null on this read; see GET's description." }
+                  locations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        geoTargetId: { type: string, description: "Numeric id from Google's geoTargetConstants/{id}." }
+                        negative: { type: boolean, description: "true = excluded location." }
+                  languages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code: { type: string }
+                        id: { type: string }
+                        name: { type: string }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
@@ -45194,7 +45241,11 @@ paths:
         Google Ads compliance row C.75: callout assets linked at the CUSTOMER
         level via `customer_asset` (not a campaign or ad group), so they serve
         fleet-wide across the account. Google only; every other platform
-        returns 501. Draws on the shared Google Ads operations budget.
+        returns 501. Cached for the quota window (10 minutes fresh, up to 7
+        days last-good), and gated by the shared Google Ads operations budget
+        on a cache miss. The response carries `cachedAt` and `stale`, set when
+        a quota-exhausted call falls back to the last-good copy instead of a
+        live read.
       security:
         - bearerAuth: []
       parameters:
@@ -45217,11 +45268,14 @@ paths:
                         assetId: { type: string }
                         text: { type: string }
                         status: { type: string, description: "customer_asset.status, e.g. ENABLED, REMOVED, PAUSED." }
+                  cachedAt: { type: [string, "null"], format: date-time, description: "When this list was fetched from Google. Null when it was never served from cache." }
+                  stale: { type: boolean, description: "True when Google's daily API quota was exhausted and this is the last successful fetch, not a live read." }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Ads access required (Ads add-on on legacy plans, included on usage-based plans).
         '404': { $ref: '#/components/responses/NotFound' }
+        '429': { description: Google Ads operations budget exhausted; retry later }
         '501': { description: Only available on Google Ads accounts }
 
     post:
@@ -45424,6 +45478,8 @@ paths:
                         minimumDailyBudget: { type: number, description: "Meta only. Minimum daily budget for the account, in the account currency's major units. This is the impressions-billed minimum; other billing events have higher minimums. Absent when the connected token cannot read it." }
                         selectable: { type: boolean, description: "Meta and X only. Whether the account can create/run ads now. Absent (treat as true) on other platforms." }
                         unusableReason: { type: [string, "null"], description: "Meta and X only. Human-readable reason when selectable is false; null when selectable." }
+                  cachedAt: { type: [string, "null"], format: date-time, description: "Google only. When this list was fetched from Google. Null when it was never served from cache, or on other platforms." }
+                  stale: { type: boolean, description: "Google only. True when Google's daily API quota was exhausted and this is the last successful fetch, not a live read. Absent on other platforms." }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '422':
           description: Platform ads connection required (TikTok Ads, X Ads) or Instagram missing linked Facebook account
@@ -48913,6 +48969,11 @@ paths:
         `customerId` is optional: when omitted, it is resolved from the connection's
         accessible Google Ads customers, and the call fails with `400` when more than
         one is accessible (pass `customerId` to disambiguate).
+
+        The list itself is cached for the quota window (1 hour fresh, up to 7 days
+        last-good; the cache key does not vary on `type`). The response carries
+        `cachedAt` and `stale`, set when a quota-exhausted call falls back to the
+        last-good copy instead of a live read.
       security:
         - bearerAuth: []
       parameters:
@@ -48931,6 +48992,8 @@ paths:
                   actions:
                     type: array
                     items: { $ref: '#/components/schemas/ConversionAction' }
+                  cachedAt: { type: [string, "null"], format: date-time, description: "When this list was fetched from Google. Null when it was never served from cache." }
+                  stale: { type: boolean, description: "True when Google's daily API quota was exhausted and this is the last successful fetch, not a live read." }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
@@ -48947,8 +49010,9 @@ paths:
       description: |
         Creates a `WEBPAGE` conversion action (category `DEFAULT`) and returns it with
         its tag snippets, read back after creation since Google never returns them on
-        the create response itself. Google-only; other platforms return `501`. Requires
-        the Ads add-on.
+        the create response itself. Invalidates the cached list `GET` on this resource
+        would otherwise keep serving. Google-only; other platforms return `501`.
+        Requires the Ads add-on.
       security:
         - bearerAuth: []
       requestBody:
