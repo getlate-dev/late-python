@@ -395,10 +395,13 @@ class PhoneNumbersResource:
             f"/v1/phone-numbers/{id}/remediate/respond", data=payload
         )
 
-    def create_phone_number_stock_watch(self, country: str) -> dict[str, Any]:
+    def create_phone_number_stock_watch(
+        self, country: str, *, number_type: str | None = None
+    ) -> dict[str, Any]:
         """Watch an out-of-stock country"""
         payload = self._build_payload(
             country=country,
+            number_type=number_type,
         )
         return self._client._post("/v1/phone-numbers/stock-watches", data=payload)
 
@@ -740,10 +743,13 @@ class PhoneNumbersResource:
             f"/v1/phone-numbers/{id}/remediate/respond", data=payload
         )
 
-    async def acreate_phone_number_stock_watch(self, country: str) -> dict[str, Any]:
+    async def acreate_phone_number_stock_watch(
+        self, country: str, *, number_type: str | None = None
+    ) -> dict[str, Any]:
         """Watch an out-of-stock country (async)"""
         payload = self._build_payload(
             country=country,
+            number_type=number_type,
         )
         return await self._client._apost(
             "/v1/phone-numbers/stock-watches", data=payload

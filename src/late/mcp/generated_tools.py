@@ -13774,15 +13774,18 @@ def register_generated_tools(mcp, _get_client):
             openWorldHint=True,
         )
     )
-    def phone_numbers_create_phone_number_stock_watch(country: str) -> str:
+    def phone_numbers_create_phone_number_stock_watch(
+        country: str, number_type: str | None = None
+    ) -> str:
         """Watch an out-of-stock country
 
         Args:
-            country: ISO 3166-1 alpha-2 code of a country listed by GET /v1/phone-numbers/countries. (required)"""
+            country: ISO 3166-1 alpha-2 code of a country listed by GET /v1/phone-numbers/countries. (required)
+            number_type: Narrow the watch to one number type. Omit to be notified when any type in the country is back."""
         client = _get_client()
         try:
             response = client.phone_numbers.create_phone_number_stock_watch(
-                country=country
+                country=country, number_type=number_type
             )
             return _format_response(response)
         except Exception as e:
