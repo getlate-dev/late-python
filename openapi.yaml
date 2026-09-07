@@ -7890,6 +7890,40 @@ components:
           type: array
           items:
             type: string
+    PostPublishIncompleteResponse:
+      type: object
+      description: 'Body of the 207 returned by createPost and updatePost when the post was saved but the inline publish did not fully succeed. Read `post.status` to tell the three outcomes apart.'
+      properties:
+        post:
+          $ref: '#/components/schemas/Post'
+        message:
+          type: string
+          description: Human-readable summary of the publish outcome.
+        error:
+          type: string
+          description: 'Present when no platform published. Absent on a partial success. Informational only; the per-platform detail is in `platformResults` and in `post.platforms[]`.'
+        platformResults:
+          type: array
+          description: 'Per-platform outcome of the publish attempt. Omitted when the attempt aborted before producing per-platform results (for example the post was already being processed); read `post.platforms[]` in that case.'
+          items:
+            type: object
+            required: [platform, status, error]
+            properties:
+              platform:
+                type: string
+                description: 'Platform slug, matching `post.platforms[].platform`.'
+              status:
+                type: string
+                example: failed
+                description: 'Per-platform status: pending, processing, published, failed, cancelled, uploading.'
+              error:
+                type: [string, "null"]
+                description: 'Failure detail for this platform, or null when it did not fail.'
+        warnings:
+          type: array
+          description: Advisory notices about the post that was still created. Absent when there are none.
+          items:
+            type: string
     PostDeleteResponse:
       type: object
       properties:
@@ -15394,6 +15428,58 @@ paths:
                             isActive: true
                           status: "pending"
                     message: "Post scheduled successfully"
+        '207':
+          description: |
+            The post was created, but the inline publish (`publishNow: true`, or a `scheduledFor` that is already due) did not fully succeed.
+
+            **207 is a 2xx status.** `fetch(...).ok` is `true` and axios' default `validateStatus` resolves, so a client that only checks for success will read this as a published post. Branch on the status code explicitly.
+
+            Tell the outcomes apart with `post.status`:
+            - `partial` - at least one platform published and at least one failed. Per-platform detail is in `platformResults` and in `post.platforms[]`.
+            - `failed` - no platform published. Terminal; nothing will be retried. Read `platforms[].errorMessage`, `platforms[].errorCategory` and `platforms[].errorSource` to decide whether the caller, the platform or Zernio must act.
+            - `scheduled` - every platform hit a transient error and was reset to `pending`. Zernio retries automatically. This is **not** a failure and must not be surfaced to an end user as one.
+
+            A publish attempt that aborted before it started (for example the post was already being processed) reports none of the three: `post.status` is whatever it already was and `platformResults` is absent. Read `error` and `post.platforms[]`, which is always present.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostPublishIncompleteResponse'
+              examples:
+                allPlatformsFailed:
+                  summary: Every platform failed (post.status is failed, terminal)
+                  value:
+                    post:
+                      _id: "6a9e43f7fd28fe46ce033d98"
+                      content: "We just launched!"
+                      status: "failed"
+                      platforms:
+                        - platform: "facebook"
+                          status: "failed"
+                          errorMessage: "Facebook needs you to confirm your identity before you can publish as this Page. Open the Facebook mobile app, go to this Page, and complete the identity confirmation, then try again."
+                          errorCategory: "platform_rejected"
+                          errorSource: "platform"
+                    message: "Post created but publishing failed"
+                    error: "All platforms failed"
+                    platformResults:
+                      - platform: "facebook"
+                        status: "failed"
+                        error: "Facebook needs you to confirm your identity before you can publish as this Page. Open the Facebook mobile app, go to this Page, and complete the identity confirmation, then try again."
+                temporaryErrorsWillRetry:
+                  summary: Transient errors (post.status is scheduled, Zernio retries)
+                  value:
+                    post:
+                      _id: "6a9e43f7fd28fe46ce033d99"
+                      content: "We just launched!"
+                      status: "scheduled"
+                      platforms:
+                        - platform: "instagram"
+                          status: "pending"
+                    message: "Post created but publishing failed"
+                    error: "Publishing encountered temporary errors. The post will be retried automatically."
+                    platformResults:
+                      - platform: "instagram"
+                        status: "pending"
+                        error: null
         '400':
           description: Validation error
           content:
@@ -15778,7 +15864,16 @@ paths:
                   status: "scheduled"
                   scheduledFor: "2024-11-02T14:00:00Z"
         '207':
-          description: Partial publish success
+          description: |
+            The post was updated, but the inline publish that followed did not fully succeed.
+
+            **207 is a 2xx status**, so `fetch(...).ok` is `true` and axios resolves. Branch on the status code explicitly.
+
+            Read `post.status`: `partial` (some platforms published), `failed` (none published, terminal), or `scheduled` (transient errors, platforms reset to `pending`, Zernio retries automatically and this is not a failure). `platformResults` is omitted when the attempt aborted before producing per-platform results; `post.platforms[]` is always present.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostPublishIncompleteResponse'
         '400':
           description: Invalid request
           content:
@@ -15969,7 +16064,24 @@ paths:
                       platformPostId: "1234567890"
                       platformPostUrl: "https://twitter.com/acme/status/1234567890"
         '207':
-          description: Partial success
+          description: |
+            The retry ran, but publishing did not fully succeed. Covers both a partial publish and a retry in which no platform published.
+
+            **207 is a 2xx status**, so `fetch(...).ok` is `true` and axios resolves. Branch on the status code explicitly.
+
+            This response carries no `platformResults`. Read `post.status` (`partial`, `failed`, or `scheduled` when transient errors will be retried automatically) and `post.platforms[]` for per-platform detail.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  error:
+                    type: string
+                    description: Summary of why the retry did not fully succeed.
+                  post:
+                    $ref: '#/components/schemas/Post'
         '400':
           description: Invalid state
           content:
