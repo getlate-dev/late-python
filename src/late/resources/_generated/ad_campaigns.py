@@ -358,6 +358,69 @@ class AdCampaignsResource:
             f"/v1/ads/campaigns/{campaign_id}/duplicate", data=payload, headers=headers
         )
 
+    def get_campaign_targeting(
+        self, campaign_id: str, *, platform: str | None = None
+    ) -> dict[str, Any]:
+        """Read a Google campaign's device, location, and language targeting"""
+        params = self._build_params(
+            platform=platform,
+        )
+        return self._client._get(
+            f"/v1/ads/campaigns/{campaign_id}/targeting", params=params
+        )
+
+    def update_campaign_targeting(
+        self, campaign_id: str, platform: str, targeting: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Edit a Google campaign's device, location, or language targeting"""
+        payload = self._build_payload(
+            platform=platform,
+            targeting=targeting,
+        )
+        return self._client._put(
+            f"/v1/ads/campaigns/{campaign_id}/targeting", data=payload
+        )
+
+    def list_ad_sets(
+        self,
+        *,
+        account_id: str | None = None,
+        campaign_id: str | None = None,
+        platform: str | None = None,
+    ) -> dict[str, Any]:
+        """List ad sets"""
+        params = self._build_params(
+            account_id=account_id,
+            campaign_id=campaign_id,
+            platform=platform,
+        )
+        return self._client._get("/v1/ads/ad-sets", params=params)
+
+    def create_ad_set(
+        self,
+        account_id: str,
+        platform: str,
+        campaign_id: str,
+        name: str,
+        *,
+        idempotency_key: str | None = None,
+        status: str | None = "PAUSED",
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Create a standalone ad group"""
+        payload = self._build_payload(
+            account_id=account_id,
+            platform=platform,
+            campaign_id=campaign_id,
+            name=name,
+            status=status,
+            customer_id=customer_id,
+        )
+        headers: dict[str, str] = {}
+        if idempotency_key is not None:
+            headers["Idempotency-Key"] = idempotency_key
+        return self._client._post("/v1/ads/ad-sets", data=payload, headers=headers)
+
     def duplicate_ad_set(
         self,
         ad_set_id: str,
@@ -1156,6 +1219,71 @@ class AdCampaignsResource:
             headers["Idempotency-Key"] = idempotency_key
         return await self._client._apost(
             f"/v1/ads/campaigns/{campaign_id}/duplicate", data=payload, headers=headers
+        )
+
+    async def aget_campaign_targeting(
+        self, campaign_id: str, *, platform: str | None = None
+    ) -> dict[str, Any]:
+        """Read a Google campaign's device, location, and language targeting (async)"""
+        params = self._build_params(
+            platform=platform,
+        )
+        return await self._client._aget(
+            f"/v1/ads/campaigns/{campaign_id}/targeting", params=params
+        )
+
+    async def aupdate_campaign_targeting(
+        self, campaign_id: str, platform: str, targeting: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Edit a Google campaign's device, location, or language targeting (async)"""
+        payload = self._build_payload(
+            platform=platform,
+            targeting=targeting,
+        )
+        return await self._client._aput(
+            f"/v1/ads/campaigns/{campaign_id}/targeting", data=payload
+        )
+
+    async def alist_ad_sets(
+        self,
+        *,
+        account_id: str | None = None,
+        campaign_id: str | None = None,
+        platform: str | None = None,
+    ) -> dict[str, Any]:
+        """List ad sets (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            campaign_id=campaign_id,
+            platform=platform,
+        )
+        return await self._client._aget("/v1/ads/ad-sets", params=params)
+
+    async def acreate_ad_set(
+        self,
+        account_id: str,
+        platform: str,
+        campaign_id: str,
+        name: str,
+        *,
+        idempotency_key: str | None = None,
+        status: str | None = "PAUSED",
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Create a standalone ad group (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            platform=platform,
+            campaign_id=campaign_id,
+            name=name,
+            status=status,
+            customer_id=customer_id,
+        )
+        headers: dict[str, str] = {}
+        if idempotency_key is not None:
+            headers["Idempotency-Key"] = idempotency_key
+        return await self._client._apost(
+            "/v1/ads/ad-sets", data=payload, headers=headers
         )
 
     async def aduplicate_ad_set(

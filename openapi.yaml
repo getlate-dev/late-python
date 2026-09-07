@@ -9385,6 +9385,33 @@ components:
             account (LinkedIn). Pass back on subsequent CRUD calls to
             identify the parent ad account.
 
+    ConversionAction:
+      type: object
+      description: |
+        A Google Ads conversion action, e.g. a WEBPAGE conversion created via
+        `createConversionAction`. Returned by `listConversionActions` and
+        `createConversionAction`.
+      required: [id, name, type, status, category, tagSnippets]
+      properties:
+        id: { type: string, description: "Google Ads conversion action id." }
+        name: { type: string }
+        type: { type: string, description: "Google's ConversionActionType, e.g. WEBPAGE, UPLOAD_CLICKS." }
+        status: { type: string, description: "Google's ConversionActionStatus, e.g. ENABLED, REMOVED, HIDDEN." }
+        category: { type: string, description: "Google's ConversionActionCategory, e.g. DEFAULT, PURCHASE, LEAD." }
+        tagSnippets:
+          type: array
+          description: |
+            The code a customer pastes onto their site. Present for types
+            Google generates a snippet for (e.g. WEBPAGE); empty otherwise.
+          items:
+            type: object
+            required: [type]
+            properties:
+              type: { type: string, description: "Google's TrackingCodeType, e.g. WEBPAGE." }
+              pageFormat: { type: string, description: "Google's TrackingCodePageFormat, e.g. HTML, AMP." }
+              globalSiteTag: { type: string, description: "The gtag.js snippet to install once per site." }
+              eventSnippet: { type: string, description: "The per-conversion-page snippet that fires the event." }
+
     CtwaSingleResponse:
       type: object
       description: |
@@ -42175,6 +42202,266 @@ paths:
         '404': { description: Source campaign not found }
         '501': { description: Operation not supported on this platform }
 
+  /v1/ads/campaigns/{campaignId}/targeting:
+    get:
+      x-resource-group: "ads"
+      operationId: getCampaignTargeting
+      tags: ["Ad Campaigns"]
+      x-platforms: ["google"]
+      summary: Read a Google campaign's device, location, and language targeting
+      description: |
+        Google Ads compliance requires geo, language, budget, and bidding targeting
+        set at creation to stay editable afterwards; this reads the live campaign
+        state so an integrator can build an editor around it. Google only; every
+        other platform returns 501.
+
+        `devices` always lists all four device types with `included` reflecting
+        Google's negative device criteria (a device absent from any negative
+        criterion is included by default). This read has no bid-modifier source,
+        so `bidModifier` is always `null` even for a device with one configured.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: campaignId, in: path, required: true, schema: { type: string }, description: Google platform campaign ID }
+        - { name: platform, in: query, schema: { type: string, enum: [google] }, description: "Disambiguates when the same campaignId string exists on more than one connected platform." }
+      responses:
+        '200':
+          description: Current campaign targeting
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  devices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        device: { type: string, enum: [MOBILE, DESKTOP, TABLET, CONNECTED_TV] }
+                        included: { type: boolean }
+                        bidModifier: { type: [number, "null"], description: "Always null on this read (see description)." }
+                  locations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        geoTargetId: { type: string, description: "Numeric id from Google's geoTargetConstants/{id}." }
+                        negative: { type: boolean, description: "true = excluded location." }
+                  languages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code: { type: string, description: "Google's language code (ISO 639-1, plus variants such as `zh_CN`). Empty when the campaign's language_constant id is not in Zernio's checked-in table." }
+                        id: { type: string, description: "Google's languageConstants/{id} numeric id." }
+                        name: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Ads access required (Ads add-on on legacy plans, included on usage-based plans).
+        '404': { description: Campaign not found }
+        '501': { description: Only available on Google Ads campaigns }
+    put:
+      x-resource-group: "ads"
+      operationId: updateCampaignTargeting
+      tags: ["Ad Campaigns"]
+      x-platforms: ["google"]
+      summary: Edit a Google campaign's device, location, or language targeting
+      description: |
+        Google Ads compliance row M.10: geo and language targeting set at
+        creation must stay editable afterwards. Send at least one of `devices`,
+        `locations`, `languages`; each provided field REPLACES that field's
+        existing criteria on the campaign (a full set, not a delta). Fields left
+        out of the body are untouched. Google only; every other platform returns
+        501.
+
+        `locations` accepts the same shapes as campaign creation: a bare array of
+        ISO country codes, or an object with `countries`/`regions`/`cities`/`zips`/`metros`
+        key lists (`key` from GET /v1/ads/targeting/search?dimension=geo). Negative
+        (excluded) locations are left untouched by this endpoint.
+
+        `languages` is an array of Google's language codes (ISO 639-1, plus variants
+        such as `zh_CN`); an unknown code returns 400.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: campaignId, in: path, required: true, schema: { type: string }, description: Google platform campaign ID }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform, targeting]
+              properties:
+                platform: { type: string, enum: [google] }
+                targeting:
+                  type: object
+                  minProperties: 1
+                  properties:
+                    devices:
+                      type: array
+                      items:
+                        oneOf:
+                          - type: string
+                            enum: [MOBILE, DESKTOP, TABLET, CONNECTED_TV]
+                          - type: object
+                            required: [device, bidModifier]
+                            properties:
+                              device: { type: string, enum: [MOBILE, DESKTOP, TABLET, CONNECTED_TV] }
+                              bidModifier: { type: number, description: "Bid modifier for this device; devices without one use the campaign's base bid." }
+                      description: "Devices to include. Devices not listed become excluded (negative) criteria, same contract as the existing devices-only edit."
+                    locations:
+                      description: "Bare country-code array, or the nested creation-time shape (countries/regions/cities/zips/metros)."
+                      oneOf:
+                        - type: array
+                          items: { type: string, description: "ISO 3166-1 alpha-2 country code." }
+                        - type: object
+                          properties:
+                            countries: { type: array, items: { type: string } }
+                            regions:
+                              type: array
+                              items: { type: object, required: [key], properties: { key: { type: string }, name: { type: string } } }
+                            cities:
+                              type: array
+                              items: { type: object, required: [key], properties: { key: { type: string }, name: { type: string } } }
+                            zips:
+                              type: array
+                              items: { type: object, required: [key], properties: { key: { type: string }, name: { type: string } } }
+                            metros:
+                              type: array
+                              items: { type: object, required: [key], properties: { key: { type: string }, name: { type: string } } }
+                    languages: { type: array, items: { type: string }, description: "Google's language codes (ISO 639-1, plus variants such as `zh_CN`), e.g. [\"en\", \"de\"]." }
+      responses:
+        '200':
+          description: Targeting updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  campaignId: { type: string }
+                  updated: { type: array, items: { type: string, enum: [devices, locations, languages] }, description: "Which targeting fields were applied." }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: 'Returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
+        '404': { description: Campaign not found }
+        '501': { description: Only available on Google Ads campaigns }
+
+  /v1/ads/ad-sets:
+    get:
+      x-resource-group: "ads"
+      operationId: listAdSets
+      tags: ["Ad Campaigns"]
+      x-platforms: ["meta", "google", "tiktok", "linkedin", "pinterest", "x"]
+      summary: List ad sets
+      description: |-
+        Ad sets (Google ad groups) synced for the connection, optionally
+        filtered by platform and campaignId. Reads the `ad_sets` table
+        directly, independent of the `ads` rollup GET /v1/ads/tree uses, so a
+        just-created standalone ad group with no ad yet (POST /v1/ads/ad-sets,
+        Google only) is visible here even though it is invisible in the tree
+        until an ad joins it via `existingAdGroupId`. Returns at most 500
+        rows, newest first.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: accountId, in: query, schema: { type: string }, description: Social account ID }
+        - { name: campaignId, in: query, schema: { type: string }, description: Platform campaign ID }
+        - { name: platform, in: query, schema: { type: string, enum: [facebook, instagram, tiktok, linkedin, pinterest, google, twitter, openai] } }
+      responses:
+        '200':
+          description: Ad sets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  adSets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        platformAdSetId: { type: string }
+                        platform: { type: string }
+                        adSetName: { type: [string, "null"] }
+                        status: { type: [string, "null"] }
+                        platformAdSetStatus: { type: [string, "null"] }
+                        platformCampaignId: { type: [string, "null"] }
+                        platformAdAccountId: { type: string }
+                        accountId: { type: [string, "null"] }
+                        profileId: { type: string }
+                        currency: { type: [string, "null"] }
+                        budget: { type: [object, "null"] }
+                        isExternal: { type: [boolean, "null"] }
+                        platformCreatedAt: { type: [string, "null"], format: date-time }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Ads access required (Ads add-on on legacy plans, included on usage-based plans).
+
+    post:
+      x-resource-group: "ads"
+      operationId: createAdSet
+      tags: ["Ad Campaigns"]
+      x-platforms: ["google"]
+      summary: Create a standalone ad group
+      description: |-
+        Google Ads compliance row C.190: creates an ad group WITHOUT an ad,
+        under an existing campaign. Ads join it later via `existingAdGroupId`
+        on POST /v1/ads/create. Google only; every other platform returns 501.
+
+        Created `PAUSED` unless `status: ACTIVE`. The new ad group has no ad
+        yet, so it will not appear in GET /v1/ads/tree (built purely from `ads`
+        rows) until one is added; use GET /v1/ads/ad-sets to see it in the
+        meantime.
+
+        **Idempotency:** send an `Idempotency-Key` header to make retries safe.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema: { type: string, maxLength: 255 }
+          description: >-
+            Optional client-generated unique key (e.g. a UUID) that makes
+            retries safe. Same key + same body replays the original response;
+            same key + different body → 422; key still processing → 409. Only
+            2xx responses are stored, so a request that failed with a 4xx can
+            be retried with a corrected body under the SAME key.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountId, platform, campaignId, name]
+              properties:
+                accountId: { type: string, description: "Zernio SocialAccount id owning the Google Ads connection." }
+                platform: { type: string, enum: [facebook, instagram, tiktok, linkedin, pinterest, google, twitter, openai], description: "Only \"google\" is implemented today; every other value returns 501." }
+                campaignId: { type: string, description: "Google platform campaign ID (numeric) the ad group is created under." }
+                name: { type: string, minLength: 1, maxLength: 255 }
+                status: { type: string, enum: [ACTIVE, PAUSED], default: PAUSED }
+                customerId: { type: string, description: "Numeric Google Ads customer id. Only required when the connection has more than one." }
+      responses:
+        '201':
+          description: Ad group created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  adSetId: { type: string, description: Platform id of the new ad group }
+                  campaignId: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: 'Returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
+        '404': { description: accountId does not belong to a Google Ads connection }
+        '501': { description: Only supported on Google Ads }
+
   /v1/ads/ad-sets/{adSetId}/duplicate:
     post:
       x-resource-group: "ads"
@@ -44659,6 +44946,137 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '501': { description: Only supported on Meta (facebook/instagram) }
 
+  /v1/ads/accounts/callouts:
+    get:
+      x-resource-group: "ads"
+      operationId: listAccountCallouts
+      tags: ["Ad Accounts"]
+      x-platforms: ["google"]
+      summary: List account-level callout extensions
+      description: |-
+        Google Ads compliance row C.75: callout assets linked at the CUSTOMER
+        level via `customer_asset` (not a campaign or ad group), so they serve
+        fleet-wide across the account. Google only; every other platform
+        returns 501. Draws on the shared Google Ads operations budget.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: string }, description: "Google ads SocialAccount id." }
+        - { name: customerId, in: query, schema: { type: string }, description: "Numeric Google Ads customer id (no dashes). Defaults to the account's connected customer." }
+      responses:
+        '200':
+          description: Account-level callouts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customerId: { type: string }
+                  callouts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        assetId: { type: string }
+                        text: { type: string }
+                        status: { type: string, description: "customer_asset.status, e.g. ENABLED, REMOVED, PAUSED." }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Ads access required (Ads add-on on legacy plans, included on usage-based plans).
+        '404': { $ref: '#/components/responses/NotFound' }
+        '501': { description: Only available on Google Ads accounts }
+
+    post:
+      x-resource-group: "ads"
+      operationId: addAccountCallouts
+      tags: ["Ad Accounts"]
+      x-platforms: ["google"]
+      summary: Add account-level callout extensions
+      description: |-
+        Creates one asset plus one `customerAsset` link (field type CALLOUT)
+        per callout text, in a single mutate. Google only; every other
+        platform returns 501.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountId, callouts]
+              properties:
+                accountId: { type: string, description: "Zernio SocialAccount id owning the Google Ads connection." }
+                customerId: { type: string, description: "Numeric Google Ads customer id. Only required when the connection has more than one." }
+                callouts:
+                  type: array
+                  minItems: 1
+                  maxItems: 20
+                  items: { type: string, minLength: 1, maxLength: 25 }
+                  description: 'Callout text, 1-25 characters each; up to 20 per request (Google''s CalloutAsset limits).'
+      responses:
+        '201':
+          description: Callouts created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customerId: { type: string }
+                  callouts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        assetId: { type: string }
+                        text: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Ads access required (Ads add-on on legacy plans, included on usage-based plans).
+        '404': { $ref: '#/components/responses/NotFound' }
+        '501': { description: Only supported on Google Ads }
+
+    delete:
+      x-resource-group: "ads"
+      operationId: removeAccountCallout
+      tags: ["Ad Accounts"]
+      x-platforms: ["google"]
+      summary: Remove an account-level callout extension
+      description: |-
+        Removes the `customerAsset` link (`customers/{cid}/customerAssets/{assetId}~CALLOUT`).
+        Google only; every other platform returns 501.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountId, assetId]
+              properties:
+                accountId: { type: string, description: "Zernio SocialAccount id owning the Google Ads connection." }
+                customerId: { type: string, description: "Numeric Google Ads customer id. Only required when the connection has more than one." }
+                assetId: { type: string, description: "Numeric asset id from GET /v1/ads/accounts/callouts." }
+      responses:
+        '200':
+          description: Callout removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  removed: { type: boolean }
+                  customerId: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Ads access required (Ads add-on on legacy plans, included on usage-based plans).
+        '404': { $ref: '#/components/responses/NotFound' }
+        '501': { description: Only supported on Google Ads }
+
   /v1/ads/accounts/finance:
     get:
       x-resource-group: "ads"
@@ -45619,7 +46037,7 @@ paths:
                     Normalized household-income tier. Meta and TikTok express all four; Google maps only
                     `top_10`; rejected on LinkedIn, X, and Pinterest. On Meta, income targeting is incompatible
                     with housing/employment/credit `specialAdCategories`.
-                languages: { type: array, items: { type: string }, description: "Language codes restricting the audience by language. On Meta, ISO 639-1 codes (e.g. ['en'], ['de']); a bare code targets all regional variants (\"en\" = all English), or use a region-qualified code for a specific one (\"en_GB\", \"pt_BR\", \"zh_TW\"). Unknown codes are rejected. Other ad platforms use their own language-code systems." }
+                languages: { type: array, items: { type: string }, description: "e.g. [\"en\",\"es\"]. Google: campaign language targeting (language_constant) using Google's language codes (ISO 639-1, plus variants such as `zh_CN`); unknown codes return 400. On Meta, a bare code targets all regional variants (\"en\" = all English), or use a region-qualified code for a specific one (\"en_GB\", \"pt_BR\", \"zh_TW\"); unknown codes are rejected. Other ad platforms use their own language-code systems." }
                 placements:
                   type: object
                   description: |
@@ -46978,12 +47396,15 @@ paths:
         `POST /v1/ads/targeting/reach-estimate`, and `saved_targeting` audiences.
 
         The `dimension` param selects what is searched, `geo` (locations, further scoped
-        by `geoType`), `interest`, `behavior`, `income`, or the Meta-only work
-        demographics `workPosition`, `workEmployer` and `workIndustry` (their ids feed
-        `TargetingSpec.workPositions`/`workEmployers`/`workIndustries`). Availability of
-        each dimension varies by platform (e.g. behaviours are Meta/TikTok only).
+        by `geoType`), `interest`, `behavior`, `income`, `language` (Google-only), or the
+        Meta-only work demographics `workPosition`, `workEmployer` and `workIndustry` (their
+        ids feed `TargetingSpec.workPositions`/`workEmployers`/`workIndustries`). Availability
+        of each dimension varies by platform (e.g. behaviours are Meta/TikTok only).
         Work industries are a fixed ~30-entry Meta catalog with no server-side query,
-        so `workIndustry` matching, ranking and `limit` happen in Zernio.
+        so `workIndustry` matching, ranking and `limit` happen in Zernio. `language`
+        is likewise a fixed, checked-in table of Google's targetable
+        `language_constant` rows (id, ISO code, name) matched by name or code, capped
+        at 20, with no network call; its ids feed `TargetingSpec.languages`.
         Results are normalized
         across platforms into a single shape, so the same client code consumes Meta,
         TikTok, LinkedIn, X, Pinterest, and Google results.
@@ -47034,7 +47455,7 @@ paths:
       parameters:
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Social account ID (a connected account on the target ad platform)." }
         - { name: q, in: query, required: true, schema: { type: string }, description: "Search query. For geo, the locality name only (no region/country suffix)." }
-        - { name: dimension, in: query, required: false, schema: { type: string, enum: [geo, interest, behavior, income, workPosition, workEmployer, workIndustry], default: interest }, description: "What to search. `geo` resolves locations (scope further with `geoType`), `interest`/`behavior` resolve audience entities, `income` resolves income-tier options, `workPosition`/`workEmployer`/`workIndustry` resolve Meta work demographics. Defaults to `interest` for backward compatibility with the deprecated /v1/ads/interests alias." }
+        - { name: dimension, in: query, required: false, schema: { type: string, enum: [geo, interest, behavior, income, language, workPosition, workEmployer, workIndustry], default: interest }, description: "What to search. `geo` resolves locations (scope further with `geoType`), `interest`/`behavior` resolve audience entities, `income` resolves income-tier options, `language` resolves Google's targetable language_constant table (Google only), `workPosition`/`workEmployer`/`workIndustry` resolve Meta work demographics. Defaults to `interest` for backward compatibility with the deprecated /v1/ads/interests alias." }
         - { name: geoType, in: query, required: false, schema: { type: string, enum: [all, country, region, city, subcity, neighborhood, place, zip, metro_area, geo_market], default: city }, description: "Only used when `dimension=geo`. The kind of location to resolve. `all` searches every type in one relevance-ranked call. Defaults to `city`." }
         - { name: countryCode, in: query, required: false, schema: { type: string, minLength: 2, maxLength: 2 }, description: "ISO 3166-1 alpha-2 country code (e.g. NL) to scope a geo search." }
         - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 25 }, description: "Maximum results to return." }
@@ -48232,6 +48653,106 @@ paths:
           description: Account not found or not accessible.
         '405':
           description: Conversion adjustments are only available for Google Ads (the account's platform is not `googleads`).
+
+  /v1/ads/conversions/actions:
+    get:
+      x-resource-group: "ads"
+      operationId: listConversionActions
+      tags: [Conversions]
+      x-platforms: ["google"]
+      summary: List conversion actions and their tag snippets
+      description: |
+        Lists Google Ads conversion actions on the resolved customer, all types by
+        default. Each action's `tagSnippets` (global site tag + event snippet) is
+        included when Google has them for that action's type, e.g. `WEBPAGE`.
+        Google-only; other platforms return `501`. Requires the Ads add-on.
+
+        `customerId` is optional: when omitted, it is resolved from the connection's
+        accessible Google Ads customers, and the call fails with `400` when more than
+        one is accessible (pass `customerId` to disambiguate).
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: string }, description: "SocialAccount _id (must be a googleads account)." }
+        - { name: customerId, in: query, required: false, schema: { type: string }, description: "Google Ads customer id (digits only). Resolved automatically when the connection has exactly one accessible customer." }
+        - { name: type, in: query, required: false, schema: { type: string }, description: "Filter by Google's ConversionActionType enum (e.g. WEBPAGE, UPLOAD_CLICKS)." }
+      responses:
+        '200':
+          description: The resolved customer and its conversion actions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customerId: { type: string, description: "The Google Ads customer id the actions were read from." }
+                  actions:
+                    type: array
+                    items: { $ref: '#/components/schemas/ConversionAction' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Ads access required (Ads add-on on legacy plans, included on usage-based plans).
+        '404': { $ref: '#/components/responses/NotFound' }
+        '501':
+          description: Conversion actions are only available for Google Ads (the account's platform is not `googleads`).
+    post:
+      x-resource-group: "ads"
+      operationId: createConversionAction
+      tags: [Conversions]
+      x-platforms: ["google"]
+      summary: Create a website conversion action
+      description: |
+        Creates a `WEBPAGE` conversion action (category `DEFAULT`) and returns it with
+        its tag snippets, read back after creation since Google never returns them on
+        the create response itself. Google-only; other platforms return `501`. Requires
+        the Ads add-on.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountId, name, type]
+              properties:
+                accountId:
+                  type: string
+                  description: SocialAccount ID. Must be a `googleads` account.
+                customerId:
+                  type: string
+                  description: "Google Ads customer id (digits only). Resolved automatically when the connection has exactly one accessible customer."
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                type:
+                  type: string
+                  enum: [WEBPAGE]
+                  description: "Only WEBPAGE is supported for creation today."
+                defaultValue:
+                  type: number
+                  minimum: 0
+                  description: "Default conversion value used when an event doesn't carry its own value."
+                alwaysUseDefaultValue:
+                  type: boolean
+                  description: "When true, always use defaultValue and ignore any value sent with the event. Defaults to true when defaultValue is set."
+      responses:
+        '201':
+          description: The created conversion action, with its tag snippets.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  action: { $ref: '#/components/schemas/ConversionAction' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Ads access required (Ads add-on on legacy plans, included on usage-based plans).
+        '404': { $ref: '#/components/responses/NotFound' }
+        '501':
+          description: Conversion actions are only available for Google Ads (the account's platform is not `googleads`).
 
   /v1/accounts/{accountId}/conversion-destinations:
     get:

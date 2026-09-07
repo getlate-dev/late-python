@@ -276,6 +276,33 @@ class AdAccountsResource:
             f"/v1/ads/value-rule-sets/{value_rule_set_id}", params=params
         )
 
+    def list_account_callouts(
+        self, account_id: str, *, customer_id: str | None = None
+    ) -> dict[str, Any]:
+        """List account-level callout extensions"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+        )
+        return self._client._get("/v1/ads/accounts/callouts", params=params)
+
+    def add_account_callouts(
+        self, account_id: str, callouts: list[str], *, customer_id: str | None = None
+    ) -> dict[str, Any]:
+        """Add account-level callout extensions"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            callouts=callouts,
+        )
+        return self._client._post("/v1/ads/accounts/callouts", data=payload)
+
+    def remove_account_callout(
+        self, account_id: str, asset_id: str, *, customer_id: str | None = None
+    ) -> dict[str, Any]:
+        """Remove an account-level callout extension"""
+        return self._client._delete("/v1/ads/accounts/callouts")
+
     def get_ad_account_finance(
         self, account_id: str, ad_account_id: str
     ) -> dict[str, Any]:
@@ -570,6 +597,33 @@ class AdAccountsResource:
         return await self._client._adelete(
             f"/v1/ads/value-rule-sets/{value_rule_set_id}", params=params
         )
+
+    async def alist_account_callouts(
+        self, account_id: str, *, customer_id: str | None = None
+    ) -> dict[str, Any]:
+        """List account-level callout extensions (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+        )
+        return await self._client._aget("/v1/ads/accounts/callouts", params=params)
+
+    async def aadd_account_callouts(
+        self, account_id: str, callouts: list[str], *, customer_id: str | None = None
+    ) -> dict[str, Any]:
+        """Add account-level callout extensions (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            callouts=callouts,
+        )
+        return await self._client._apost("/v1/ads/accounts/callouts", data=payload)
+
+    async def aremove_account_callout(
+        self, account_id: str, asset_id: str, *, customer_id: str | None = None
+    ) -> dict[str, Any]:
+        """Remove an account-level callout extension (async)"""
+        return await self._client._adelete("/v1/ads/accounts/callouts")
 
     async def aget_ad_account_finance(
         self, account_id: str, ad_account_id: str

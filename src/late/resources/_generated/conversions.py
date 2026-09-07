@@ -113,6 +113,42 @@ class ConversionsResource:
         )
         return self._client._post("/v1/ads/conversions/adjustments", data=payload)
 
+    def list_conversion_actions(
+        self,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        type: str | None = None,
+    ) -> dict[str, Any]:
+        """List conversion actions and their tag snippets"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+            type=type,
+        )
+        return self._client._get("/v1/ads/conversions/actions", params=params)
+
+    def create_conversion_action(
+        self,
+        account_id: str,
+        name: str,
+        type: str,
+        *,
+        customer_id: str | None = None,
+        default_value: float | None = None,
+        always_use_default_value: bool | None = None,
+    ) -> dict[str, Any]:
+        """Create a website conversion action"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            name=name,
+            type=type,
+            default_value=default_value,
+            always_use_default_value=always_use_default_value,
+        )
+        return self._client._post("/v1/ads/conversions/actions", data=payload)
+
     def list_conversion_destinations(self, account_id: str) -> dict[str, Any]:
         """List conversion destinations"""
         return self._client._get(f"/v1/accounts/{account_id}/conversion-destinations")
@@ -314,6 +350,42 @@ class ConversionsResource:
         return await self._client._apost(
             "/v1/ads/conversions/adjustments", data=payload
         )
+
+    async def alist_conversion_actions(
+        self,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        type: str | None = None,
+    ) -> dict[str, Any]:
+        """List conversion actions and their tag snippets (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+            type=type,
+        )
+        return await self._client._aget("/v1/ads/conversions/actions", params=params)
+
+    async def acreate_conversion_action(
+        self,
+        account_id: str,
+        name: str,
+        type: str,
+        *,
+        customer_id: str | None = None,
+        default_value: float | None = None,
+        always_use_default_value: bool | None = None,
+    ) -> dict[str, Any]:
+        """Create a website conversion action (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            name=name,
+            type=type,
+            default_value=default_value,
+            always_use_default_value=always_use_default_value,
+        )
+        return await self._client._apost("/v1/ads/conversions/actions", data=payload)
 
     async def alist_conversion_destinations(self, account_id: str) -> dict[str, Any]:
         """List conversion destinations (async)"""

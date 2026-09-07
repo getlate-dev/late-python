@@ -1796,6 +1796,83 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
+            title="List account-level callout extensions",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_accounts_list_account_callouts(
+        account_id: str, customer_id: str | None = None
+    ) -> str:
+        """List account-level callout extensions
+
+        Args:
+            account_id: Google ads SocialAccount id. (required)
+            customer_id: Numeric Google Ads customer id (no dashes). Defaults to the account's connected customer."""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.list_account_callouts(
+                account_id=account_id, customer_id=customer_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Add account-level callout extensions",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_add_account_callouts(
+        account_id: str, callouts: list[str] | None, customer_id: str | None = None
+    ) -> str:
+        """Add account-level callout extensions
+
+        Args:
+            account_id: Zernio SocialAccount id owning the Google Ads connection. (required)
+            customer_id: Numeric Google Ads customer id. Only required when the connection has more than one.
+            callouts: Callout text, 1-25 characters each; up to 20 per request (Google's CalloutAsset limits). (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.add_account_callouts(
+                account_id=account_id, customer_id=customer_id, callouts=callouts
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Remove an account-level callout extension",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_remove_account_callout(
+        account_id: str, asset_id: str, customer_id: str | None = None
+    ) -> str:
+        """Remove an account-level callout extension
+
+        Args:
+            account_id: Zernio SocialAccount id owning the Google Ads connection. (required)
+            customer_id: Numeric Google Ads customer id. Only required when the connection has more than one.
+            asset_id: Numeric asset id from GET /v1/ads/accounts/callouts. (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.remove_account_callout(
+                account_id=account_id, customer_id=customer_id, asset_id=asset_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
             title="Ad account finances",
             readOnlyHint=True,
             destructiveHint=False,
@@ -2699,6 +2776,124 @@ def register_generated_tools(mcp, _get_client):
                 rename_prefix=rename_prefix,
                 rename_suffix=rename_suffix,
                 sync_after=sync_after,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Read a Google campaign's device, location, and language targeting",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_campaigns_get_campaign_targeting(
+        campaign_id: str, platform: str | None = None
+    ) -> str:
+        """Read a Google campaign's device, location, and language targeting
+
+        Args:
+            campaign_id: Google platform campaign ID (required)
+            platform: Disambiguates when the same campaignId string exists on more than one connected platform."""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.get_campaign_targeting(
+                campaign_id=campaign_id, platform=platform
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Edit a Google campaign's device, location, or language targeting",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_update_campaign_targeting(
+        campaign_id: str, platform: str, targeting: dict[str, Any] | None
+    ) -> str:
+        """Edit a Google campaign's device, location, or language targeting
+
+        Args:
+            campaign_id: Google platform campaign ID (required)
+            platform: (required)
+            targeting: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.update_campaign_targeting(
+                campaign_id=campaign_id, platform=platform, targeting=targeting
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List ad sets",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_campaigns_list_ad_sets(
+        account_id: str | None = None,
+        campaign_id: str | None = None,
+        platform: str | None = None,
+    ) -> str:
+        """List ad sets
+
+        Args:
+            account_id: Social account ID
+            campaign_id: Platform campaign ID
+            platform"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.list_ad_sets(
+                account_id=account_id, campaign_id=campaign_id, platform=platform
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Create a standalone ad group",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_create_ad_set(
+        account_id: str,
+        platform: str,
+        campaign_id: str,
+        name: str,
+        status: str = "PAUSED",
+        customer_id: str | None = None,
+    ) -> str:
+        """Create a standalone ad group
+
+        Args:
+            account_id: Zernio SocialAccount id owning the Google Ads connection. (required)
+            platform: Only "google" is implemented today; every other value returns 501. (required)
+            campaign_id: Google platform campaign ID (numeric) the ad group is created under. (required)
+            name: (required)
+            status
+            customer_id: Numeric Google Ads customer id. Only required when the connection has more than one."""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.create_ad_set(
+                account_id=account_id,
+                platform=platform,
+                campaign_id=campaign_id,
+                name=name,
+                status=status,
+                customer_id=customer_id,
             )
             return _format_response(response)
         except Exception as e:
@@ -3667,7 +3862,7 @@ def register_generated_tools(mcp, _get_client):
                 income_tier: Normalized household-income tier. Meta and TikTok express all four; Google maps only
         `top_10`; rejected on LinkedIn, X, and Pinterest. On Meta, income targeting is incompatible
         with housing/employment/credit `specialAdCategories`.
-                languages: Language codes restricting the audience by language. On Meta, ISO 639-1 codes (e.g. ['en'], ['de']); a bare code targets all regional variants ("en" = all English), or use a region-qualified code for a specific one ("en_GB", "pt_BR", "zh_TW"). Unknown codes are rejected. Other ad platforms use their own language-code systems.
+                languages: e.g. ["en","es"]. Google: campaign language targeting (language_constant) using Google's language codes (ISO 639-1, plus variants such as `zh_CN`); unknown codes return 400. On Meta, a bare code targets all regional variants ("en" = all English), or use a region-qualified code for a specific one ("en_GB", "pt_BR", "zh_TW"); unknown codes are rejected. Other ad platforms use their own language-code systems.
                 placements: Meta only. Manual ad placements. Omit for automatic placements (Meta's default,
         recommended for most cases — Meta optimises delivery across all eligible surfaces).
         When set, restricts delivery to the chosen surfaces, mapped onto the ad set's
@@ -5109,7 +5304,7 @@ def register_generated_tools(mcp, _get_client):
         Args:
             account_id: Social account ID (a connected account on the target ad platform). (required)
             q: Search query. For geo, the locality name only (no region/country suffix). (required)
-            dimension: What to search. `geo` resolves locations (scope further with `geoType`), `interest`/`behavior` resolve audience entities, `income` resolves income-tier options, `workPosition`/`workEmployer`/`workIndustry` resolve Meta work demographics. Defaults to `interest` for backward compatibility with the deprecated /v1/ads/interests alias.
+            dimension: What to search. `geo` resolves locations (scope further with `geoType`), `interest`/`behavior` resolve audience entities, `income` resolves income-tier options, `language` resolves Google's targetable language_constant table (Google only), `workPosition`/`workEmployer`/`workIndustry` resolve Meta work demographics. Defaults to `interest` for backward compatibility with the deprecated /v1/ads/interests alias.
             geo_type: Only used when `dimension=geo`. The kind of location to resolve. `all` searches every type in one relevance-ranked call. Defaults to `city`.
             country_code: ISO 3166-1 alpha-2 country code (e.g. NL) to scope a geo search.
             limit: Maximum results to return."""
@@ -9697,6 +9892,71 @@ def register_generated_tools(mcp, _get_client):
                 account_id=account_id,
                 destination_id=destination_id,
                 adjustments=adjustments,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List conversion actions and their tag snippets",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def conversions_list_conversion_actions(
+        account_id: str, customer_id: str | None = None, type: str | None = None
+    ) -> str:
+        """List conversion actions and their tag snippets
+
+        Args:
+            account_id: SocialAccount _id (must be a googleads account). (required)
+            customer_id: Google Ads customer id (digits only). Resolved automatically when the connection has exactly one accessible customer.
+            type: Filter by Google's ConversionActionType enum (e.g. WEBPAGE, UPLOAD_CLICKS)."""
+        client = _get_client()
+        try:
+            response = client.conversions.list_conversion_actions(
+                account_id=account_id, customer_id=customer_id, type=type
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Create a website conversion action",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def conversions_create_conversion_action(
+        account_id: str,
+        name: str,
+        type: str,
+        customer_id: str | None = None,
+        default_value: float | None = None,
+        always_use_default_value: bool | None = None,
+    ) -> str:
+        """Create a website conversion action
+
+        Args:
+            account_id: SocialAccount ID. Must be a `googleads` account. (required)
+            customer_id: Google Ads customer id (digits only). Resolved automatically when the connection has exactly one accessible customer.
+            name: (required)
+            type: Only WEBPAGE is supported for creation today. (required)
+            default_value: Default conversion value used when an event doesn't carry its own value.
+            always_use_default_value: When true, always use defaultValue and ignore any value sent with the event. Defaults to true when defaultValue is set."""
+        client = _get_client()
+        try:
+            response = client.conversions.create_conversion_action(
+                account_id=account_id,
+                customer_id=customer_id,
+                name=name,
+                type=type,
+                default_value=default_value,
+                always_use_default_value=always_use_default_value,
             )
             return _format_response(response)
         except Exception as e:
