@@ -198,7 +198,7 @@ x-documentation:
     - `verification.failed` - A managed-OTP verification was exhausted after too many wrong code attempts
     - `webhook.test` - Test event sent when verifying a webhook endpoint
 
-    Webhook payloads are signed with HMAC-SHA256 via the `X-Zernio-Signature` header.
+    Every delivery carries `X-Zernio-Event` (the event name) and `X-Zernio-Event-Id` (the payload's `id`, a UUID generated once when the event is emitted). That id is identical on every subscription that receives the event, on every automatic retry and on a redelivery via `POST /v1/webhooks/logs/redeliver`, so it is the key to dedupe on. Payloads are signed with HMAC-SHA256 via the `X-Zernio-Signature` header when the subscription has a secret. Legacy `X-Late-*` copies of these three headers are still sent and will be removed in a future major version.
 
     ## Full Documentation
 
@@ -439,7 +439,7 @@ tags:
     description: |
       Configure webhooks for real-time notifications. Webhooks can be created from the dashboard (Settings → Webhooks) or via this API.
       Events: post.scheduled, post.published, post.failed, post.partial, post.cancelled, post.recycled, post.platform.published, post.platform.failed, post.platform.deleted, post.tiktok.url_resolved, post.external.created, post.external.updated, post.external.deleted, account.connected, account.disconnected, account.ads.initial_sync_completed, analytics.synced, message.received, conversation.started, call.received, call.ended, call.failed, call.permission_request, message.sent, message.edited, message.deleted, message.delivered, message.read, message.failed, reaction.received, referral.received, comment.received, review.new, review.updated, lead.received, ad.status_changed, whatsapp.template.status_updated, whatsapp.template.category_updated, whatsapp.account.name_status_updated, whatsapp.automatic_event, whatsapp.number.activated, whatsapp.number.declined, whatsapp.number.action_required, whatsapp.number.verification_required, whatsapp.number.suspended, whatsapp.number.reactivated, whatsapp.number.released, whatsapp.number.kyc_submitted, phone_number.stock_available, verification.approved, verification.failed, webhook.test.
-      Security: optional HMAC-SHA256 signature in X-Zernio-Signature header. Configure a secret key to enable verification. Custom headers supported.
+      Headers: every delivery carries X-Zernio-Event (event name) and X-Zernio-Event-Id (the payload `id`, a UUID minted once per event and identical across every subscribed endpoint, every automatic retry and every redelivery, so dedupe on it). Security: optional HMAC-SHA256 signature in X-Zernio-Signature header. Configure a secret key to enable verification. Custom headers supported. Legacy X-Late-Event, X-Late-Event-Id and X-Late-Signature duplicates are still sent and will be removed in a future major version.
 
       Resource groups. Every event belongs to one group: post.* to publishing, message.*, reaction.*, conversation.*, call.* and whatsapp.automatic_event to messages, comment.* and review.* to engagement, lead.* to contacts, ad.* to ads, account.*, whatsapp.template.* and whatsapp.account.* to accounts, analytics.* to analytics, whatsapp.number.* and verification.* to telephony, webhook.test to webhooks. Two independent controls use that mapping. (1) A restricted (zrk_) API key can only subscribe to, test-fire, redeliver, or read delivery logs for events in the groups it holds, so it can never create a subscription broader than itself. (2) Each subscription carries its own `disabledResourceGroups` denylist: events in a disabled group are dropped before delivery to that endpoint, on live delivery and on every replay path, no matter which key or session created the subscription. Changing that denylist applies to every event emitted after the change; events already queued when it landed can still be delivered for up to five minutes after they were enqueued, because the delivery worker trusts a five-minute enqueue-time snapshot before re-checking. Absent or empty on a subscription means it receives everything it subscribes to, which is the behavior of every subscription created before the field existed.
   - name: Webhook Events
@@ -2515,7 +2515,7 @@ components:
           description: Name of the webhook configuration at delivery time
         eventId:
           type: string
-          description: Stable webhook event ID (correlates to the delivered payload)
+          description: 'Stable webhook event ID: the payload `id`, also sent as the X-Zernio-Event-Id header. Shared by every attempt and redelivery of the same event.'
         event:
           type: string
           description: Event type that triggered the delivery (e.g. post.published)
@@ -5173,7 +5173,7 @@ components:
         status:
           type: string
           example: pending
-          description: "Platform-specific status: pending, publishing, published, failed"
+          description: "Platform-specific status: pending, processing, uploading, published, failed, cancelled (removed from the platform via DELETE /v1/posts/{postId}/unpublish)"
         platformPostId:
           type: string
           description: The native post ID on the platform (populated after successful publish)
@@ -5243,7 +5243,10 @@ components:
           items: { $ref: '#/components/schemas/PlatformTarget' }
         scheduledFor: { type: string, format: date-time }
         timezone: { type: string }
-        status: { type: string, enum: [draft, scheduled, publishing, published, failed, partial] }
+        status:
+          type: string
+          enum: [draft, scheduled, publishing, published, partial, failed, cancelled]
+          description: '`cancelled` is set by DELETE /v1/posts/{postId}/unpublish once every platform entry has been removed from its platform (a post with published entries left becomes `partial`); cancelled posts can be edited and rescheduled like drafts.'
         tags:
           type: array
           description: "YouTube constraints: each tag max 100 chars, combined max 500 chars, duplicates removed."
@@ -14936,7 +14939,7 @@ paths:
             full synced history (we keep up to the last ~12 months per account).
         - name: status
           in: query
-          schema: { type: string, enum: [draft, scheduled, published, failed] }
+          schema: { type: string, enum: [draft, scheduled, publishing, published, partial, failed, cancelled] }
         - name: platform
           in: query
           schema: { type: string, example: twitter }
@@ -15154,6 +15157,10 @@ paths:
                   type: boolean
                   default: false
                   description: When true, saves the post as a draft. When none of scheduledFor, publishNow, or queuedFromProfile are provided, the post defaults to draft automatically.
+                dryRun:
+                  type: boolean
+                  default: false
+                  description: 'TikTok only. Preview whether each `tiktok` entry in `platforms` could publish right now under the TikTok Direct Post daily limits, without creating, scheduling or publishing anything: no post is persisted and no upload slot is claimed, so it can be repeated freely. The request still goes through auth, the payment gate and body validation, then returns HTTP 200 with `{ dryRun: true, canPublish, tiktok: [...] }` instead of 201. Only `tiktok` entries are evaluated; other platforms in the body are ignored, and a body with no `tiktok` entry is rejected with 400 `invalid_field_value` on `platforms`. An entry with `platformSpecificData.tiktokSettings.draft: true` (Creator Inbox upload) is not subject to the limit and always reports `canPublish: true`.'
                 timezone:
                   type: string
                   default: UTC
@@ -15429,6 +15436,39 @@ paths:
                   scheduledFor: "2024-11-01T10:00:00Z"
                   timezone: "America/New_York"
       responses:
+        '200':
+          description: 'dryRun preview (TikTok only): nothing was created. Deliberately carries no numeric cap detail, only a per-account go/no-go and a reason.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [dryRun, canPublish, tiktok]
+                properties:
+                  dryRun: { type: boolean, description: Always true on this response }
+                  canPublish: { type: boolean, description: True only when every evaluated TikTok account can publish now }
+                  tiktok:
+                    type: array
+                    description: One verdict per `tiktok` entry in the request, in request order
+                    items:
+                      type: object
+                      required: [accountId, canPublish, reason]
+                      properties:
+                        accountId: { type: string }
+                        canPublish: { type: boolean }
+                        alreadyPostedToday: { type: boolean, description: 'Whether this account already published a Direct Post today (an account that did can keep publishing). Absent for Creator Inbox drafts and when no per-user limit applies.' }
+                        reason: { type: string, description: Human-readable explanation of the verdict }
+              example:
+                dryRun: true
+                canPublish: false
+                tiktok:
+                  - accountId: "64e1f0a9e2b5af0012ab34de"
+                    canPublish: true
+                    alreadyPostedToday: false
+                    reason: "Account can publish now."
+                  - accountId: "64e1f0a9e2b5af0012ab34df"
+                    canPublish: false
+                    alreadyPostedToday: false
+                    reason: "Daily TikTok Direct Post limit reached. Use tiktokSettings.draft: true to continue posting via Creator Inbox."
         '201':
           description: Post created
           content:
@@ -22245,6 +22285,93 @@ paths:
         '404': { description: Profile not found }
 
   /v1/connect/slack:
+    get:
+      x-resource-group: "accounts"
+      operationId: listSlackChannels
+      tags: [Connect]
+      summary: List Slack channels for the channel picker
+      description: |
+        Serves the channel picker of the Slack connect flow. Slack's OAuth installs the bot into a
+        workspace, not a channel, so after the redirect the caller lists the workspace's channels
+        here and finalizes one with `POST /v1/connect/slack`. Served by a dedicated route that
+        shadows `GET /v1/connect/{platform}` for `slack`.
+
+        Send exactly one of `pendingDataToken` (first connect: the nonce from the OAuth redirect,
+        bound to the same `profileId`) or `accountId` (add another channel to a workspace already
+        connected: the existing Slack account's workspace token is reused, no re-OAuth). With
+        neither, the endpoint behaves like `GET /v1/connect/{platform}` and returns `authUrl` and
+        `state` to start the OAuth flow.
+
+        Channels are read live from Slack (`conversations.list`, public and private, archived
+        excluded, up to 2,000). `isMember` says whether the Zernio bot is already in the channel:
+        a public channel is joined automatically on finalize, a private one must be invited
+        (`/invite @Zernio`) first.
+      parameters:
+        - name: profileId
+          in: query
+          required: true
+          schema: { type: string }
+          description: Zernio profile the channel account will belong to. Must match the profile the OAuth flow was started on when `pendingDataToken` is used.
+        - name: pendingDataToken
+          in: query
+          schema: { type: string, minLength: 16 }
+          description: Nonce from the OAuth redirect (first connect).
+        - name: accountId
+          in: query
+          schema: { type: string }
+          description: Existing active Slack account (yours or a team member's) whose workspace token is reused.
+        - name: redirect_url
+          in: query
+          schema: { type: string, format: uri }
+          description: 'Start-OAuth mode only: where to send the user after the connect completes. `redirectUrl` is accepted as an alias.'
+      responses:
+        '200':
+          description: Channel list (picker mode), or the OAuth URL when neither `pendingDataToken` nor `accountId` is sent
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    title: Channel picker
+                    required: [team, channels]
+                    properties:
+                      team:
+                        type: object
+                        properties:
+                          id: { type: string, description: Slack workspace (team) id }
+                          name: { type: [string, "null"] }
+                          icon: { type: [string, "null"], format: uri, description: Workspace icon URL }
+                      channels:
+                        type: array
+                        items:
+                          type: object
+                          required: [id, name, isPrivate, isMember]
+                          properties:
+                            id: { type: string, description: 'Channel id (C... or G...), the value to send as channelId on POST' }
+                            name: { type: string }
+                            isPrivate: { type: boolean }
+                            isMember: { type: boolean, description: Whether the Zernio bot is already a member of the channel }
+                  - type: object
+                    title: Start OAuth
+                    required: [authUrl, state]
+                    properties:
+                      authUrl: { type: string, format: uri }
+                      state: { type: string }
+              examples:
+                picker:
+                  value:
+                    team: { id: "T0123ABCD", name: "Acme", icon: "https://avatars.slack-edge.com/acme_88.png" }
+                    channels:
+                      - { id: "C0123ABCD", name: "general", isPrivate: false, isMember: true }
+                      - { id: "G0456EFGH", name: "leadership", isPrivate: true, isMember: false }
+                startOAuth:
+                  value:
+                    authUrl: "https://slack.com/oauth/v2/authorize?client_id=...&state=..."
+                    state: "user123-profile456-1234567890-https%3A%2F%2Fzernio.com%2Fdashboard%2Fconnections"
+        '400': { description: 'Invalid profileId or accountId format, or pendingDataToken invalid, expired or issued for another profile (code: invalid_field_value)' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: 'No access to the profile, or Slack connections are temporarily unavailable (code: feature_not_available)' }
+        '404': { description: 'Profile not found (start-OAuth mode), or no active Slack account with that accountId for this user or their team (code: account_not_found)' }
     post:
       x-resource-group: "accounts"
       operationId: connectSlackChannel

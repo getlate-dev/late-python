@@ -500,6 +500,23 @@ class ConnectResource:
         )
         return self._client._post("/v1/connect/discord", data=payload)
 
+    def list_slack_channels(
+        self,
+        profile_id: str,
+        *,
+        pending_data_token: str | None = None,
+        account_id: str | None = None,
+        redirect_url: str | None = None,
+    ) -> dict[str, Any]:
+        """List Slack channels for the channel picker"""
+        params = self._build_params(
+            profile_id=profile_id,
+            pending_data_token=pending_data_token,
+            account_id=account_id,
+            redirect_url=redirect_url,
+        )
+        return self._client._get("/v1/connect/slack", params=params)
+
     def connect_slack_channel(
         self,
         profile_id: str,
@@ -1227,6 +1244,23 @@ class ConnectResource:
             profile_id=profile_id,
         )
         return await self._client._apost("/v1/connect/discord", data=payload)
+
+    async def alist_slack_channels(
+        self,
+        profile_id: str,
+        *,
+        pending_data_token: str | None = None,
+        account_id: str | None = None,
+        redirect_url: str | None = None,
+    ) -> dict[str, Any]:
+        """List Slack channels for the channel picker (async)"""
+        params = self._build_params(
+            profile_id=profile_id,
+            pending_data_token=pending_data_token,
+            account_id=account_id,
+            redirect_url=redirect_url,
+        )
+        return await self._client._aget("/v1/connect/slack", params=params)
 
     async def aconnect_slack_channel(
         self,

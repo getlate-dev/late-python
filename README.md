@@ -331,6 +331,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `connect.list_instagram_pages()` | List Pages with a linked Instagram account |
 | `connect.list_linked_in_organizations()` | List LinkedIn orgs |
 | `connect.list_pinterest_boards_for_selection()` | List Pinterest boards |
+| `connect.list_slack_channels()` | List Slack channels for the channel picker |
 | `connect.list_snapchat_profiles()` | List Snapchat profiles |
 | `connect.list_whats_app_phone_numbers()` | List numbers for selection |
 | `connect.create_pinterest_board()` | Create Pinterest board |

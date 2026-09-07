@@ -8681,6 +8681,39 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
+            title="List Slack channels for the channel picker",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def connect_list_slack_channels(
+        profile_id: str,
+        pending_data_token: str | None = None,
+        account_id: str | None = None,
+        redirect_url: str | None = None,
+    ) -> str:
+        """List Slack channels for the channel picker
+
+        Args:
+            profile_id: Zernio profile the channel account will belong to. Must match the profile the OAuth flow was started on when `pendingDataToken` is used. (required)
+            pending_data_token: Nonce from the OAuth redirect (first connect).
+            account_id: Existing active Slack account (yours or a team member's) whose workspace token is reused.
+            redirect_url: Start-OAuth mode only: where to send the user after the connect completes. `redirectUrl` is accepted as an alias."""
+        client = _get_client()
+        try:
+            response = client.connect.list_slack_channels(
+                profile_id=profile_id,
+                pending_data_token=pending_data_token,
+                account_id=account_id,
+                redirect_url=redirect_url,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
             title="Connect a Slack channel",
             readOnlyHint=False,
             destructiveHint=True,
@@ -14107,6 +14140,7 @@ def register_generated_tools(mcp, _get_client):
         scheduled_for: str | None = None,
         publish_now: bool = False,
         is_draft: bool = False,
+        dry_run: bool = False,
         timezone: str = "UTC",
         tags: list[str] | None = None,
         hashtags: list[str] | None = None,
@@ -14129,6 +14163,7 @@ def register_generated_tools(mcp, _get_client):
                 scheduled_for: When to publish. Required unless `publishNow` is true, `queuedFromProfile` is set, or the post is a draft. An ISO 8601 value with a `Z` or offset (`2026-01-15T10:00:00Z`, `2026-01-15T11:00:00+01:00`) is taken as-is; a value without one (`2026-01-15T10:00:00` or `2026-01-15 10:00`) is read as local time in `timezone`. A value already in the past is published synchronously in the same request. Ignored when `publishNow` is true.
                 publish_now: Publish to every platform synchronously in this request instead of scheduling; the response then carries each platform result and `platformPostUrl`, with HTTP 207 when some platforms failed. Takes precedence over `scheduledFor`; ignored when `isDraft` is true.
                 is_draft: When true, saves the post as a draft. When none of scheduledFor, publishNow, or queuedFromProfile are provided, the post defaults to draft automatically.
+                dry_run: TikTok only. Preview whether each `tiktok` entry in `platforms` could publish right now under the TikTok Direct Post daily limits, without creating, scheduling or publishing anything: no post is persisted and no upload slot is claimed, so it can be repeated freely. The request still goes through auth, the payment gate and body validation, then returns HTTP 200 with `{ dryRun: true, canPublish, tiktok: [...] }` instead of 201. Only `tiktok` entries are evaluated; other platforms in the body are ignored, and a body with no `tiktok` entry is rejected with 400 `invalid_field_value` on `platforms`. An entry with `platformSpecificData.tiktokSettings.draft: true` (Creator Inbox upload) is not subject to the limit and always reports `canPublish: true`.
                 timezone: IANA timezone (`Europe/Madrid`, `America/New_York`) used to interpret a `scheduledFor` (root or per-platform) that carries no `Z` or offset. Has no effect on values that already carry one. An unknown name returns 400 when `scheduledFor` is set.
                 tags: Tags/keywords. YouTube constraints: each tag max 100 chars, combined max 500 chars, duplicates auto-removed.
                 hashtags: Stored for reference only. Hashtags are NOT automatically appended to the caption when publishing. Include hashtags directly in the content field (platforms like Instagram only support hashtags as caption text). For YouTube keywords, use the tags field instead.
@@ -14152,6 +14187,7 @@ def register_generated_tools(mcp, _get_client):
                 scheduled_for=scheduled_for,
                 publish_now=publish_now,
                 is_draft=is_draft,
+                dry_run=dry_run,
                 timezone=timezone,
                 tags=tags,
                 hashtags=hashtags,
