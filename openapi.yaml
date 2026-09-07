@@ -17557,7 +17557,32 @@ paths:
                       maxVideoDurationSec: { type: integer, description: Maximum video duration in seconds }
                       interactionSettings:
                         type: object
-                        description: Available interaction toggles (comment, duet, stitch) and their defaults
+                        description: 'Per-interaction descriptors for the comment, duet and stitch toggles. Each key matches the tiktokSettings field of the same name on the create-post request. allow_duet and allow_stitch are null when mediaType is photo, because TikTok does not apply duet or stitch to photo posts.'
+                        properties:
+                          allow_comment:
+                            type: object
+                            description: 'Descriptor for the allow_comment toggle.'
+                            properties:
+                              enabled: { type: boolean, description: 'Whether the creator permits this interaction. False means they disabled it in the TikTok app. This is availability, never the value the user selected.' }
+                              required: { type: boolean, description: 'Whether tiktokSettings.allow_comment must be supplied when creating a post. Always true, because TikTok forbids defaulting it.' }
+                              default: { type: boolean, description: 'Initial value a post composer should render. A UI seed only, never applied server-side when the field is omitted.' }
+                              label: { type: string, description: 'Human-readable toggle label.' }
+                          allow_duet:
+                            type: [object, "null"]
+                            description: 'Descriptor for the allow_duet toggle. Null when mediaType is photo.'
+                            properties:
+                              enabled: { type: boolean, description: 'Whether the creator permits this interaction. False means they disabled it in the TikTok app. This is availability, never the value the user selected.' }
+                              required: { type: boolean, description: 'Whether tiktokSettings.allow_duet must be supplied when creating a post. Always true, because TikTok forbids defaulting it.' }
+                              default: { type: boolean, description: 'Initial value a post composer should render. A UI seed only, never applied server-side when the field is omitted.' }
+                              label: { type: string, description: 'Human-readable toggle label.' }
+                          allow_stitch:
+                            type: [object, "null"]
+                            description: 'Descriptor for the allow_stitch toggle. Null when mediaType is photo.'
+                            properties:
+                              enabled: { type: boolean, description: 'Whether the creator permits this interaction. False means they disabled it in the TikTok app. This is availability, never the value the user selected.' }
+                              required: { type: boolean, description: 'Whether tiktokSettings.allow_stitch must be supplied when creating a post. Always true, because TikTok forbids defaulting it.' }
+                              default: { type: boolean, description: 'Initial value a post composer should render. A UI seed only, never applied server-side when the field is omitted.' }
+                              label: { type: string, description: 'Human-readable toggle label.' }
                   commercialContentTypes:
                     type: array
                     description: Available commercial content disclosure options
@@ -17585,9 +17610,21 @@ paths:
                 postingLimits:
                   maxVideoDurationSec: 600
                   interactionSettings:
-                    comment: true
-                    duet: true
-                    stitch: true
+                    allow_comment:
+                      enabled: true
+                      required: true
+                      default: false
+                      label: "Allow Comment"
+                    allow_duet:
+                      enabled: true
+                      required: true
+                      default: false
+                      label: "Allow Duet"
+                    allow_stitch:
+                      enabled: false
+                      required: true
+                      default: false
+                      label: "Allow Stitch"
                 commercialContentTypes:
                   - value: "none"
                     label: "No Commercial Content"
