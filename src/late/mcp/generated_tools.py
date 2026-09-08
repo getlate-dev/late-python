@@ -3926,10 +3926,12 @@ def register_generated_tools(mcp, _get_client):
         multiple ads per ad set are allowed (unlike `dynamicCreative` which is limited to one).
         Requires `imageUrl` or `video`, `linkUrl`, and `callToAction`. When set, the top-level
         `body` field is used as the `object_story_spec.link_data.message` (the preview text) and
-        `headlines` must also be present. Mutually exclusive with `dynamicCreative`,
-        `placementAssets`, `carouselCards`, and `creatives[]`.
+        `headlines` must also be present. On a video creative the copy lands in
+        `video_data.message` / `video_data.title` instead of `link_data`. Mutually exclusive
+        with `dynamicCreative`, `placementAssets`, `carouselCards`, and `creatives[]`.
                 headlines: Meta only. Headline variations for Multiple Text Options. Must be sent alongside `bodies`.
-        The top-level `headline` field is used as the `object_story_spec.link_data.name`.
+        The top-level `headline` field is used as the `object_story_spec.link_data.name`
+        (`video_data.title` on a video creative).
                 descriptions: Meta only. Optional description variations for Multiple Text Options. Sent alongside `bodies` and `headlines`.
                 call_to_action: Required on legacy + attach shapes for Meta. Honoured on TikTok (passes through to the Spark Ad creative's `call_to_action`) and on LinkedIn (the CTA button on the ad; defaults to LEARN_MORE when `linkUrl` is set). LinkedIn accepts: LEARN_MORE, SIGN_UP, DOWNLOAD, SUBSCRIBE, REGISTER, JOIN, ATTEND, REQUEST_DEMO, VIEW_QUOTE, APPLY, SEE_MORE, SHOP_NOW, BUY_NOW. Ignored by Google, Pinterest, and X/Twitter.
                 link_url: Required on legacy + attach shapes (skip for multi-creative). On LinkedIn it's the ad's destination URL; required for `traffic` ads, optional for `engagement` / `awareness`. NOT required when `goal` is `lead_generation` (the ad opens a Lead Gen form instead of a destination). On LinkedIn, `imageUrl` + `linkUrl` publishes an ARTICLE-content creative; this is LinkedIn's article ad format, with the image as thumbnail and `longHeadline` as description. Required for OpenAI Ads (the chat card's target_url).
@@ -12770,7 +12772,7 @@ def register_generated_tools(mcp, _get_client):
                 reply_markup: Telegram-native keyboard markup. Ignored on other platforms.
                 messaging_type: Facebook messaging type. Required when using messageTag.
                 message_tag: Facebook message tag for messaging outside 24h window. Requires messagingType MESSAGE_TAG. Instagram only supports HUMAN_AGENT.
-                reply_to: Platform message ID to quote-reply to. For WhatsApp, pass the wamid; for Telegram, the Telegram message ID (delivered as message.platformMessageId on webhooks, and as `id` on each entry of the list-messages endpoint). On Slack it threads the reply (thread_ts) instead of quoting. Silently ignored on platforms without send-side reply support, including Instagram and Facebook Messenger (Meta's Send API rejects reply_to on Instagram and does not expose it on Messenger).
+                reply_to: Platform message ID to quote-reply to. For WhatsApp, pass the wamid; for Telegram, the Telegram message ID (delivered as message.platformMessageId on webhooks, and as `id` on each entry of the list-messages endpoint). On Slack it threads the reply (thread_ts) instead of quoting. Instagram and Facebook Messenger do not support send-side quote replies: the message is sent without a quote and the successful response includes a warnings entry with code ignored_field and param replyTo. Other platforms without send-side reply support ignore this field.
                 location: WhatsApp-only. Send a location pin.
                 contacts: WhatsApp-only. Send one or more contact cards."""
         client = _get_client()

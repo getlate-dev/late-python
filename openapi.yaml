@@ -28422,7 +28422,7 @@ paths:
                   description: Facebook message tag for messaging outside 24h window. Requires messagingType MESSAGE_TAG. Instagram only supports HUMAN_AGENT.
                 replyTo:
                   type: string
-                  description: 'Platform message ID to quote-reply to. For WhatsApp, pass the wamid; for Telegram, the Telegram message ID (delivered as message.platformMessageId on webhooks, and as `id` on each entry of the list-messages endpoint). On Slack it threads the reply (thread_ts) instead of quoting. Silently ignored on platforms without send-side reply support, including Instagram and Facebook Messenger (Meta''s Send API rejects reply_to on Instagram and does not expose it on Messenger).'
+                  description: 'Platform message ID to quote-reply to. For WhatsApp, pass the wamid; for Telegram, the Telegram message ID (delivered as message.platformMessageId on webhooks, and as `id` on each entry of the list-messages endpoint). On Slack it threads the reply (thread_ts) instead of quoting. Instagram and Facebook Messenger do not support send-side quote replies: the message is sent without a quote and the successful response includes a warnings entry with code ignored_field and param replyTo. Other platforms without send-side reply support ignore this field.'
                 location:
                   type: object
                   description: WhatsApp-only. Send a location pin.
@@ -28512,7 +28512,7 @@ paths:
                   description: Message tag (requires messagingType MESSAGE_TAG)
                 replyTo:
                   type: string
-                  description: 'Platform message ID to quote-reply to. For WhatsApp, pass the wamid; for Telegram, the Telegram message ID (delivered as message.platformMessageId on webhooks, and as `id` on each entry of the list-messages endpoint). On Slack it threads the reply (thread_ts) instead of quoting. Silently ignored on platforms without send-side reply support, including Instagram and Facebook Messenger (Meta''s Send API rejects reply_to on Instagram and does not expose it on Messenger).'
+                  description: 'Platform message ID to quote-reply to. For WhatsApp, pass the wamid; for Telegram, the Telegram message ID (delivered as message.platformMessageId on webhooks, and as `id` on each entry of the list-messages endpoint). On Slack it threads the reply (thread_ts) instead of quoting. Instagram and Facebook Messenger do not support send-side quote replies: the message is sent without a quote and the successful response includes a warnings entry with code ignored_field and param replyTo. Other platforms without send-side reply support ignore this field.'
                 voiceNote:
                   type: string
                   enum: ['true']
@@ -28526,6 +28526,16 @@ paths:
                 type: object
                 properties:
                   success: { type: boolean }
+                  warnings:
+                    type: array
+                    description: Present when a successful send ignored replyTo on Instagram or Facebook Messenger. The message was sent without a quote; do not retry it to apply the reply.
+                    items:
+                      type: object
+                      required: [code, param, message]
+                      properties:
+                        code: { type: string, enum: [ignored_field] }
+                        param: { type: string, enum: [replyTo] }
+                        message: { type: string, description: Human-readable explanation of the ignored field. }
                   data:
                     type: object
                     properties:
@@ -43365,6 +43375,32 @@ paths:
         - **Pinterest / X / OpenAI Ads**: status + budget only. Sending
           `targeting` or `creative` returns 501 with code `unsupported_platform_operation`.
           OpenAI Ads budget is lifetime-only (see `budget.type` below).
+
+        **Google keyword replacement:** These edits affect the ad's entire ad group,
+        including sibling ads. Positive (`targeting.keywords`) and negative
+        (`targeting.negativeKeywords`) sets are independent: omit a field to leave
+        that set unchanged, or send `[]` to remove every keyword of that kind.
+
+        Zernio compares each supplied set with Google's live criteria by
+        case-insensitive keyword text and match type. A matching criterion is left
+        untouched, retaining its criterion ID, enabled/paused status, keyword-level
+        bid overrides, labels, and criterion-associated history/statistics. Zernio
+        does not reset its quality score; Google continues to calculate scores and
+        statistics normally. Text comparison does not trim whitespace.
+
+        A bare string or an object without `matchType` means `broad`, not the
+        existing criterion's match type. For example, resending an existing
+        `{ "text": "plumber", "matchType": "exact" }` preserves it; sending
+        `"plumber"` instead removes that EXACT criterion and requests a BROAD one.
+        Changing text or match type removes criteria no longer requested and
+        creates any missing criteria. New criteria get new IDs and do not inherit
+        removed criteria's bid overrides, labels, or history. Historical reporting
+        for a removed criterion is not transferred to its replacement.
+
+        To add keywords without replacing a set, use
+        [POST /v1/ads/keywords](https://docs.zernio.com/ad-campaigns/add-ad-keywords).
+        Use `PATCH /v1/ads/keywords/{keywordId}` to pause/enable one keyword, or
+        `DELETE /v1/ads/keywords/{keywordId}` to remove it.
       security:
         - bearerAuth: []
       parameters:
@@ -43391,14 +43427,28 @@ paths:
                   properties:
                     keywords:
                       type: array
-                      description: "Google only. The FULL new set of positive keywords for the ad group; live keywords not listed are removed. Entries are strings (BROAD) or { text, matchType } with matchType exact | phrase | broad. Mirrored to GET /v1/ads/keywords immediately."
+                      description: |
+                        Google only. The FULL desired set of positive keywords for the entire ad group.
+                        Omit to leave positives unchanged; [] removes all positives. Negatives are independent.
+                        Entries are strings (BROAD) or { text, matchType } with matchType exact | phrase | broad;
+                        an omitted matchType also defaults to BROAD. Matching case-insensitive text AND match type
+                        retains the existing criterion ID, status, bid overrides, labels and history without a mutation.
+                        A changed text or match type uses remove/create, without transferring the old criterion's
+                        attributes or history. See Google keyword replacement above for an EXACT-to-BROAD example.
+                        Mirrored to GET /v1/ads/keywords immediately.
                       items:
                         oneOf:
                           - { type: string }
                           - { type: object, required: [text], properties: { text: { type: string, maxLength: 80 }, matchType: { type: string, enum: [exact, phrase, broad] } } }
                     negativeKeywords:
                       type: array
-                      description: "Google only. Same declarative contract as keywords, for the ad group's negative keywords."
+                      description: |
+                        Google only. The FULL desired set of negative keywords for the entire ad group,
+                        independent of positives. Omit to leave negatives unchanged; [] removes all negatives.
+                        Uses the same text/match-type identity and preservation contract as keywords above.
+                        Strings and objects without matchType default to BROAD, so resending an EXACT or PHRASE
+                        negative as a bare string requests a different criterion. Campaign negatives are separate:
+                        use /v1/ads/campaigns/{campaignId}/negative-keywords to manage those.
                       items:
                         oneOf:
                           - { type: string }
@@ -46114,8 +46164,9 @@ paths:
                     multiple ads per ad set are allowed (unlike `dynamicCreative` which is limited to one).
                     Requires `imageUrl` or `video`, `linkUrl`, and `callToAction`. When set, the top-level
                     `body` field is used as the `object_story_spec.link_data.message` (the preview text) and
-                    `headlines` must also be present. Mutually exclusive with `dynamicCreative`,
-                    `placementAssets`, `carouselCards`, and `creatives[]`.
+                    `headlines` must also be present. On a video creative the copy lands in
+                    `video_data.message` / `video_data.title` instead of `link_data`. Mutually exclusive
+                    with `dynamicCreative`, `placementAssets`, `carouselCards`, and `creatives[]`.
                 headlines:
                   type: array
                   minItems: 1
@@ -46123,7 +46174,8 @@ paths:
                   items: { type: string, maxLength: 255 }
                   description: |
                     Meta only. Headline variations for Multiple Text Options. Must be sent alongside `bodies`.
-                    The top-level `headline` field is used as the `object_story_spec.link_data.name`.
+                    The top-level `headline` field is used as the `object_story_spec.link_data.name`
+                    (`video_data.title` on a video creative).
                 descriptions:
                   type: array
                   minItems: 1
@@ -47259,7 +47311,7 @@ paths:
                             content: { type: array, items: { type: string } }
                             style: { type: string, enum: [LIST_STYLE, PARAGRAPH_STYLE] }
                             buttonText: { type: string }
-                            coverPhoto: { type: string }
+                            coverPhoto: { type: string, format: uri, description: "Direct public JPEG or PNG image URL, up to 5 MB. Redirects, Ad Image hashes and IDs are not supported." }
                     - type: object
                       title: LinkedInLeadFormPlatformData
                       required: [adAccountId, headline, description, questions]
