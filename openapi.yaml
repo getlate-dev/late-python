@@ -31329,7 +31329,7 @@ paths:
                         type: string
                 message_send_ttl_seconds:
                   type: integer
-                  description: 'Delivery validity window in seconds: a message not delivered within it is dropped. Range depends on category: AUTHENTICATION 30 to 900, UTILITY 30 to 43200 (12h), MARKETING 43200 to 2592000 (30 days); -1 restores the 30-day default on AUTHENTICATION and UTILITY. Meta defaults to 600 for AUTHENTICATION and 30 days otherwise. If Meta later recategorises the template, it clears the TTL (read it back to check).'
+                  description: 'Delivery validity window in seconds: a message not delivered within it is dropped. Range depends on category: AUTHENTICATION 30 to 900, UTILITY 30 to 43200 (12h), MARKETING 43200 to 2592000 (30 days); -1 (create only) keeps the 30-day default on AUTHENTICATION and UTILITY. Meta defaults to 600 for AUTHENTICATION and 30 days otherwise. If Meta later recategorises the template, it clears the TTL (read it back to check).'
             examples:
               custom:
                 summary: Custom template (requires review)
@@ -31482,8 +31482,9 @@ paths:
         must match exactly. Variants in `PENDING_DELETION` are not part of the family.
 
         Meta only allows editing templates in `APPROVED`, `REJECTED` or `PAUSED` state; an approved
-        template can be edited once per 24 hours and up to 10 times per 30 days. A successful update
-        sends the variant back to Meta for review, so the `status` returned here is normally `PENDING`.
+        template can be edited once per 24 hours and up to 10 times per 30 days. A component update
+        sends the variant back to Meta for review, so the `status` returned here is normally `PENDING`;
+        a TTL-only update keeps an APPROVED variant approved.
         The final outcome arrives on the `whatsapp.template.status_updated` webhook (which carries the
         variant's `templateId` and `language`). A variant already in `PENDING` cannot be edited again
         until Meta finishes reviewing it.
@@ -31519,7 +31520,7 @@ paths:
                     $ref: '#/components/schemas/WhatsAppTemplateComponent'
                 message_send_ttl_seconds:
                   type: integer
-                  description: 'Delivery validity window in seconds: a message not delivered within it is dropped. Range depends on category: AUTHENTICATION 30 to 900, UTILITY 30 to 43200 (12h), MARKETING 43200 to 2592000 (30 days); -1 restores the 30-day default on AUTHENTICATION and UTILITY. Meta defaults to 600 for AUTHENTICATION and 30 days otherwise. If Meta later recategorises the template, it clears the TTL (read it back to check).'
+                  description: 'Delivery validity window in seconds: a message not delivered within it is dropped. Range depends on category: AUTHENTICATION 30 to 900, UTILITY 30 to 43200 (12h), MARKETING 43200 to 2592000 (30 days); -1 is not accepted here (Meta treats it as an empty edit); send a value in range. A TTL-only edit keeps an APPROVED template approved, no re-review. Meta defaults to 600 for AUTHENTICATION and 30 days otherwise. If Meta later recategorises the template, it clears the TTL (read it back to check).'
             example:
               accountId: "507f1f77bcf86cd799439011"
               language: "es"
@@ -31695,8 +31696,9 @@ paths:
         Update one variant's components and/or its message_send_ttl_seconds by its Meta id. Name, language and category cannot change.
 
         Meta only allows editing templates in `APPROVED`, `REJECTED` or `PAUSED` state; an approved
-        template can be edited once per 24 hours and up to 10 times per 30 days. A successful update
-        sends the variant back to Meta for review, so the `status` returned here is normally `PENDING`.
+        template can be edited once per 24 hours and up to 10 times per 30 days. A component update
+        sends the variant back to Meta for review, so the `status` returned here is normally `PENDING`;
+        a TTL-only update keeps an APPROVED variant approved.
         The final outcome arrives on the `whatsapp.template.status_updated` webhook (which carries the
         variant's `templateId` and `language`). A variant already in `PENDING` cannot be edited again
         until Meta finishes reviewing it.
@@ -31729,7 +31731,7 @@ paths:
                     $ref: '#/components/schemas/WhatsAppTemplateComponent'
                 message_send_ttl_seconds:
                   type: integer
-                  description: 'Delivery validity window in seconds: a message not delivered within it is dropped. Range depends on category: AUTHENTICATION 30 to 900, UTILITY 30 to 43200 (12h), MARKETING 43200 to 2592000 (30 days); -1 restores the 30-day default on AUTHENTICATION and UTILITY. Meta defaults to 600 for AUTHENTICATION and 30 days otherwise. If Meta later recategorises the template, it clears the TTL (read it back to check).'
+                  description: 'Delivery validity window in seconds: a message not delivered within it is dropped. Range depends on category: AUTHENTICATION 30 to 900, UTILITY 30 to 43200 (12h), MARKETING 43200 to 2592000 (30 days); -1 is not accepted here (Meta treats it as an empty edit); send a value in range. A TTL-only edit keeps an APPROVED template approved, no re-review. Meta defaults to 600 for AUTHENTICATION and 30 days otherwise. If Meta later recategorises the template, it clears the TTL (read it back to check).'
       responses:
         '200':
           description: Template updated successfully
@@ -38981,7 +38983,7 @@ paths:
         - { name: search, in: query, schema: { type: string }, description: 'Case-insensitive substring match on the contact name, email and company. Phone numbers and other platform identifiers are not matched: they live on the contact channel, not on the contact. To reach a contact from an inbox webhook, use the conversation.contactId it already carries.' }
         - { name: tag, in: query, schema: { type: string } }
         - { name: tags, in: query, schema: { type: string }, description: 'Comma-separated tags, matches contacts carrying any of them' }
-        - { name: platform, in: query, schema: { type: string, enum: [instagram, facebook, telegram, twitter, bluesky, reddit, whatsapp, slack] } }
+        - { name: platform, in: query, schema: { type: string, enum: [instagram, facebook, telegram, twitter, bluesky, reddit, whatsapp, slack, sms] } }
         - { name: isSubscribed, in: query, schema: { type: string, enum: ['true', 'false'] } }
         - { name: limit, in: query, schema: { type: integer, default: 50, maximum: 200 } }
         - { name: skip, in: query, schema: { type: integer, default: 0 } }
@@ -39052,7 +39054,7 @@ paths:
                 isSubscribed: { type: boolean, default: true }
                 notes: { type: string }
                 accountId: { type: string, description: Optional. Creates a channel if provided with platform + platformIdentifier }
-                platform: { type: string, enum: [instagram, facebook, telegram, twitter, bluesky, reddit, whatsapp, slack], description: 'Channel platform. Only the enum values support contact channels; any other platform is rejected with code platform_not_supported.' }
+                platform: { type: string, enum: [instagram, facebook, telegram, twitter, bluesky, reddit, whatsapp, slack, sms], description: 'Channel platform. Only the enum values support contact channels; any other platform is rejected with code platform_not_supported.' }
                 platformIdentifier: { type: string }
                 displayIdentifier: { type: string }
       responses:
@@ -39523,7 +39525,7 @@ paths:
               properties:
                 profileId: { type: string }
                 accountId: { type: string }
-                platform: { type: string, enum: [instagram, facebook, telegram, twitter, bluesky, reddit, whatsapp] }
+                platform: { type: string, enum: [instagram, facebook, telegram, twitter, bluesky, reddit, whatsapp, sms, slack] }
                 name: { type: string }
                 description: { type: string }
                 message:
@@ -40478,7 +40480,7 @@ paths:
               properties:
                 profileId: { type: string }
                 accountId: { type: string }
-                platform: { type: string, enum: [instagram, facebook, telegram, twitter, bluesky, reddit, whatsapp] }
+                platform: { type: string, enum: [instagram, facebook, telegram, twitter, bluesky, reddit, whatsapp, slack] }
                 name: { type: string }
                 description: { type: string }
                 steps:
