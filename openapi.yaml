@@ -1625,6 +1625,10 @@ components:
       required: [type, elements]
       properties:
         type: { type: string, enum: [generic] }
+        imageAspectRatio:
+          type: string
+          enum: [horizontal, square]
+          description: 'Facebook only. How Messenger renders each element imageUrl: horizontal (1.91:1, the default) or square (1:1). Instagram has no such setting, so an Instagram automation carrying it is a 400.'
         elements:
           type: array
           minItems: 1
@@ -28067,7 +28071,9 @@ paths:
                     and provide up to 10 `elements`, each with a `title` (required) and
                     optional `subtitle`, `imageUrl`, and `buttons`. Mutually exclusive with
                     the top-level `buttons` field (sending both is a 400); put the card's
-                    buttons on its `elements` instead.
+                    buttons on its `elements` instead. On Facebook, `imageAspectRatio`
+                    (`horizontal`, the default, or `square`) sets how Messenger renders the
+                    element images; Instagram has no such setting and rejects it.
 
                     WhatsApp: sends an approved WhatsApp template message, the only message
                     type WhatsApp accepts when the 24-hour customer-service window is closed.
@@ -28084,6 +28090,7 @@ paths:
                     create-conversation endpoint (POST /v1/inbox/conversations) instead.
                   properties:
                     type: { type: string, enum: [generic], description: Template type. Required for Instagram/Facebook generic templates; ignored on WhatsApp. }
+                    imageAspectRatio: { type: string, enum: [horizontal, square], description: 'Facebook only. Aspect ratio Messenger renders element images at: horizontal (1.91:1, default) or square (1:1). A 400 on Instagram.' }
                     elements:
                       type: array
                       maxItems: 10

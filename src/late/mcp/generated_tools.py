@@ -12683,7 +12683,9 @@ def register_generated_tools(mcp, _get_client):
         and provide up to 10 `elements`, each with a `title` (required) and
         optional `subtitle`, `imageUrl`, and `buttons`. Mutually exclusive with
         the top-level `buttons` field (sending both is a 400); put the card's
-        buttons on its `elements` instead.
+        buttons on its `elements` instead. On Facebook, `imageAspectRatio`
+        (`horizontal`, the default, or `square`) sets how Messenger renders the
+        element images; Instagram has no such setting and rejects it.
 
         WhatsApp: sends an approved WhatsApp template message, the only message
         type WhatsApp accepts when the 24-hour customer-service window is closed.
