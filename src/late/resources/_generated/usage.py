@@ -80,7 +80,7 @@ class UsageResource:
         return self._client._get("/v1/billing")
 
     def get_x_api_pricing(self) -> dict[str, Any]:
-        """Get X/Twitter API pricing table"""
+        """Get X API pricing table"""
         return self._client._get("/v1/billing/x-pricing")
 
     def get_usage(
@@ -156,7 +156,7 @@ class UsageResource:
         return await self._client._aget("/v1/billing")
 
     async def aget_x_api_pricing(self) -> dict[str, Any]:
-        """Get X/Twitter API pricing table (async)"""
+        """Get X API pricing table (async)"""
         return await self._client._aget("/v1/billing/x-pricing")
 
     async def aget_usage(

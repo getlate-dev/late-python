@@ -222,7 +222,7 @@ class ConnectResource:
         search: str | None = None,
         filter: str | None = None,
     ) -> dict[str, Any]:
-        """List GBP locations"""
+        """List Google Business Profile locations"""
         params = self._build_params(
             profile_id=profile_id,
             pending_data_token=pending_data_token,
@@ -241,7 +241,7 @@ class ConnectResource:
         account_id: str | None = None,
         redirect_url: str | None = None,
     ) -> dict[str, Any]:
-        """Select GBP location"""
+        """Select Google Business Profile location"""
         payload = self._build_payload(
             profile_id=profile_id,
             location_id=location_id,
@@ -468,6 +468,10 @@ class ConnectResource:
             "/v1/connect/whatsapp/select-phone-number", data=payload, headers=headers
         )
 
+    def get_whats_app_sdk_config(self) -> dict[str, Any]:
+        """Get Embedded Signup SDK config"""
+        return self._client._get("/v1/connect/whatsapp/sdk-config")
+
     def connect_whats_app_embedded_signup(
         self,
         code: str,
@@ -686,7 +690,7 @@ class ConnectResource:
         filter: str | None = None,
         limit: int | None = 100,
     ) -> dict[str, Any]:
-        """List GBP locations"""
+        """List Google Business Profile locations"""
         params = self._build_params(
             search=search,
             filter=filter,
@@ -703,7 +707,7 @@ class ConnectResource:
         *,
         google_account_id: str | None = None,
     ) -> dict[str, Any]:
-        """Update GBP location"""
+        """Update Google Business Profile location"""
         payload = self._build_payload(
             selected_location_id=selected_location_id,
             google_account_id=google_account_id,
@@ -720,7 +724,7 @@ class ConnectResource:
         *,
         google_account_id: str | None = None,
     ) -> dict[str, Any]:
-        """Assign GBP location to another profile"""
+        """Assign Google Business Profile location to another profile"""
         payload = self._build_payload(
             profile_id=profile_id,
             selected_location_id=selected_location_id,
@@ -953,7 +957,7 @@ class ConnectResource:
         search: str | None = None,
         filter: str | None = None,
     ) -> dict[str, Any]:
-        """List GBP locations (async)"""
+        """List Google Business Profile locations (async)"""
         params = self._build_params(
             profile_id=profile_id,
             pending_data_token=pending_data_token,
@@ -974,7 +978,7 @@ class ConnectResource:
         account_id: str | None = None,
         redirect_url: str | None = None,
     ) -> dict[str, Any]:
-        """Select GBP location (async)"""
+        """Select Google Business Profile location (async)"""
         payload = self._build_payload(
             profile_id=profile_id,
             location_id=location_id,
@@ -1211,6 +1215,10 @@ class ConnectResource:
             "/v1/connect/whatsapp/select-phone-number", data=payload, headers=headers
         )
 
+    async def aget_whats_app_sdk_config(self) -> dict[str, Any]:
+        """Get Embedded Signup SDK config (async)"""
+        return await self._client._aget("/v1/connect/whatsapp/sdk-config")
+
     async def aconnect_whats_app_embedded_signup(
         self,
         code: str,
@@ -1433,7 +1441,7 @@ class ConnectResource:
         filter: str | None = None,
         limit: int | None = 100,
     ) -> dict[str, Any]:
-        """List GBP locations (async)"""
+        """List Google Business Profile locations (async)"""
         params = self._build_params(
             search=search,
             filter=filter,
@@ -1450,7 +1458,7 @@ class ConnectResource:
         *,
         google_account_id: str | None = None,
     ) -> dict[str, Any]:
-        """Update GBP location (async)"""
+        """Update Google Business Profile location (async)"""
         payload = self._build_payload(
             selected_location_id=selected_location_id,
             google_account_id=google_account_id,
@@ -1467,7 +1475,7 @@ class ConnectResource:
         *,
         google_account_id: str | None = None,
     ) -> dict[str, Any]:
-        """Assign GBP location to another profile (async)"""
+        """Assign Google Business Profile location to another profile (async)"""
         payload = self._build_payload(
             profile_id=profile_id,
             selected_location_id=selected_location_id,

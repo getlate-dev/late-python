@@ -237,8 +237,8 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `analytics.get_facebook_page_insights()` | Get Facebook Page insights |
 | `analytics.get_facebook_post_earnings()` | Get Facebook post monetization earnings |
 | `analytics.get_facebook_post_reactions()` | Get Facebook post reactions |
-| `analytics.get_google_business_performance()` | Get GBP performance metrics |
-| `analytics.get_google_business_search_keywords()` | Get GBP search keywords |
+| `analytics.get_google_business_performance()` | Get Google Business Profile performance metrics |
+| `analytics.get_google_business_search_keywords()` | Get Google Business Profile search keywords |
 | `analytics.get_instagram_account_insights()` | Get Instagram insights |
 | `analytics.get_instagram_demographics()` | Get Instagram demographics |
 | `analytics.get_instagram_follower_history()` | Get Instagram follower history |
@@ -316,7 +316,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `usage.get_sms_usage()` | SMS usage (volumes) |
 | `usage.get_usage()` | Usage snapshot (default) or billed-spend metering (with params) |
 | `usage.get_usage_stats()` | Get plan and usage snapshot (plan, limits, payment status) |
-| `usage.get_x_api_pricing()` | Get X/Twitter API pricing table |
+| `usage.get_x_api_pricing()` | Get X API pricing table |
 
 ### Logs
 | Method | Description |
@@ -327,7 +327,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | Method | Description |
 |--------|-------------|
 | `connect.list_facebook_pages()` | List Facebook pages |
-| `connect.list_google_business_locations()` | List GBP locations |
+| `connect.list_google_business_locations()` | List Google Business Profile locations |
 | `connect.list_instagram_pages()` | List Pages with a linked Instagram account |
 | `connect.list_linked_in_organizations()` | List LinkedIn orgs |
 | `connect.list_pinterest_boards_for_selection()` | List Pinterest boards |
@@ -337,7 +337,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `connect.create_pinterest_board()` | Create Pinterest board |
 | `connect.get_connect_url()` | Get OAuth connect URL |
 | `connect.get_facebook_pages()` | List Facebook pages |
-| `connect.get_gmb_locations()` | List GBP locations |
+| `connect.get_gmb_locations()` | List Google Business Profile locations |
 | `connect.get_linked_in_organizations()` | List LinkedIn orgs |
 | `connect.get_pending_o_auth_data()` | Get pending OAuth data |
 | `connect.get_pinterest_boards()` | List Pinterest boards |
@@ -346,15 +346,16 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `connect.get_shopify_connect_url()` | Get Shopify OAuth connect URL |
 | `connect.get_subreddit_rules()` | Get subreddit rules |
 | `connect.get_telegram_connect_status()` | Generate Telegram code |
+| `connect.get_whats_app_sdk_config()` | Get Embedded Signup SDK config |
 | `connect.get_youtube_captions()` | Get a YouTube video transcript |
 | `connect.get_youtube_playlists()` | List YouTube playlists |
 | `connect.update_facebook_page()` | Update Facebook page |
-| `connect.update_gmb_location()` | Update GBP location |
+| `connect.update_gmb_location()` | Update Google Business Profile location |
 | `connect.update_linked_in_organization()` | Switch LinkedIn account type |
 | `connect.update_pinterest_boards()` | Set default Pinterest board |
 | `connect.update_reddit_subreddits()` | Set default subreddit |
 | `connect.update_youtube_default_playlist()` | Set default YouTube playlist |
-| `connect.assign_google_business_location()` | Assign GBP location to another profile |
+| `connect.assign_google_business_location()` | Assign Google Business Profile location to another profile |
 | `connect.complete_telegram_connect()` | Check Telegram status |
 | `connect.complete_whats_app_phone_selection()` | Complete number selection |
 | `connect.configure_tik_tok_ads_brand_identity()` | Set TikTok brand identity |
@@ -369,7 +370,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `connect.handle_o_auth_callback()` | Complete OAuth callback |
 | `connect.initiate_telegram_connect()` | Connect Telegram directly |
 | `connect.select_facebook_page()` | Select Facebook page |
-| `connect.select_google_business_location()` | Select GBP location |
+| `connect.select_google_business_location()` | Select Google Business Profile location |
 | `connect.select_instagram_account()` | Select the Page whose Instagram account to connect |
 | `connect.select_linked_in_organization()` | Select LinkedIn org |
 | `connect.select_pinterest_board()` | Select Pinterest board |
@@ -759,6 +760,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `messages.search_inbox_conversations()` | Search conversations |
 | `messages.send_inbox_message()` | Send message |
 | `messages.send_typing_indicator()` | Send typing indicator |
+| `messages.set_conversation_thread_control()` | Hand a conversation to or from Meta Business Agent |
 | `messages.upload_media_direct()` | Upload media file |
 
 ### Messaging Ads

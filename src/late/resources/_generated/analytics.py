@@ -425,7 +425,7 @@ class AnalyticsResource:
         start_date: str | None = None,
         end_date: str | None = None,
     ) -> dict[str, Any]:
-        """Get GBP performance metrics"""
+        """Get Google Business Profile performance metrics"""
         params = self._build_params(
             account_id=account_id,
             metrics=metrics,
@@ -443,7 +443,7 @@ class AnalyticsResource:
         start_month: str | None = None,
         end_month: str | None = None,
     ) -> dict[str, Any]:
-        """Get GBP search keywords"""
+        """Get Google Business Profile search keywords"""
         params = self._build_params(
             account_id=account_id,
             start_month=start_month,
@@ -888,7 +888,7 @@ class AnalyticsResource:
         start_date: str | None = None,
         end_date: str | None = None,
     ) -> dict[str, Any]:
-        """Get GBP performance metrics (async)"""
+        """Get Google Business Profile performance metrics (async)"""
         params = self._build_params(
             account_id=account_id,
             metrics=metrics,
@@ -906,7 +906,7 @@ class AnalyticsResource:
         start_month: str | None = None,
         end_month: str | None = None,
     ) -> dict[str, Any]:
-        """Get GBP search keywords (async)"""
+        """Get Google Business Profile search keywords (async)"""
         params = self._build_params(
             account_id=account_id,
             start_month=start_month,

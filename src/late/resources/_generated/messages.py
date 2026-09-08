@@ -288,6 +288,26 @@ class MessagesResource:
             f"/v1/inbox/conversations/{conversation_id}/typing", data=payload
         )
 
+    def set_conversation_thread_control(
+        self,
+        conversation_id: str,
+        account_id: str,
+        action: str,
+        *,
+        target: str | None = None,
+        metadata: str | None = None,
+    ) -> dict[str, Any]:
+        """Hand a conversation to or from Meta Business Agent"""
+        payload = self._build_payload(
+            account_id=account_id,
+            action=action,
+            target=target,
+            metadata=metadata,
+        )
+        return self._client._post(
+            f"/v1/inbox/conversations/{conversation_id}/thread-control", data=payload
+        )
+
     def mark_conversation_read(
         self, conversation_id: str, account_id: str
     ) -> dict[str, Any]:
@@ -560,6 +580,26 @@ class MessagesResource:
         )
         return await self._client._apost(
             f"/v1/inbox/conversations/{conversation_id}/typing", data=payload
+        )
+
+    async def aset_conversation_thread_control(
+        self,
+        conversation_id: str,
+        account_id: str,
+        action: str,
+        *,
+        target: str | None = None,
+        metadata: str | None = None,
+    ) -> dict[str, Any]:
+        """Hand a conversation to or from Meta Business Agent (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            action=action,
+            target=target,
+            metadata=metadata,
+        )
+        return await self._client._apost(
+            f"/v1/inbox/conversations/{conversation_id}/thread-control", data=payload
         )
 
     async def amark_conversation_read(
