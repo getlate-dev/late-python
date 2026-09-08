@@ -16,6 +16,7 @@ from .analytics import AnalyticsResource
 from .api_keys import ApiKeysResource
 from .blogs import BlogsResource
 from .broadcasts import BroadcastsResource
+from .business_agent import BusinessAgentResource
 from .calls import CallsResource
 from .comment_automations import CommentAutomationsResource
 from .comments import CommentsResource
@@ -77,6 +78,7 @@ __all__ = [
     "ApiKeysResource",
     "BlogsResource",
     "BroadcastsResource",
+    "BusinessAgentResource",
     "CallsResource",
     "CommentAutomationsResource",
     "CommentsResource",

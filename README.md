@@ -346,7 +346,6 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `connect.get_shopify_connect_url()` | Get Shopify OAuth connect URL |
 | `connect.get_subreddit_rules()` | Get subreddit rules |
 | `connect.get_telegram_connect_status()` | Generate Telegram code |
-| `connect.get_whats_app_sdk_config()` | Get Embedded Signup SDK config |
 | `connect.get_youtube_captions()` | Get a YouTube video transcript |
 | `connect.get_youtube_playlists()` | List YouTube playlists |
 | `connect.update_facebook_page()` | Update Facebook page |
@@ -550,6 +549,65 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `broadcasts.cancel_broadcast()` | Cancel broadcast |
 | `broadcasts.schedule_broadcast()` | Schedule broadcast for later |
 | `broadcasts.send_broadcast()` | Send broadcast now |
+
+### Business Agent
+| Method | Description |
+|--------|-------------|
+| `business_agent.list_business_agent_allowlist()` | List allowlisted consumers |
+| `business_agent.list_business_agent_connector_tools()` | List connector tools |
+| `business_agent.list_business_agent_connectors()` | List connectors |
+| `business_agent.list_business_agent_faqs()` | List FAQs |
+| `business_agent.list_business_agent_files()` | List knowledge files |
+| `business_agent.list_business_agent_settings()` | List agent settings |
+| `business_agent.list_business_agent_skills()` | List skills |
+| `business_agent.list_business_agent_ui_skills()` | List UI skills |
+| `business_agent.list_business_agent_websites()` | List crawled websites |
+| `business_agent.create_business_agent_connector()` | Create a connector |
+| `business_agent.create_business_agent_connector_tool()` | Create a connector tool |
+| `business_agent.create_business_agent_faq()` | Create a FAQ |
+| `business_agent.create_business_agent_skill()` | Create a skill |
+| `business_agent.create_business_agent_ui_skill()` | Create a UI skill |
+| `business_agent.get_business_agent_budget()` | Get usage budgets |
+| `business_agent.get_business_agent_business_information()` | Get business information |
+| `business_agent.get_business_agent_connector()` | Get a connector |
+| `business_agent.get_business_agent_connector_logs()` | Get connector failure logs |
+| `business_agent.get_business_agent_connector_tool()` | Get a connector tool |
+| `business_agent.get_business_agent_event()` | Get a business event status |
+| `business_agent.get_business_agent_faq()` | Get a FAQ |
+| `business_agent.get_business_agent_file()` | Get a knowledge file |
+| `business_agent.get_business_agent_skill()` | Get a skill |
+| `business_agent.get_business_agent_status()` | Get agent setup status |
+| `business_agent.get_business_agent_ui_skill()` | Get a UI skill |
+| `business_agent.get_business_agent_website()` | Get a crawled website |
+| `business_agent.update_business_agent_connector()` | Update a connector |
+| `business_agent.update_business_agent_connector_tool()` | Update a connector tool |
+| `business_agent.update_business_agent_faq()` | Update a FAQ |
+| `business_agent.update_business_agent_settings()` | Update agent settings |
+| `business_agent.update_business_agent_skill()` | Update a skill |
+| `business_agent.update_business_agent_ui_skill()` | Update a UI skill |
+| `business_agent.update_business_agent_website()` | Update a crawled website |
+| `business_agent.delete_business_agent_connector()` | Delete a connector |
+| `business_agent.delete_business_agent_connector_tool()` | Delete a connector tool |
+| `business_agent.delete_business_agent_faq()` | Delete a FAQ |
+| `business_agent.delete_business_agent_file()` | Delete a knowledge file |
+| `business_agent.delete_business_agent_skill()` | Delete a skill |
+| `business_agent.delete_business_agent_ui_skill()` | Delete a UI skill |
+| `business_agent.delete_business_agent_website()` | Remove a crawled website |
+| `business_agent.add_business_agent_allowlist_entry()` | Allowlist a consumer |
+| `business_agent.add_business_agent_website()` | Add a website to crawl |
+| `business_agent.onboard_business_agent()` | Create the agent |
+| `business_agent.read_business_agent_evals()` | Read evaluation data |
+| `business_agent.refresh_business_agent_connector_tools()` | Refresh MCP connector tools |
+| `business_agent.remove_business_agent_allowlist_entry()` | Remove an allowlisted consumer |
+| `business_agent.replace_business_agent_budget()` | Replace usage budgets |
+| `business_agent.replace_business_agent_business_information()` | Replace business information |
+| `business_agent.reset_business_agent_business_information()` | Reset business information |
+| `business_agent.run_business_agent_connector_tool()` | Run a connector tool once |
+| `business_agent.send_business_agent_event()` | Send a business event |
+| `business_agent.send_business_agent_test_message()` | Send a test message |
+| `business_agent.set_business_agent_connector_credentials()` | Set connector credentials |
+| `business_agent.start_business_agent_eval_run()` | Start an evaluation run |
+| `business_agent.upload_business_agent_file()` | Upload a knowledge file |
 
 ### Calls
 | Method | Description |

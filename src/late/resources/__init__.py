@@ -18,6 +18,7 @@ from ._generated.ad_targeting import AdTargetingResource
 from ._generated.api_keys import ApiKeysResource
 from ._generated.blogs import BlogsResource
 from ._generated.broadcasts import BroadcastsResource
+from ._generated.business_agent import BusinessAgentResource
 from ._generated.calls import CallsResource
 from ._generated.comment_automations import CommentAutomationsResource
 from ._generated.comments import CommentsResource
@@ -84,6 +85,7 @@ __all__ = [
     "ApiKeysResource",
     "BlogsResource",
     "BroadcastsResource",
+    "BusinessAgentResource",
     "CallsResource",
     "CommentAutomationsResource",
     "CommentsResource",

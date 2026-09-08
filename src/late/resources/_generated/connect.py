@@ -468,10 +468,6 @@ class ConnectResource:
             "/v1/connect/whatsapp/select-phone-number", data=payload, headers=headers
         )
 
-    def get_whats_app_sdk_config(self) -> dict[str, Any]:
-        """Get Embedded Signup SDK config"""
-        return self._client._get("/v1/connect/whatsapp/sdk-config")
-
     def connect_whats_app_embedded_signup(
         self,
         code: str,
@@ -1214,10 +1210,6 @@ class ConnectResource:
         return await self._client._apost(
             "/v1/connect/whatsapp/select-phone-number", data=payload, headers=headers
         )
-
-    async def aget_whats_app_sdk_config(self) -> dict[str, Any]:
-        """Get Embedded Signup SDK config (async)"""
-        return await self._client._aget("/v1/connect/whatsapp/sdk-config")
 
     async def aconnect_whats_app_embedded_signup(
         self,

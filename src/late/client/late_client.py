@@ -24,6 +24,7 @@ from ..resources import (
     ApiKeysResource,
     BlogsResource,
     BroadcastsResource,
+    BusinessAgentResource,
     CallsResource,
     CommentAutomationsResource,
     CommentsResource,
@@ -165,6 +166,7 @@ class Zernio(BaseClient):
         self.api_keys = ApiKeysResource(self)
         self.blogs = BlogsResource(self)
         self.broadcasts = BroadcastsResource(self)
+        self.business_agent = BusinessAgentResource(self)
         self.calls = CallsResource(self)
         self.comment_automations = CommentAutomationsResource(self)
         self.comments = CommentsResource(self)

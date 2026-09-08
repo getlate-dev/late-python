@@ -7298,6 +7298,1375 @@ def register_generated_tools(mcp, _get_client):
         except Exception as e:
             return f"Error: {e}"
 
+    # BUSINESS_AGENT
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get agent setup status",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_get_business_agent_status() -> str:
+        """Get agent setup status"""
+        client = _get_client()
+        try:
+            response = client.business_agent.get_business_agent_status()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Create the agent",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_onboard_business_agent() -> str:
+        """Create the agent"""
+        client = _get_client()
+        try:
+            response = client.business_agent.onboard_business_agent()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List agent settings",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_list_business_agent_settings(agent_id: str | None = None) -> str:
+        """List agent settings
+
+        Args:
+            agent_id"""
+        client = _get_client()
+        try:
+            response = client.business_agent.list_business_agent_settings(
+                agent_id=agent_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Update agent settings",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_update_business_agent_settings(
+        agent_id: str | None = None,
+        rollout: dict[str, Any] | None = None,
+        handoff: dict[str, Any] | None = None,
+        followup: dict[str, Any] | None = None,
+        ai_audience: str | None = None,
+        never_say_phrases: list[str] | None = None,
+    ) -> str:
+        """Update agent settings
+
+        Args:
+            agent_id
+            rollout
+            handoff
+            followup
+            ai_audience
+            never_say_phrases: Exact phrases the agent must never say; the full replacement list."""
+        client = _get_client()
+        try:
+            response = client.business_agent.update_business_agent_settings(
+                agent_id=agent_id,
+                rollout=rollout,
+                handoff=handoff,
+                followup=followup,
+                ai_audience=ai_audience,
+                never_say_phrases=never_say_phrases,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List allowlisted consumers",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_list_business_agent_allowlist() -> str:
+        """List allowlisted consumers"""
+        client = _get_client()
+        try:
+            response = client.business_agent.list_business_agent_allowlist()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Allowlist a consumer",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_add_business_agent_allowlist_entry(
+        consumer_phone_number: str,
+    ) -> str:
+        """Allowlist a consumer
+
+        Args:
+            consumer_phone_number: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.add_business_agent_allowlist_entry(
+                consumer_phone_number=consumer_phone_number
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Remove an allowlisted consumer",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_remove_business_agent_allowlist_entry(entry_id: str) -> str:
+        """Remove an allowlisted consumer
+
+        Args:
+            entry_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.remove_business_agent_allowlist_entry(
+                entry_id=entry_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get business information",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_get_business_agent_business_information() -> str:
+        """Get business information"""
+        client = _get_client()
+        try:
+            response = client.business_agent.get_business_agent_business_information()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Replace business information",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_replace_business_agent_business_information(
+        payment_method: str | None = None,
+        return_policy: str | None = None,
+        purchase_info: str | None = None,
+        delivery_and_shipping: str | None = None,
+        business_description: str | None = None,
+        contact_info: str | None = None,
+    ) -> str:
+        """Replace business information
+
+        Args:
+            payment_method
+            return_policy
+            purchase_info
+            delivery_and_shipping
+            business_description
+            contact_info"""
+        client = _get_client()
+        try:
+            response = (
+                client.business_agent.replace_business_agent_business_information(
+                    payment_method=payment_method,
+                    return_policy=return_policy,
+                    purchase_info=purchase_info,
+                    delivery_and_shipping=delivery_and_shipping,
+                    business_description=business_description,
+                    contact_info=contact_info,
+                )
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Reset business information",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_reset_business_agent_business_information() -> str:
+        """Reset business information"""
+        client = _get_client()
+        try:
+            response = client.business_agent.reset_business_agent_business_information()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List FAQs",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_list_business_agent_faqs() -> str:
+        """List FAQs"""
+        client = _get_client()
+        try:
+            response = client.business_agent.list_business_agent_faqs()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Create a FAQ",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_create_business_agent_faq(
+        question: str, answer: str, metadata: dict[str, Any] | None = None
+    ) -> str:
+        """Create a FAQ
+
+        Args:
+            question: Phrase it the way a customer would ask it; one topic per entry. (required)
+            answer: Self-contained; the agent retrieves entries independently. (required)
+            metadata"""
+        client = _get_client()
+        try:
+            response = client.business_agent.create_business_agent_faq(
+                question=question, answer=answer, metadata=metadata
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get a FAQ",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_get_business_agent_faq(faq_id: str) -> str:
+        """Get a FAQ
+
+        Args:
+            faq_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.get_business_agent_faq(faq_id=faq_id)
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Update a FAQ",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_update_business_agent_faq(
+        faq_id: str, question: str, answer: str, metadata: dict[str, Any] | None = None
+    ) -> str:
+        """Update a FAQ
+
+        Args:
+            faq_id: (required)
+            question: Phrase it the way a customer would ask it; one topic per entry. (required)
+            answer: Self-contained; the agent retrieves entries independently. (required)
+            metadata"""
+        client = _get_client()
+        try:
+            response = client.business_agent.update_business_agent_faq(
+                faq_id=faq_id, question=question, answer=answer, metadata=metadata
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Delete a FAQ",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_delete_business_agent_faq(faq_id: str) -> str:
+        """Delete a FAQ
+
+        Args:
+            faq_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.delete_business_agent_faq(faq_id=faq_id)
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List crawled websites",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_list_business_agent_websites() -> str:
+        """List crawled websites"""
+        client = _get_client()
+        try:
+            response = client.business_agent.list_business_agent_websites()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Add a website to crawl",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_add_business_agent_website(
+        url: str,
+        included_sub_domains: list[str] | None = None,
+        included_url_patterns: list[str] | None = None,
+        excluded_sub_domains: list[str] | None = None,
+        excluded_url_patterns: list[str] | None = None,
+        single_urls: list[str] | None = None,
+    ) -> str:
+        """Add a website to crawl
+
+        Args:
+            url: (required)
+            included_sub_domains
+            included_url_patterns: Only URLs containing one of these substrings are ingested.
+            excluded_sub_domains
+            excluded_url_patterns
+            single_urls: Crawl only these exact pages instead of the whole site."""
+        client = _get_client()
+        try:
+            response = client.business_agent.add_business_agent_website(
+                url=url,
+                included_sub_domains=included_sub_domains,
+                included_url_patterns=included_url_patterns,
+                excluded_sub_domains=excluded_sub_domains,
+                excluded_url_patterns=excluded_url_patterns,
+                single_urls=single_urls,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get a crawled website",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_get_business_agent_website(website_id: str) -> str:
+        """Get a crawled website
+
+        Args:
+            website_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.get_business_agent_website(
+                website_id=website_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Update a crawled website",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_update_business_agent_website(
+        website_id: str,
+        url: str,
+        included_sub_domains: list[str] | None = None,
+        included_url_patterns: list[str] | None = None,
+        excluded_sub_domains: list[str] | None = None,
+        excluded_url_patterns: list[str] | None = None,
+        single_urls: list[str] | None = None,
+    ) -> str:
+        """Update a crawled website
+
+        Args:
+            website_id: (required)
+            url: (required)
+            included_sub_domains
+            included_url_patterns: Only URLs containing one of these substrings are ingested.
+            excluded_sub_domains
+            excluded_url_patterns
+            single_urls: Crawl only these exact pages instead of the whole site."""
+        client = _get_client()
+        try:
+            response = client.business_agent.update_business_agent_website(
+                website_id=website_id,
+                url=url,
+                included_sub_domains=included_sub_domains,
+                included_url_patterns=included_url_patterns,
+                excluded_sub_domains=excluded_sub_domains,
+                excluded_url_patterns=excluded_url_patterns,
+                single_urls=single_urls,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Remove a crawled website",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_delete_business_agent_website(website_id: str) -> str:
+        """Remove a crawled website
+
+        Args:
+            website_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.delete_business_agent_website(
+                website_id=website_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List knowledge files",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_list_business_agent_files() -> str:
+        """List knowledge files"""
+        client = _get_client()
+        try:
+            response = client.business_agent.list_business_agent_files()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Upload a knowledge file",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_upload_business_agent_file(
+        url: str, file_name: str | None = None
+    ) -> str:
+        """Upload a knowledge file
+
+        Args:
+            url: Publicly downloadable file URL. (required)
+            file_name: Defaults to the last path segment of the URL."""
+        client = _get_client()
+        try:
+            response = client.business_agent.upload_business_agent_file(
+                url=url, file_name=file_name
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get a knowledge file",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_get_business_agent_file(file_id: str) -> str:
+        """Get a knowledge file
+
+        Args:
+            file_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.get_business_agent_file(file_id=file_id)
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Delete a knowledge file",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_delete_business_agent_file(file_id: str) -> str:
+        """Delete a knowledge file
+
+        Args:
+            file_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.delete_business_agent_file(file_id=file_id)
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List skills",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_list_business_agent_skills() -> str:
+        """List skills"""
+        client = _get_client()
+        try:
+            response = client.business_agent.list_business_agent_skills()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Create a skill",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_create_business_agent_skill(
+        skill: str, title: str | None = None, description: str | None = None
+    ) -> str:
+        """Create a skill
+
+        Args:
+            title: Lowercase letters, digits and hyphens, e.g. greeting-skill.
+            description: When the agent should apply the skill.
+            skill: The instructions themselves. Avoid two skills that both claim priority for the same situation. (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.create_business_agent_skill(
+                title=title, description=description, skill=skill
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get a skill",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_get_business_agent_skill(skill_id: str) -> str:
+        """Get a skill
+
+        Args:
+            skill_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.get_business_agent_skill(skill_id=skill_id)
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Update a skill",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_update_business_agent_skill(
+        skill_id: str,
+        skill: str,
+        title: str | None = None,
+        description: str | None = None,
+    ) -> str:
+        """Update a skill
+
+        Args:
+            skill_id: (required)
+            title: Lowercase letters, digits and hyphens, e.g. greeting-skill.
+            description: When the agent should apply the skill.
+            skill: The instructions themselves. Avoid two skills that both claim priority for the same situation. (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.update_business_agent_skill(
+                skill_id=skill_id, title=title, description=description, skill=skill
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Delete a skill",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_delete_business_agent_skill(skill_id: str) -> str:
+        """Delete a skill
+
+        Args:
+            skill_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.delete_business_agent_skill(
+                skill_id=skill_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List UI skills",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_list_business_agent_ui_skills(
+        before: str | None = None, after: str | None = None, limit: int | None = None
+    ) -> str:
+        """List UI skills
+
+        Args:
+            before
+            after
+            limit"""
+        client = _get_client()
+        try:
+            response = client.business_agent.list_business_agent_ui_skills(
+                before=before, after=after, limit=limit
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Create a UI skill",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_create_business_agent_ui_skill(
+        component_type: str,
+        status: str,
+        instruction: str,
+        title: str | None = None,
+        flow_id: int | None = None,
+    ) -> str:
+        """Create a UI skill
+
+        Args:
+            title
+            component_type: (required)
+            status: (required)
+            instruction: When to send the component and everything needed to fill its fields. (required)
+            flow_id: Required for component_type flow, rejected otherwise."""
+        client = _get_client()
+        try:
+            response = client.business_agent.create_business_agent_ui_skill(
+                title=title,
+                component_type=component_type,
+                status=status,
+                instruction=instruction,
+                flow_id=flow_id,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get a UI skill",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_get_business_agent_ui_skill(ui_skill_id: str) -> str:
+        """Get a UI skill
+
+        Args:
+            ui_skill_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.get_business_agent_ui_skill(
+                ui_skill_id=ui_skill_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Update a UI skill",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_update_business_agent_ui_skill(
+        ui_skill_id: str,
+        component_type: str,
+        status: str,
+        instruction: str,
+        title: str | None = None,
+        flow_id: int | None = None,
+    ) -> str:
+        """Update a UI skill
+
+        Args:
+            ui_skill_id: (required)
+            title
+            component_type: (required)
+            status: (required)
+            instruction: When to send the component and everything needed to fill its fields. (required)
+            flow_id: Required for component_type flow, rejected otherwise."""
+        client = _get_client()
+        try:
+            response = client.business_agent.update_business_agent_ui_skill(
+                ui_skill_id=ui_skill_id,
+                title=title,
+                component_type=component_type,
+                status=status,
+                instruction=instruction,
+                flow_id=flow_id,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Delete a UI skill",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_delete_business_agent_ui_skill(ui_skill_id: str) -> str:
+        """Delete a UI skill
+
+        Args:
+            ui_skill_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.delete_business_agent_ui_skill(
+                ui_skill_id=ui_skill_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List connectors",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_list_business_agent_connectors() -> str:
+        """List connectors"""
+        client = _get_client()
+        try:
+            response = client.business_agent.list_business_agent_connectors()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Create a connector",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_create_business_agent_connector(
+        name: str,
+        base_url: str,
+        auth_type: str,
+        description: str | None = None,
+        connector_protocol: str | None = None,
+        auth_config: dict[str, Any] | None = None,
+        user_auth_injection_config: dict[str, Any] | None = None,
+        requires_certificate: bool | None = None,
+    ) -> str:
+        """Create a connector
+
+        Args:
+            name: Unique per number. (required)
+            description: Tell the agent what the service provides.
+            base_url: Public HTTPS URL reachable from Meta. (required)
+            connector_protocol
+            auth_type: (required)
+            auth_config
+            user_auth_injection_config
+            requires_certificate"""
+        client = _get_client()
+        try:
+            response = client.business_agent.create_business_agent_connector(
+                name=name,
+                description=description,
+                base_url=base_url,
+                connector_protocol=connector_protocol,
+                auth_type=auth_type,
+                auth_config=auth_config,
+                user_auth_injection_config=user_auth_injection_config,
+                requires_certificate=requires_certificate,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get a connector",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_get_business_agent_connector() -> str:
+        """Get a connector"""
+        client = _get_client()
+        try:
+            response = client.business_agent.get_business_agent_connector()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Update a connector",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_update_business_agent_connector(
+        name: str,
+        base_url: str,
+        auth_type: str,
+        description: str | None = None,
+        connector_protocol: str | None = None,
+        auth_config: dict[str, Any] | None = None,
+        user_auth_injection_config: dict[str, Any] | None = None,
+        requires_certificate: bool | None = None,
+    ) -> str:
+        """Update a connector
+
+        Args:
+            name: Unique per number. (required)
+            description: Tell the agent what the service provides.
+            base_url: Public HTTPS URL reachable from Meta. (required)
+            connector_protocol
+            auth_type: (required)
+            auth_config
+            user_auth_injection_config
+            requires_certificate"""
+        client = _get_client()
+        try:
+            response = client.business_agent.update_business_agent_connector(
+                name=name,
+                description=description,
+                base_url=base_url,
+                connector_protocol=connector_protocol,
+                auth_type=auth_type,
+                auth_config=auth_config,
+                user_auth_injection_config=user_auth_injection_config,
+                requires_certificate=requires_certificate,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Delete a connector",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_delete_business_agent_connector() -> str:
+        """Delete a connector"""
+        client = _get_client()
+        try:
+            response = client.business_agent.delete_business_agent_connector()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Set connector credentials",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_set_business_agent_connector_credentials(
+        body: dict[str, Any],
+    ) -> str:
+        """Set connector credentials
+
+        Args:
+            body: Full request body as documented in the API reference. (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.set_business_agent_connector_credentials(
+                body=body
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Refresh MCP connector tools",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_refresh_business_agent_connector_tools() -> str:
+        """Refresh MCP connector tools"""
+        client = _get_client()
+        try:
+            response = client.business_agent.refresh_business_agent_connector_tools()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get connector failure logs",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_get_business_agent_connector_logs(
+        start_time: int | None = None,
+        end_time: int | None = None,
+        limit: int | None = None,
+        tool_id: str | None = None,
+        include_stats: bool | None = None,
+        summary_only: bool | None = None,
+        top_n: int | None = None,
+    ) -> str:
+        """Get connector failure logs
+
+        Args:
+            start_time: Unix seconds.
+            end_time: Unix seconds.
+            limit
+            tool_id
+            include_stats: Add success rate and latency percentiles.
+            summary_only: Aggregate failure patterns instead of entries.
+            top_n"""
+        client = _get_client()
+        try:
+            response = client.business_agent.get_business_agent_connector_logs(
+                start_time=start_time,
+                end_time=end_time,
+                limit=limit,
+                tool_id=tool_id,
+                include_stats=include_stats,
+                summary_only=summary_only,
+                top_n=top_n,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List connector tools",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_list_business_agent_connector_tools() -> str:
+        """List connector tools"""
+        client = _get_client()
+        try:
+            response = client.business_agent.list_business_agent_connector_tools()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Create a connector tool",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_create_business_agent_connector_tool(
+        name: str,
+        description: str,
+        request_definition: dict[str, Any] | None,
+        user_auth_required: bool | None = None,
+        user_auth_action_config: dict[str, Any] | None = None,
+        transformation_spec: dict[str, Any] | None = None,
+    ) -> str:
+        """Create a connector tool
+
+        Args:
+            name: (required)
+            description: When and how the agent should use the operation. (required)
+            request_definition: Meta request definition: method, path, path_parameters, query_parameters, headers and a typed body schema (content_type, params, required). (required)
+            user_auth_required
+            user_auth_action_config
+            transformation_spec"""
+        client = _get_client()
+        try:
+            response = client.business_agent.create_business_agent_connector_tool(
+                name=name,
+                description=description,
+                request_definition=request_definition,
+                user_auth_required=user_auth_required,
+                user_auth_action_config=user_auth_action_config,
+                transformation_spec=transformation_spec,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get a connector tool",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_get_business_agent_connector_tool() -> str:
+        """Get a connector tool"""
+        client = _get_client()
+        try:
+            response = client.business_agent.get_business_agent_connector_tool()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Update a connector tool",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_update_business_agent_connector_tool(
+        name: str,
+        description: str,
+        request_definition: dict[str, Any] | None,
+        user_auth_required: bool | None = None,
+        user_auth_action_config: dict[str, Any] | None = None,
+        transformation_spec: dict[str, Any] | None = None,
+    ) -> str:
+        """Update a connector tool
+
+        Args:
+            name: (required)
+            description: When and how the agent should use the operation. (required)
+            request_definition: Meta request definition: method, path, path_parameters, query_parameters, headers and a typed body schema (content_type, params, required). (required)
+            user_auth_required
+            user_auth_action_config
+            transformation_spec"""
+        client = _get_client()
+        try:
+            response = client.business_agent.update_business_agent_connector_tool(
+                name=name,
+                description=description,
+                request_definition=request_definition,
+                user_auth_required=user_auth_required,
+                user_auth_action_config=user_auth_action_config,
+                transformation_spec=transformation_spec,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Delete a connector tool",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_delete_business_agent_connector_tool() -> str:
+        """Delete a connector tool"""
+        client = _get_client()
+        try:
+            response = client.business_agent.delete_business_agent_connector_tool()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Run a connector tool once",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_run_business_agent_connector_tool(input: str) -> str:
+        """Run a connector tool once
+
+        Args:
+            input: JSON string with the tool arguments. (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.run_business_agent_connector_tool(
+                input=input
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get usage budgets",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_get_business_agent_budget() -> str:
+        """Get usage budgets"""
+        client = _get_client()
+        try:
+            response = client.business_agent.get_business_agent_budget()
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Replace usage budgets",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_replace_business_agent_budget(
+        budgets: list[dict[str, Any]] | None,
+    ) -> str:
+        """Replace usage budgets
+
+        Args:
+            budgets: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.replace_business_agent_budget(
+                budgets=budgets
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Send a test message",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_send_business_agent_test_message(
+        message: str, conversation_id: str | None = None
+    ) -> str:
+        """Send a test message
+
+        Args:
+            message: (required)
+            conversation_id"""
+        client = _get_client()
+        try:
+            response = client.business_agent.send_business_agent_test_message(
+                message=message, conversation_id=conversation_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Send a business event",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_send_business_agent_event(
+        to: str, type: str, description: str, payload: str
+    ) -> str:
+        """Send a business event
+
+        Args:
+            to: Consumer E.164 phone number. (required)
+            type: (required)
+            description: (required)
+            payload: JSON string passed to the agent verbatim. (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.send_business_agent_event(
+                to=to, type=type, description=description, payload=payload
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get a business event status",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_get_business_agent_event(event_id: str) -> str:
+        """Get a business event status
+
+        Args:
+            event_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.get_business_agent_event(event_id=event_id)
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Read evaluation data",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def business_agent_read_business_agent_evals(
+        job_id: str | None = None,
+        summary_ids: str | None = None,
+        eval_ids: str | None = None,
+    ) -> str:
+        """Read evaluation data
+
+        Args:
+            job_id
+            summary_ids: Comma-separated summary ids.
+            eval_ids: Comma-separated evaluation ids."""
+        client = _get_client()
+        try:
+            response = client.business_agent.read_business_agent_evals(
+                job_id=job_id, summary_ids=summary_ids, eval_ids=eval_ids
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Start an evaluation run",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def business_agent_start_business_agent_eval_run(
+        eval_case_ids: list[str] | None,
+    ) -> str:
+        """Start an evaluation run
+
+        Args:
+            eval_case_ids: (required)"""
+        client = _get_client()
+        try:
+            response = client.business_agent.start_business_agent_eval_run(
+                eval_case_ids=eval_case_ids
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
     # CALLS
 
     @mcp.tool(
@@ -8974,23 +10343,6 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Get Embedded Signup SDK config",
-            readOnlyHint=True,
-            destructiveHint=False,
-            openWorldHint=False,
-        )
-    )
-    def connect_get_whats_app_sdk_config() -> str:
-        """Get Embedded Signup SDK config"""
-        client = _get_client()
-        try:
-            response = client.connect.get_whats_app_sdk_config()
-            return _format_response(response)
-        except Exception as e:
-            return f"Error: {e}"
-
-    @mcp.tool(
-        annotations=ToolAnnotations(
             title="Connect WhatsApp from Embedded Signup",
             readOnlyHint=False,
             destructiveHint=True,
@@ -9008,11 +10360,11 @@ def register_generated_tools(mcp, _get_client):
         """Connect WhatsApp from Embedded Signup
 
         Args:
-            code: Authorization code from the FB.login response (authResponse.code) (required)
+            code: Authorization code from the WA_EMBEDDED_SIGNUP postMessage (required)
             profile_id: (required)
-            waba_id: waba_id from the WA_EMBEDDED_SIGNUP message event
-            phone_number_id: phone_number_id from the WA_EMBEDDED_SIGNUP message event. With wabaId it skips the number picker.
-            is_coexistence: Set when the popup ended with the FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING event, so the number stays live in the WhatsApp Business app
+            waba_id: WhatsApp Business Account id, when the SDK reported one
+            phone_number_id
+            is_coexistence: Number is also live in the WhatsApp Business app
             expected_phone_number: Rejects the connect when Meta returns a different number"""
         client = _get_client()
         try:
