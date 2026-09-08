@@ -42524,6 +42524,10 @@ paths:
                       properties:
                         geoTargetId: { type: string, description: "Numeric id from Google's geoTargetConstants/{id}." }
                         negative: { type: boolean, description: "true = excluded location." }
+                        name: { type: [string, "null"], description: "Google's geo_target_constant.name, e.g. \"United States\"; null when the id could not be resolved." }
+                        canonicalName: { type: [string, "null"], description: "Google's geo_target_constant.canonical_name, e.g. \"California, United States\"; null when the id could not be resolved." }
+                        type: { type: [string, "null"], description: "Google's geo_target_constant.target_type, e.g. \"Country\", \"Region\", \"City\"; null when the id could not be resolved." }
+                        countryCode: { type: [string, "null"], description: "Google's geo_target_constant.country_code, an ISO 3166-1 alpha-2 code; null when the id could not be resolved." }
                   languages:
                     type: array
                     items:
@@ -42640,6 +42644,10 @@ paths:
                       properties:
                         geoTargetId: { type: string, description: "Numeric id from Google's geoTargetConstants/{id}." }
                         negative: { type: boolean, description: "true = excluded location." }
+                        name: { type: [string, "null"], description: "Google's geo_target_constant.name; see GET's description." }
+                        canonicalName: { type: [string, "null"], description: "Google's geo_target_constant.canonical_name; see GET's description." }
+                        type: { type: [string, "null"], description: "Google's geo_target_constant.target_type; see GET's description." }
+                        countryCode: { type: [string, "null"], description: "Google's geo_target_constant.country_code; see GET's description." }
                   languages:
                     type: array
                     items:
@@ -47316,7 +47324,7 @@ paths:
                             content: { type: array, items: { type: string } }
                             style: { type: string, enum: [LIST_STYLE, PARAGRAPH_STYLE] }
                             buttonText: { type: string }
-                            coverPhoto: { type: string, format: uri, description: "Direct public JPEG or PNG image URL, up to 5 MB. Redirects, Ad Image hashes and IDs are not supported." }
+                            coverPhoto: { type: string, format: uri, description: "Direct public JPEG or PNG image URL, up to 5 MB. Uploaded as an unpublished Page photo and attached to the form. Redirects, Ad Image hashes and IDs are not supported." }
                     - type: object
                       title: LinkedInLeadFormPlatformData
                       required: [adAccountId, headline, description, questions]
