@@ -120,6 +120,7 @@ class WhatsappResource:
         library_template_name: str | None = None,
         library_template_body_inputs: dict[str, Any] | None = None,
         library_template_button_inputs: list[dict[str, Any]] | None = None,
+        message_send_ttl_seconds: int | None = None,
     ) -> dict[str, Any]:
         """Create template"""
         payload = self._build_payload(
@@ -132,6 +133,7 @@ class WhatsappResource:
             library_template_name=library_template_name,
             library_template_body_inputs=library_template_body_inputs,
             library_template_button_inputs=library_template_button_inputs,
+            message_send_ttl_seconds=message_send_ttl_seconds,
         )
         return self._client._post("/v1/whatsapp/templates", data=payload)
 
@@ -151,15 +153,17 @@ class WhatsappResource:
         self,
         template_name: str,
         account_id: str,
-        components: list[Any],
         *,
         language: str | None = None,
+        components: list[Any] | None = None,
+        message_send_ttl_seconds: int | None = None,
     ) -> dict[str, Any]:
         """Update template"""
         payload = self._build_payload(
             account_id=account_id,
             language=language,
             components=components,
+            message_send_ttl_seconds=message_send_ttl_seconds,
         )
         return self._client._patch(
             f"/v1/whatsapp/templates/{template_name}", data=payload
@@ -189,12 +193,18 @@ class WhatsappResource:
         )
 
     def update_whats_app_template_by_id(
-        self, template_id: str, account_id: str, components: list[Any]
+        self,
+        template_id: str,
+        account_id: str,
+        *,
+        components: list[Any] | None = None,
+        message_send_ttl_seconds: int | None = None,
     ) -> dict[str, Any]:
         """Update template by id"""
         payload = self._build_payload(
             account_id=account_id,
             components=components,
+            message_send_ttl_seconds=message_send_ttl_seconds,
         )
         return self._client._patch(
             f"/v1/whatsapp/templates/id/{template_id}", data=payload
@@ -606,6 +616,7 @@ class WhatsappResource:
         library_template_name: str | None = None,
         library_template_body_inputs: dict[str, Any] | None = None,
         library_template_button_inputs: list[dict[str, Any]] | None = None,
+        message_send_ttl_seconds: int | None = None,
     ) -> dict[str, Any]:
         """Create template (async)"""
         payload = self._build_payload(
@@ -618,6 +629,7 @@ class WhatsappResource:
             library_template_name=library_template_name,
             library_template_body_inputs=library_template_body_inputs,
             library_template_button_inputs=library_template_button_inputs,
+            message_send_ttl_seconds=message_send_ttl_seconds,
         )
         return await self._client._apost("/v1/whatsapp/templates", data=payload)
 
@@ -637,15 +649,17 @@ class WhatsappResource:
         self,
         template_name: str,
         account_id: str,
-        components: list[Any],
         *,
         language: str | None = None,
+        components: list[Any] | None = None,
+        message_send_ttl_seconds: int | None = None,
     ) -> dict[str, Any]:
         """Update template (async)"""
         payload = self._build_payload(
             account_id=account_id,
             language=language,
             components=components,
+            message_send_ttl_seconds=message_send_ttl_seconds,
         )
         return await self._client._apatch(
             f"/v1/whatsapp/templates/{template_name}", data=payload
@@ -675,12 +689,18 @@ class WhatsappResource:
         )
 
     async def aupdate_whats_app_template_by_id(
-        self, template_id: str, account_id: str, components: list[Any]
+        self,
+        template_id: str,
+        account_id: str,
+        *,
+        components: list[Any] | None = None,
+        message_send_ttl_seconds: int | None = None,
     ) -> dict[str, Any]:
         """Update template by id (async)"""
         payload = self._build_payload(
             account_id=account_id,
             components=components,
+            message_send_ttl_seconds=message_send_ttl_seconds,
         )
         return await self._client._apatch(
             f"/v1/whatsapp/templates/id/{template_id}", data=payload
