@@ -47793,19 +47793,18 @@ paths:
       x-platforms: ["meta", "linkedin"]
       summary: Search the public Ad Library
       description: |-
-        Competitor and market research over the platform's public ad archive, searched with the
-        customer's own connected token (no extra scope): Meta's Ad Library (`GET /ads_archive`) for
-        a `facebook` / `instagram` / `metaads` account, LinkedIn's Ad Library (`GET /rest/adLibrary`)
-        for a `linkedin` / `linkedinads` account. Rows are returned in the platform's raw shape under
-        `data`; `paging.after` is an opaque cursor on both (`null` when exhausted).
+        Competitor and market research over the public ad archives. Meta's Ad Library
+        (`GET /ads_archive`) is searched with Zernio's own developer access, so `platform=meta` needs
+        no connected account at all. LinkedIn's Ad Library (`GET /rest/adLibrary`) runs on a connected
+        `linkedin` / `linkedinads` account, passed as `accountId`. Passing a Meta account as `accountId`
+        also selects Meta. Rows are returned in the platform's raw shape under `data`; `paging.after`
+        is an opaque cursor on both (`null` when exhausted).
 
         **Meta coverage.** Political and social-issue ads are searchable worldwide. Every other ad is
         in the archive only if it was delivered to the EU or UK within the last year, so a US-only
         commercial advertiser is invisible. Spend, impressions and demographics are political-only
-        fields and are left out of the default projection; request them via `fields`. Meta serves the
-        archive only to people who confirmed their identity and location at facebook.com/ID: until the
-        Facebook user behind the connection has done so, the call fails with
-        `meta_identity_confirmation_required` (403).
+        fields and are left out of the default projection; request them via `fields`. All customers
+        share Zernio's Meta quota, so a `429` means back off for a minute.
 
         **LinkedIn coverage.** Ads served after June 1 2023, worldwide, kept for a year after their
         last impression. EU-delivered ads carry impression ranges and the disclosed targeting facets.
@@ -47818,7 +47817,8 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - { name: accountId, in: query, required: true, schema: { type: string }, description: "Zernio SocialAccount id (facebook / instagram / metaads for Meta, linkedin / linkedinads for LinkedIn). Its token is the one that searches." }
+        - { name: platform, in: query, schema: { type: string, enum: [meta, linkedin] }, description: "Which archive to search. `meta` needs no accountId. Required unless accountId is given." }
+        - { name: accountId, in: query, schema: { type: string }, description: "Zernio SocialAccount id. Required for LinkedIn (linkedin / linkedinads: its token searches). Optional for Meta, where any facebook / instagram / metaads account just selects the platform." }
         - { name: q, in: query, schema: { type: string, maxLength: 100 }, description: "Keyword search. Meta does not translate it, so write it in the ads' language. Required unless pageIds (Meta) or advertiser (LinkedIn) is given." }
         - { name: pageIds, in: query, schema: { type: string }, description: "Meta only. Comma-separated Facebook Page ids (max 10) whose ads to list." }
         - { name: advertiser, in: query, schema: { type: string, maxLength: 100 }, description: "LinkedIn only. Advertiser (Page) name to search." }
@@ -47892,9 +47892,10 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
-          description: "Ads access required (legacy plans need the Ads add-on), or, on Meta, `meta_identity_confirmation_required`: the Facebook user behind the connection has not confirmed identity and location at facebook.com/ID."
+          description: Ads access required. Legacy plans need the Ads add-on; included by default on usage-based plans.
         '404': { description: Account not found }
         '501': { description: Only supported on Meta and LinkedIn accounts }
+        '503': { description: "Meta's Ad Library is unavailable on Zernio's side (`PLATFORM_DISABLED`); LinkedIn searches are unaffected." }
 
   /v1/ads/targeting/reach-estimate:
     post:

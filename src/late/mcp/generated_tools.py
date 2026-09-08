@@ -5354,7 +5354,8 @@ def register_generated_tools(mcp, _get_client):
         )
     )
     def ad_library_search_ad_library(
-        account_id: str,
+        platform: str | None = None,
+        account_id: str | None = None,
         q: str | None = None,
         page_ids: str | None = None,
         advertiser: str | None = None,
@@ -5374,7 +5375,8 @@ def register_generated_tools(mcp, _get_client):
         """Search the public Ad Library
 
         Args:
-            account_id: Zernio SocialAccount id (facebook / instagram / metaads for Meta, linkedin / linkedinads for LinkedIn). Its token is the one that searches. (required)
+            platform: Which archive to search. `meta` needs no accountId. Required unless accountId is given.
+            account_id: Zernio SocialAccount id. Required for LinkedIn (linkedin / linkedinads: its token searches). Optional for Meta, where any facebook / instagram / metaads account just selects the platform.
             q: Keyword search. Meta does not translate it, so write it in the ads' language. Required unless pageIds (Meta) or advertiser (LinkedIn) is given.
             page_ids: Meta only. Comma-separated Facebook Page ids (max 10) whose ads to list.
             advertiser: LinkedIn only. Advertiser (Page) name to search.
@@ -5393,6 +5395,7 @@ def register_generated_tools(mcp, _get_client):
         client = _get_client()
         try:
             response = client.ad_library.search_ad_library(
+                platform=platform,
                 account_id=account_id,
                 q=q,
                 page_ids=page_ids,

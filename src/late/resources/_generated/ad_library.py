@@ -75,8 +75,9 @@ class AdLibraryResource:
 
     def search_ad_library(
         self,
-        account_id: str,
         *,
+        platform: str | None = None,
+        account_id: str | None = None,
         q: str | None = None,
         page_ids: str | None = None,
         advertiser: str | None = None,
@@ -95,6 +96,7 @@ class AdLibraryResource:
     ) -> dict[str, Any]:
         """Search the public Ad Library"""
         params = self._build_params(
+            platform=platform,
             account_id=account_id,
             q=q,
             page_ids=page_ids,
@@ -116,8 +118,9 @@ class AdLibraryResource:
 
     async def asearch_ad_library(
         self,
-        account_id: str,
         *,
+        platform: str | None = None,
+        account_id: str | None = None,
         q: str | None = None,
         page_ids: str | None = None,
         advertiser: str | None = None,
@@ -136,6 +139,7 @@ class AdLibraryResource:
     ) -> dict[str, Any]:
         """Search the public Ad Library (async)"""
         params = self._build_params(
+            platform=platform,
             account_id=account_id,
             q=q,
             page_ids=page_ids,
