@@ -265,6 +265,15 @@ class AccountsResource:
         phone_numbers: dict[str, Any] | None = None,
         categories: dict[str, Any] | None = None,
         service_items: list[dict[str, Any]] | None = None,
+        title: str | None = None,
+        store_code: str | None = None,
+        labels: list[str] | None = None,
+        storefront_address: dict[str, Any] | None = None,
+        service_area: dict[str, Any] | None = None,
+        open_info: dict[str, Any] | None = None,
+        more_hours: list[dict[str, Any]] | None = None,
+        latlng: dict[str, Any] | None = None,
+        ad_words_location_extensions: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Update location details"""
         params = self._build_params(
@@ -279,6 +288,15 @@ class AccountsResource:
             phone_numbers=phone_numbers,
             categories=categories,
             service_items=service_items,
+            title=title,
+            store_code=store_code,
+            labels=labels,
+            storefront_address=storefront_address,
+            service_area=service_area,
+            open_info=open_info,
+            more_hours=more_hours,
+            latlng=latlng,
+            ad_words_location_extensions=ad_words_location_extensions,
         )
         return self._client._put(
             f"/v1/accounts/{account_id}/gmb-location-details",
@@ -754,6 +772,15 @@ class AccountsResource:
         phone_numbers: dict[str, Any] | None = None,
         categories: dict[str, Any] | None = None,
         service_items: list[dict[str, Any]] | None = None,
+        title: str | None = None,
+        store_code: str | None = None,
+        labels: list[str] | None = None,
+        storefront_address: dict[str, Any] | None = None,
+        service_area: dict[str, Any] | None = None,
+        open_info: dict[str, Any] | None = None,
+        more_hours: list[dict[str, Any]] | None = None,
+        latlng: dict[str, Any] | None = None,
+        ad_words_location_extensions: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Update location details (async)"""
         params = self._build_params(
@@ -768,6 +795,15 @@ class AccountsResource:
             phone_numbers=phone_numbers,
             categories=categories,
             service_items=service_items,
+            title=title,
+            store_code=store_code,
+            labels=labels,
+            storefront_address=storefront_address,
+            service_area=service_area,
+            open_info=open_info,
+            more_hours=more_hours,
+            latlng=latlng,
+            ad_words_location_extensions=ad_words_location_extensions,
         )
         return await self._client._aput(
             f"/v1/accounts/{account_id}/gmb-location-details",

@@ -7982,6 +7982,23 @@ components:
       properties:
         post:
           $ref: '#/components/schemas/Post'
+    TikTokDryRunVerdict:
+      type: object
+      required: [dryRun, canPublish, tiktok]
+      properties:
+        dryRun: { type: boolean, description: Always true on this response }
+        canPublish: { type: boolean, description: True only when every evaluated TikTok account can publish now }
+        tiktok:
+          type: array
+          description: One verdict per `tiktok` entry in the request, in request order
+          items:
+            type: object
+            required: [accountId, canPublish, reason]
+            properties:
+              accountId: { type: string }
+              canPublish: { type: boolean }
+              alreadyPostedToday: { type: boolean, description: 'Whether this account already published a Direct Post today (an account that did can keep publishing). Absent for Creator Inbox drafts and when no per-user limit applies.' }
+              reason: { type: string, description: Human-readable explanation of the verdict }
     PostCreateResponse:
       type: object
       properties:
@@ -15928,38 +15945,18 @@ paths:
                   timezone: "America/New_York"
       responses:
         '200':
-          description: 'dryRun preview (TikTok only): nothing was created. Deliberately carries no numeric cap detail, only a per-account go/no-go and a reason.'
+          description: |
+            A dryRun preview (TikTok only): nothing was created. Deliberately carries no numeric
+            cap detail, only a per-account go/no-go and a reason.
+
+            The schema is a union only so generated clients can type both success shapes of this
+            operation: a 200 is always the dry-run verdict, and a created post is always a 201.
           content:
             application/json:
               schema:
-                type: object
-                required: [dryRun, canPublish, tiktok]
-                properties:
-                  dryRun: { type: boolean, description: Always true on this response }
-                  canPublish: { type: boolean, description: True only when every evaluated TikTok account can publish now }
-                  tiktok:
-                    type: array
-                    description: One verdict per `tiktok` entry in the request, in request order
-                    items:
-                      type: object
-                      required: [accountId, canPublish, reason]
-                      properties:
-                        accountId: { type: string }
-                        canPublish: { type: boolean }
-                        alreadyPostedToday: { type: boolean, description: 'Whether this account already published a Direct Post today (an account that did can keep publishing). Absent for Creator Inbox drafts and when no per-user limit applies.' }
-                        reason: { type: string, description: Human-readable explanation of the verdict }
-              example:
-                dryRun: true
-                canPublish: false
-                tiktok:
-                  - accountId: "64e1f0a9e2b5af0012ab34de"
-                    canPublish: true
-                    alreadyPostedToday: false
-                    reason: "Account can publish now."
-                  - accountId: "64e1f0a9e2b5af0012ab34df"
-                    canPublish: false
-                    alreadyPostedToday: false
-                    reason: "Daily TikTok Direct Post limit reached. Use tiktokSettings.draft: true to continue posting via Creator Inbox."
+                oneOf:
+                  - $ref: '#/components/schemas/TikTokDryRunVerdict'
+                  - $ref: '#/components/schemas/PostCreateResponse'
         '201':
           description: Post created
           content:
@@ -20549,6 +20546,81 @@ paths:
                           currencyCode: { type: string, description: "ISO 4217 currency code (e.g. 'USD')" }
                           units: { type: string, description: "Whole units of the amount" }
                           nanos: { type: integer, description: "Nano units (10^-9) of the amount" }
+                title:
+                  type: string
+                  description: "Business name. Use updateMask='title'."
+                storeCode:
+                  type: string
+                  description: "External store identifier, unique within the account. Use updateMask='storeCode'."
+                labels:
+                  type: array
+                  description: "Free-form, internal-only labels for grouping (1-255 characters each). Use updateMask='labels'."
+                  items: { type: string }
+                storefrontAddress:
+                  type: object
+                  description: "Postal address of the storefront. Use updateMask='storefrontAddress'. Omit for service-area-only businesses."
+                  properties:
+                    regionCode: { type: string, description: "ISO 3166-1 alpha-2 country code (e.g. 'BR')" }
+                    languageCode: { type: string }
+                    postalCode: { type: string }
+                    administrativeArea: { type: string, description: "State or province" }
+                    locality: { type: string, description: "City" }
+                    addressLines: { type: array, items: { type: string } }
+                serviceArea:
+                  type: object
+                  description: "Areas the business serves. Use updateMask='serviceArea'. Full replacement: send every place you want to keep."
+                  properties:
+                    businessType:
+                      type: string
+                      enum: [CUSTOMER_LOCATION_ONLY, CUSTOMER_AND_BUSINESS_LOCATION]
+                    places:
+                      type: object
+                      properties:
+                        placeInfos:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              placeName: { type: string, description: "Localized area name (e.g. 'Sao Paulo, SP, Brasil')" }
+                              placeId: { type: string, description: "Google Place ID for the area" }
+                    regionCode: { type: string, description: "Immutable. CLDR region code of the country the business is based in (e.g. 'BR')" }
+                openInfo:
+                  type: object
+                  description: "Open/closed status of the location. Use updateMask='openInfo'."
+                  properties:
+                    status:
+                      type: string
+                      enum: [OPEN, CLOSED_PERMANENTLY, CLOSED_TEMPORARILY]
+                    openingDate:
+                      type: object
+                      properties: { year: { type: integer }, month: { type: integer }, day: { type: integer } }
+                moreHours:
+                  type: array
+                  description: "Additional hours for specific services (delivery, drive-through, etc.). Use updateMask='moreHours'."
+                  items:
+                    type: object
+                    properties:
+                      hoursTypeId: { type: string, description: "Hours type from Google's catalog (e.g. 'DELIVERY', 'DRIVE_THROUGH')" }
+                      periods:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            openDay: { type: string }
+                            openTime: { type: string }
+                            closeDay: { type: string }
+                            closeTime: { type: string }
+                latlng:
+                  type: object
+                  description: "Precise coordinates. Use updateMask='latlng'. Google restricts latlng writes to approved clients, so this update may be silently ignored or rejected."
+                  properties:
+                    latitude: { type: number }
+                    longitude: { type: number }
+                adWordsLocationExtensions:
+                  type: object
+                  description: "Alternate phone shown in Google Ads location extensions. Use updateMask='adWordsLocationExtensions'."
+                  properties:
+                    adPhone: { type: string }
             examples:
               updateHours:
                 summary: Update business hours
@@ -32917,7 +32989,6 @@ paths:
                             contactName: { type: string, description: "CRM contact name for the counterparty, when resolved." }
                   nextCursor: { type: [string, "null"], format: date-time, description: Pass as `before` for the next page; null on the last page. }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { description: Not enrolled in the calling beta }
 
   /v1/calls/{id}:
     get:
@@ -32951,7 +33022,6 @@ paths:
                           contactName: { type: string, description: "CRM contact name for the counterparty, when resolved." }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { description: Not enrolled in the calling beta }
         '404': { description: Call not found }
 
   /v1/calls/{id}/recording:
@@ -32983,7 +33053,6 @@ paths:
                   url: { type: string }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { description: Not enrolled in the calling beta }
         '404': { description: "Call not found, or no recording is available for this call" }
         '502': { description: Recording provider lookup failed }
 
@@ -44958,7 +45027,19 @@ paths:
                 dynamicValueParameters: { type: object, additionalProperties: { type: string }, description: "LinkedIn only. key -> dynamic value enum (CAMPAIGN_ID, CAMPAIGN_NAME, CREATIVE_ID, ...)." }
                 customValueParameters: { type: object, additionalProperties: { type: string }, description: "LinkedIn only. key -> static value." }
       responses:
-        '200': { description: "Updated" }
+        '200':
+          description: |
+            The tags as they now stand, in the same shape the GET on this path returns:
+            `platform` plus the fields that platform supports. Meta returns `level`,
+            `urlTags` and `templateUrlSpec`; Google returns `trackingUrlTemplate` and
+            `finalUrlSuffix`. A field the platform does not support is absent.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  platform: { type: string }
+                additionalProperties: true
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: 'Returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
@@ -47736,6 +47817,10 @@ paths:
           description: 'Ads access required. Legacy plans need the Ads add-on; included by default on usage-based plans. Also returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
         '422':
           description: Platform ads connection required (TikTok Ads, X Ads) or missing linked account
+        '501':
+          description: |
+            The requested option is not supported on this platform: `validateOnly` outside Meta,
+            or a shape the adapter does not implement. Carries code `feature_not_available`.
         '502':
           description: |
             The platform rejected the request, or failed to produce media the ad
@@ -50658,7 +50743,22 @@ paths:
                       description: Where the conversation opens when the ad is tapped.
       responses:
         '201':
-          description: Ad(s) created and submitted for review
+          description: |
+            Ad(s) created and submitted for review. The route shares its handler with
+            `POST /v1/ads/ctwa`, so the body is the same tagged union discriminated by
+            `adType`: `single` carries `{ adType, ad, message }`, and `multi` carries
+            `{ adType, ads, platformCampaignId, platformAdSetId, message }`.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/CtwaSingleResponse'
+                  - $ref: '#/components/schemas/CtwaMultiResponse'
+                discriminator:
+                  propertyName: adType
+                  mapping:
+                    single: '#/components/schemas/CtwaSingleResponse'
+                    multi: '#/components/schemas/CtwaMultiResponse'
         '400': { description: Invalid input }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
@@ -50700,7 +50800,22 @@ paths:
                       description: "Website shown as the creative's link. Required: Meta rejects tel: as link_data.link; the phone number rides only the CTA."
       responses:
         '201':
-          description: Ad(s) created and submitted for review
+          description: |
+            Ad(s) created and submitted for review. The route shares its handler with
+            `POST /v1/ads/ctwa`, so the body is the same tagged union discriminated by
+            `adType`: `single` carries `{ adType, ad, message }`, and `multi` carries
+            `{ adType, ads, platformCampaignId, platformAdSetId, message }`.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/CtwaSingleResponse'
+                  - $ref: '#/components/schemas/CtwaMultiResponse'
+                discriminator:
+                  propertyName: adType
+                  mapping:
+                    single: '#/components/schemas/CtwaSingleResponse'
+                    multi: '#/components/schemas/CtwaMultiResponse'
         '400': { description: Invalid input }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':

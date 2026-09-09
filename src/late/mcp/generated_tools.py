@@ -788,6 +788,15 @@ def register_generated_tools(mcp, _get_client):
         phone_numbers: dict[str, Any] | None = None,
         categories: dict[str, Any] | None = None,
         service_items: list[dict[str, Any]] | None = None,
+        title: str | None = None,
+        store_code: str | None = None,
+        labels: list[str] | None = None,
+        storefront_address: dict[str, Any] | None = None,
+        service_area: dict[str, Any] | None = None,
+        open_info: dict[str, Any] | None = None,
+        more_hours: list[dict[str, Any]] | None = None,
+        latlng: dict[str, Any] | None = None,
+        ad_words_location_extensions: dict[str, Any] | None = None,
     ) -> str:
         """Update location details
 
@@ -801,7 +810,16 @@ def register_generated_tools(mcp, _get_client):
             website_uri
             phone_numbers
             categories: Primary and additional business categories. Use updateMask='categories' to update.
-            service_items: Services offered by the business. Use updateMask='serviceItems' to update."""
+            service_items: Services offered by the business. Use updateMask='serviceItems' to update.
+            title: Business name. Use updateMask='title'.
+            store_code: External store identifier, unique within the account. Use updateMask='storeCode'.
+            labels: Free-form, internal-only labels for grouping (1-255 characters each). Use updateMask='labels'.
+            storefront_address: Postal address of the storefront. Use updateMask='storefrontAddress'. Omit for service-area-only businesses.
+            service_area: Areas the business serves. Use updateMask='serviceArea'. Full replacement: send every place you want to keep.
+            open_info: Open/closed status of the location. Use updateMask='openInfo'.
+            more_hours: Additional hours for specific services (delivery, drive-through, etc.). Use updateMask='moreHours'.
+            latlng: Precise coordinates. Use updateMask='latlng'. Google restricts latlng writes to approved clients, so this update may be silently ignored or rejected.
+            ad_words_location_extensions: Alternate phone shown in Google Ads location extensions. Use updateMask='adWordsLocationExtensions'."""
         client = _get_client()
         try:
             response = client.accounts.update_google_business_location_details(
@@ -815,6 +833,15 @@ def register_generated_tools(mcp, _get_client):
                 phone_numbers=phone_numbers,
                 categories=categories,
                 service_items=service_items,
+                title=title,
+                store_code=store_code,
+                labels=labels,
+                storefront_address=storefront_address,
+                service_area=service_area,
+                open_info=open_info,
+                more_hours=more_hours,
+                latlng=latlng,
+                ad_words_location_extensions=ad_words_location_extensions,
             )
             return _format_response(response)
         except Exception as e:
