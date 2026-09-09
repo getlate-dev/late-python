@@ -2155,7 +2155,7 @@ def register_generated_tools(mcp, _get_client):
         """Get audience details
 
         Args:
-            audience_id: (required)"""
+            audience_id: The Zernio audience id (the id field of GET /v1/ads/audiences), not the platform segment id. (required)"""
         client = _get_client()
         try:
             response = client.ad_audiences.get_ad_audience(audience_id=audience_id)
@@ -2227,7 +2227,7 @@ def register_generated_tools(mcp, _get_client):
         """Add users to audience
 
         Args:
-            audience_id: (required)
+            audience_id: The Zernio audience id (the id field of GET /v1/ads/audiences), not the platform segment id. (required)
             users: (required)"""
         client = _get_client()
         try:
@@ -2252,7 +2252,7 @@ def register_generated_tools(mcp, _get_client):
         """Replace audience companies
 
         Args:
-            audience_id: (required)
+            audience_id: The Zernio audience id (the id field of GET /v1/ads/audiences), not the platform segment id. (required)
             companies: The complete company list. Each row needs at least one of name, domain, website or linkedinPageUrl. (required)"""
         client = _get_client()
         try:

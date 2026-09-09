@@ -49129,7 +49129,7 @@ paths:
                     items:
                       type: object
                       properties:
-                        id: { type: [string, "null"] }
+                        id: { type: [string, "null"], description: "The Zernio audience id. Pass this as audienceId on GET /v1/ads/audiences/{audienceId} and the companies/users upload endpoints. Null when the audience was not created through Zernio." }
                         accountId: { type: string, description: "Account the audience was created against. Returned for saved_targeting items." }
                         platformAudienceId: { type: string }
                         name: { type: string }
@@ -49347,7 +49347,7 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - { name: audienceId, in: path, required: true, schema: { type: string } }
+        - { name: audienceId, in: path, required: true, schema: { type: string }, description: "The Zernio audience id (the id field of GET /v1/ads/audiences), not the platform segment id." }
       responses:
         '200':
           description: Audience details
@@ -49357,7 +49357,7 @@ paths:
                 type: object
                 properties:
                   audience: { type: object }
-                  metaData: { type: [object, "null"], description: Fresh data from Meta API }
+                  platformData: { type: [object, "null"], description: Fresh data from the platform API }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Ads access required. Legacy plans need the Ads add-on; included by default on usage-based plans.
@@ -49455,7 +49455,7 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - { name: audienceId, in: path, required: true, schema: { type: string } }
+        - { name: audienceId, in: path, required: true, schema: { type: string }, description: "The Zernio audience id (the id field of GET /v1/ads/audiences), not the platform segment id." }
       requestBody:
         required: true
         content:
@@ -49524,7 +49524,7 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - { name: audienceId, in: path, required: true, schema: { type: string } }
+        - { name: audienceId, in: path, required: true, schema: { type: string }, description: "The Zernio audience id (the id field of GET /v1/ads/audiences), not the platform segment id." }
       requestBody:
         required: true
         content:
