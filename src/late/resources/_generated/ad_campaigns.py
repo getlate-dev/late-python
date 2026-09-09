@@ -687,9 +687,14 @@ class AdCampaignsResource:
         )
         return self._client._get("/v1/ads/timeline", params=params)
 
-    def get_ad(self, ad_id: str) -> dict[str, Any]:
+    def get_ad(
+        self, ad_id: str, *, refresh_promotion: bool | None = False
+    ) -> dict[str, Any]:
         """Get ad details"""
-        return self._client._get(f"/v1/ads/{ad_id}")
+        params = self._build_params(
+            refresh_promotion=refresh_promotion,
+        )
+        return self._client._get(f"/v1/ads/{ad_id}", params=params)
 
     def update_ad(
         self,
@@ -774,6 +779,7 @@ class AdCampaignsResource:
         name: str,
         goal: str,
         *,
+        creative_features: Any | None = None,
         post_id: str | None = None,
         platform_post_id: str | None = None,
         ad_set_id: str | None = None,
@@ -805,6 +811,7 @@ class AdCampaignsResource:
     ) -> dict[str, Any]:
         """Boost post as ad"""
         payload = self._build_payload(
+            creative_features=creative_features,
             post_id=post_id,
             platform_post_id=platform_post_id,
             account_id=account_id,
@@ -855,7 +862,8 @@ class AdCampaignsResource:
         billing_event: str | None = None,
         buying_type: str | None = None,
         rf_prediction_id: str | None = None,
-        creative_features: dict[str, Any] | None = None,
+        promotion: Any | None = None,
+        creative_features: Any | None = None,
         multi_advertiser: str | None = None,
         validate_only: bool | None = None,
         budget_amount: float | None = None,
@@ -956,6 +964,7 @@ class AdCampaignsResource:
             billing_event=billing_event,
             buying_type=buying_type,
             rf_prediction_id=rf_prediction_id,
+            promotion=promotion,
             creative_features=creative_features,
             multi_advertiser=multi_advertiser,
             validate_only=validate_only,
@@ -1667,9 +1676,14 @@ class AdCampaignsResource:
         )
         return await self._client._aget("/v1/ads/timeline", params=params)
 
-    async def aget_ad(self, ad_id: str) -> dict[str, Any]:
+    async def aget_ad(
+        self, ad_id: str, *, refresh_promotion: bool | None = False
+    ) -> dict[str, Any]:
         """Get ad details (async)"""
-        return await self._client._aget(f"/v1/ads/{ad_id}")
+        params = self._build_params(
+            refresh_promotion=refresh_promotion,
+        )
+        return await self._client._aget(f"/v1/ads/{ad_id}", params=params)
 
     async def aupdate_ad(
         self,
@@ -1754,6 +1768,7 @@ class AdCampaignsResource:
         name: str,
         goal: str,
         *,
+        creative_features: Any | None = None,
         post_id: str | None = None,
         platform_post_id: str | None = None,
         ad_set_id: str | None = None,
@@ -1785,6 +1800,7 @@ class AdCampaignsResource:
     ) -> dict[str, Any]:
         """Boost post as ad (async)"""
         payload = self._build_payload(
+            creative_features=creative_features,
             post_id=post_id,
             platform_post_id=platform_post_id,
             account_id=account_id,
@@ -1835,7 +1851,8 @@ class AdCampaignsResource:
         billing_event: str | None = None,
         buying_type: str | None = None,
         rf_prediction_id: str | None = None,
-        creative_features: dict[str, Any] | None = None,
+        promotion: Any | None = None,
+        creative_features: Any | None = None,
         multi_advertiser: str | None = None,
         validate_only: bool | None = None,
         budget_amount: float | None = None,
@@ -1936,6 +1953,7 @@ class AdCampaignsResource:
             billing_event=billing_event,
             buying_type=buying_type,
             rf_prediction_id=rf_prediction_id,
+            promotion=promotion,
             creative_features=creative_features,
             multi_advertiser=multi_advertiser,
             validate_only=validate_only,

@@ -82,6 +82,7 @@ class MessagingAdsResource:
         name: str,
         destination: str,
         *,
+        creative_features: Any | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -121,6 +122,7 @@ class MessagingAdsResource:
     ) -> dict[str, Any]:
         """Create messaging ad"""
         payload = self._build_payload(
+            creative_features=creative_features,
             account_id=account_id,
             ad_account_id=ad_account_id,
             name=name,
@@ -172,6 +174,7 @@ class MessagingAdsResource:
         phone_number: str,
         link_url: str,
         *,
+        creative_features: Any | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -211,6 +214,7 @@ class MessagingAdsResource:
     ) -> dict[str, Any]:
         """Create Click-to-Call ad"""
         payload = self._build_payload(
+            creative_features=creative_features,
             account_id=account_id,
             ad_account_id=ad_account_id,
             name=name,
@@ -261,6 +265,7 @@ class MessagingAdsResource:
         ad_account_id: str,
         name: str,
         *,
+        creative_features: Any | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -300,6 +305,7 @@ class MessagingAdsResource:
     ) -> dict[str, Any]:
         """Create CTWA ad (deprecated)"""
         payload = self._build_payload(
+            creative_features=creative_features,
             account_id=account_id,
             ad_account_id=ad_account_id,
             name=name,
@@ -349,6 +355,7 @@ class MessagingAdsResource:
         name: str,
         destination: str,
         *,
+        creative_features: Any | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -388,6 +395,7 @@ class MessagingAdsResource:
     ) -> dict[str, Any]:
         """Create messaging ad (async)"""
         payload = self._build_payload(
+            creative_features=creative_features,
             account_id=account_id,
             ad_account_id=ad_account_id,
             name=name,
@@ -439,6 +447,7 @@ class MessagingAdsResource:
         phone_number: str,
         link_url: str,
         *,
+        creative_features: Any | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -478,6 +487,7 @@ class MessagingAdsResource:
     ) -> dict[str, Any]:
         """Create Click-to-Call ad (async)"""
         payload = self._build_payload(
+            creative_features=creative_features,
             account_id=account_id,
             ad_account_id=ad_account_id,
             name=name,
@@ -528,6 +538,7 @@ class MessagingAdsResource:
         ad_account_id: str,
         name: str,
         *,
+        creative_features: Any | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -567,6 +578,7 @@ class MessagingAdsResource:
     ) -> dict[str, Any]:
         """Create CTWA ad (deprecated) (async)"""
         payload = self._build_payload(
+            creative_features=creative_features,
             account_id=account_id,
             ad_account_id=ad_account_id,
             name=name,

@@ -886,6 +886,9 @@ components:
         The route enforces this at the Zod boundary; OpenAPI's
         `required` cannot express the OR cleanly.
       properties:
+        creativeFeatures:
+          $ref: '#/components/schemas/MetaCreativeFeatures'
+          description: 'Meta enhancement settings for single or attached ads, and defaults for creatives[]. An item replaces the entire map, including with an empty object.'
         accountId:
           type: string
           minLength: 1
@@ -986,6 +989,9 @@ components:
                 type: string
                 pattern: '^\d+_\d+$'
                 description: 'Messaging and CTWA only. Raw Facebook pageId_postId reference, used as object_story_id even with an Instagram account. Mutually exclusive with existingPostId and fresh creative fields.'
+              creativeFeatures:
+                $ref: '#/components/schemas/MetaCreativeFeatures'
+                description: 'Replaces the top-level creativeFeatures map for this item. Omit to inherit; an empty object clears inherited enrollment choices.'
               headline:
                 type: string
                 minLength: 1
@@ -8999,6 +9005,36 @@ components:
         jobFunctions: { type: array, items: { type: string }, description: "LinkedIn B2B only." }
         audienceInclude: { type: array, items: { type: string }, description: 'Platform audience IDs to include, as returned by GET /v1/ads/audiences (Meta custom audience ids, TikTok audience ids, Pinterest customer list ids, LinkedIn segment ids (the platformAudienceId from GET /v1/ads/audiences; Zernio resolves it to the targetable LinkedIn ad segment, an unknown id returns 400), Google user list ids, X custom audience ids). Not supported on OpenAI (400).' }
         audienceExclude: { type: array, items: { type: string }, description: 'Platform audience IDs to exclude; same ID formats as audienceInclude. Not supported on OpenAI (400).' }
+    MetaCreativeFeatures:
+      type: object
+      additionalProperties: { type: string, enum: [OPT_IN, OPT_OUT] }
+      propertyNames: { pattern: '^[a-z0-9_]+$' }
+      description: 'Meta Advantage+ creative enhancements. Map snake_case feature names to OPT_IN or OPT_OUT; Meta validates supported keys and unspecified features default to OPT_OUT. auto_promotion_tag is an enhancement; use the separate promotion field for an explicit offer. The deprecated standard_enhancements bundle is rejected by Meta.'
+      example: { auto_promotion_tag: OPT_IN }
+    MetaPromotion:
+      type: [object, "null"]
+      description: 'Meta explicit Promotion offer. Maps to creative_sourcing_spec.promotion_metadata_spec with promotion_source ADVERTISER_INPUT. Dates become Unix seconds. Send null to omit an explicit offer on a new creative or remove it when rebuilding. Creation success alone does not confirm application: inspect promotionStatus in the response.'
+      required: [type, value]
+      properties:
+        type:
+          type: string
+          enum: [AMOUNT_OFF, FREE_RETURN, FREE_SHIPPING, PERCENTAGE_OFF, PROMO_CODE]
+          description: 'Promotion type accepted by Meta. PERCENTAGE_OFF values cannot exceed 100.'
+        value: { type: number, minimum: 0, description: 'Nonnegative promotion value passed to Meta unchanged. AMOUNT_OFF units are not confirmed, including major versus minor currency units. For PERCENTAGE_OFF this is the percentage discount, at most 100.' }
+        code: { type: string, minLength: 1, description: 'Optional promotion code.' }
+        startDate: { type: string, format: date-time, description: 'Optional ISO 8601 start timestamp with a timezone offset or Z.' }
+        endDate: { type: string, format: date-time, description: 'Optional ISO 8601 end timestamp with a timezone offset or Z. Must be after startDate when both are set.' }
+      example:
+        type: PERCENTAGE_OFF
+        value: 20
+        code: SAVE20
+        startDate: '2026-10-01T00:00:00Z'
+        endDate: '2026-10-31T23:59:59Z'
+    MetaPromotionStatus:
+      type: string
+      enum: [applied, not_returned, unavailable]
+      description: 'Meta creative readback result. applied means Meta returned promotion metadata; not_returned means the read succeeded without promotion metadata; unavailable means the read failed. Only applied confirms the returned offer. Missing metadata is not proof that Ads Manager displays the requested Promotion.'
+      example: not_returned
     Ad:
       type: object
       properties:
@@ -9159,6 +9195,10 @@ components:
             imageUrl: { type: string, description: Alternative image URL }
             videoId: { type: [string, "null"], description: "Meta video ID for VIDEO-type ads. Null for non-video ads. Callers that need an embeddable MP4 can call GET /{videoId}?fields=source with the page access token." }
             videoUrl: { type: [string, "null"], description: "Public Facebook watch URL for VIDEO-type ads (https://www.facebook.com/watch/?v={videoId}). Null for non-video ads." }
+            promotion:
+              $ref: '#/components/schemas/MetaPromotion'
+              description: 'Meta offer read from the live creative on creation or GET /v1/ads/{adId}. Null when metadata is not returned or cannot be read. Requested values are never echoed as applied.'
+            promotionStatus: { $ref: '#/components/schemas/MetaPromotionStatus' }
             creativeId: { type: [string, "null"], description: "Meta ad creative id backing this ad. Reusable via existingCreativeId on POST /v1/ads/create." }
             objectType: { type: string, description: "Meta creative object_type (e.g. SHARE, VIDEO, PRIVACY_CHECK_FAIL, POST_DELETED). Use this to render state-aware previews: when Meta moderation strips image/video fields, only thumbnailUrl at 64x64 is available." }
             objectStoryId: { type: [string, "null"], description: "Meta creative `object_story_id` (the SHARE reference). Frequently absent, because Meta omits it for SHARE creatives. Use effectiveObjectStoryId instead." }
@@ -43790,7 +43830,9 @@ paths:
         Duplicates a single ad via Meta's native `POST /{ad-id}/copies`. The copy is created
         paused. `adSetId` retargets the copy into another ad set; omitted = the source's own ad
         set. Accepts the Zernio ad id or the platform ad id. Sync discovery is triggered
-        automatically (`syncAfter: false` to skip).
+        automatically (`syncAfter: false` to skip). Creative settings returned by Meta,
+        including explicit promotion metadata and creativeFeatures, are preserved when the
+        native copy requires a creative rebuild. Metadata Meta does not return cannot be recovered.
       security:
         - bearerAuth: []
       parameters:
@@ -44282,9 +44324,19 @@ paths:
         - the creative's `effective_instagram_media_id` (Instagram side)
 
         Any of the four resolve to the same ad. Caller doesn't need a translation step.
+        By default, creative.promotion and creative.creativeFeatures contain stored requested
+        settings, which do not confirm platform application. With `refreshPromotion=true`,
+        Meta promotion metadata is read live and exposed as `ad.creative.promotion`
+        with `promotionStatus`. Only `applied` confirms an offer; `not_returned` means the
+        creative read succeeded without promotion metadata, and `unavailable` means it failed.
       security:
         - bearerAuth: []
       parameters:
+        - name: refreshPromotion
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+          description: 'Meta only. Read current promotion metadata from Meta and include promotionStatus. Omit for stored creative settings with no promotion-specific Graph call.'
         - name: adId
           in: path
           required: true
@@ -44300,6 +44352,7 @@ paths:
                 type: object
                 properties:
                   ad: { $ref: '#/components/schemas/Ad' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
     put:
@@ -44448,6 +44501,10 @@ paths:
                       GET /v1/ads/creatives and ignores every other field. Meta creatives are
                       immutable, so any change creates a new creative and repoints the ad; the old
                       creative is retained on the ad account for historical reporting.
+                      `promotion` and `creativeFeatures` are Meta-only. Omitted settings are
+                      preserved from the live creative, including full rebuilds. Send
+                      `promotion: null` to remove the explicit offer from the replacement.
+                      A supplied creativeFeatures map overrides individual existing keys.
                     - **TikTok**: patch-style. Pass any subset; `headline` is ignored (TikTok creatives
                       have no headline slot). `body` becomes the in-feed `ad_text`; `linkUrl` becomes
                       `landing_page_url`; `videoUrl` triggers a fresh upload. `description`, `videoId`
@@ -44458,6 +44515,8 @@ paths:
                       The old creative is retained for historical reporting. `videoId` and
                       `existingCreativeId` are Meta-only and return 400.
                   properties:
+                    promotion: { $ref: '#/components/schemas/MetaPromotion' }
+                    creativeFeatures: { $ref: '#/components/schemas/MetaCreativeFeatures' }
                     headline: { type: string, description: "Meta and LinkedIn (TikTok has no headline slot)" }
                     body: { type: string }
                     description: { type: string, maxLength: 255, description: "Link description slot (Meta `link_data.description` / `video_data.link_description`, LinkedIn creative description)." }
@@ -44468,6 +44527,10 @@ paths:
                     videoId: { type: string, description: "Meta only. Reuse an already-uploaded ad video (from POST /v1/ads/videos or GET /v1/ads/videos) instead of re-uploading via videoUrl." }
                     existingCreativeId: { type: string, description: "Meta only. Repoint the ad at an existing library creative (from GET /v1/ads/creatives); all other creative fields are ignored." }
                 name: { type: string, maxLength: 255, description: "Rename the ad. Now propagated to Meta (POST /{ad-id}); non-Meta platforms return 501." }
+            example:
+              creative:
+                promotion: null
+                creativeFeatures: { auto_promotion_tag: OPT_OUT }
       responses:
         '200':
           description: Ad updated
@@ -45886,7 +45949,11 @@ paths:
         `existingCreativeId`. Provide exactly one of `imageUrl` (uploaded server-side),
         `imageHash` (from POST /v1/ads/images or the library list), or `carouselCards` (2-10
         hand-built cards). The Page (and linked Instagram account, when present) is resolved
-        from `accountId` as the story actor.
+        from `accountId` as the story actor. `promotion` configures an explicit offer separately
+        from Advantage+ `creativeFeatures`. Only when `promotion` is supplied does the response
+        read the creative back from Meta;
+        `promotionStatus: not_returned` means Meta accepted creation but omitted promotion
+        metadata, so the requested offer is not confirmed as applied.
       security:
         - bearerAuth: []
       requestBody:
@@ -45920,14 +45987,23 @@ paths:
                       description: { type: string, maxLength: 255 }
                       callToAction: { type: string }
                 urlTags: { type: string, description: "Appended to every outbound URL (e.g. utm_source=fb)." }
+                promotion: { $ref: '#/components/schemas/MetaPromotion' }
                 creativeFeatures:
-                  type: object
-                  additionalProperties: { type: string, enum: [OPT_IN, OPT_OUT] }
-                  description: 'Advantage+ creative enhancements: partial map of Meta creative feature keys (snake_case) to enroll status, forwarded as degrees_of_freedom_spec.creative_features_spec. Unspecified features default to OPT_OUT.'
+                  $ref: '#/components/schemas/MetaCreativeFeatures'
+                  description: 'Meta only. Applied to each new creative, including standalone and attach shapes. With creatives[], these are defaults; an item replaces the whole feature map, including an empty map. auto_promotion_tag is an enhancement; an explicit offer uses promotion.'
                 multiAdvertiser:
                   type: string
                   enum: [OPT_IN, OPT_OUT]
                   description: "Meta only. Multi-advertiser ads: whether Meta may show this ad alongside other advertisers' in one unit. Meta auto-enrols since Aug 2024, so send OPT_OUT to leave. It is a top-level creative field, NOT a `creativeFeatures` key, and Meta rejects it there."
+            example:
+              accountId: '69fc524892b3d8e85f893e73'
+              adAccountId: act_123456789
+              headline: Save on your next order
+              body: Use SAVE20 at checkout.
+              linkUrl: https://example.com/shop
+              imageUrl: https://example.com/ad.jpg
+              promotion: { type: PERCENTAGE_OFF, value: 20, code: SAVE20 }
+              creativeFeatures: { auto_promotion_tag: OPT_OUT }
       responses:
         '201':
           description: Creative created
@@ -45938,6 +46014,13 @@ paths:
                 properties:
                   adAccountId: { type: string }
                   creativeId: { type: string, description: "Platform creative id, reusable via existingCreativeId." }
+                  promotion: { $ref: '#/components/schemas/MetaPromotion' }
+                  promotionStatus: { $ref: '#/components/schemas/MetaPromotionStatus' }
+              example:
+                adAccountId: act_123456789
+                creativeId: '123456789012345'
+                promotion: null
+                promotionStatus: not_returned
         '400': { description: "Invalid input, or Meta rejected the create" }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '422': { description: No Facebook Page found to act as the story actor }
@@ -47486,6 +47569,7 @@ paths:
               type: object
               required: [accountId, adAccountId, name, goal]
               properties:
+                creativeFeatures: { $ref: '#/components/schemas/MetaCreativeFeatures' }
                 postId: { type: string, description: Zernio post ID (provide this or platformPostId) }
                 platformPostId: { type: string, description: Platform post ID (alternative to postId) }
                 accountId: { type: string, description: Account ID }
@@ -47805,6 +47889,16 @@ paths:
         - Meta-only multi-creative shape via the creatives array: one ad set with N ads sharing budget and targeting.
         - Attach shape via adSetId: adds one new ad to an existing ad set, inheriting its budget, targeting, and schedule (Meta, Google Ads, TikTok, and LinkedIn). On LinkedIn adSetId is the existing Campaign id, and the budget, schedule, targeting and bidding fields must be omitted.
 
+        Meta accepts `promotion` and `creativeFeatures` on the single and attach shapes and
+        as defaults for `creatives[]`. An item replaces the whole feature map; its `promotion`
+        replaces the default offer, and `promotion: null` disables that default for the item.
+        Reusing `existingCreativeId` uses the existing creative settings instead of new settings.
+        Requested settings are persisted for lists, exports, and default ad-detail reads.
+        Only ads supplied a `promotion` receive live readback; multi-create batches those reads
+        in groups of up to 50 IDs without per-ad fallback. Inspect `ad.creative.promotionStatus` (or
+        `ads[].creative.promotionStatus`). `not_returned` means Meta omitted the metadata;
+        successful creation does not by itself prove the offer was applied or will display.
+
         Per-platform required fields, budget minimums, and video-ad rules are documented on each property below.
 
         LinkedIn creates a Single Image or Single Video Ad backed by a Direct Sponsored Content "dark post" authored by a Company Page (see `organizationId`). Supported goals are engagement, traffic, awareness, and video_views (video ads use the `video` field; video_views requires a video), and traffic ads require `linkUrl`.
@@ -47871,10 +47965,10 @@ paths:
                 billingEvent: { type: string, description: "Meta only. Explicit ad-set `billing_event`. Defaults to `IMPRESSIONS`. Forwarded verbatim to Meta, which validates compatibility with the optimization goal." }
                 buyingType: { type: string, enum: [AUCTION, RESERVED], description: "Meta only. RESERVED = Reach & Frequency: requires `rfPredictionId` (a RESERVED prediction from /v1/ads/rf-predictions + /reserve). Budget, schedule and pricing come from the reservation, so budgetAmount/budgetType are not required and bid fields are ignored. Only the plain single-ad shape (no creatives[], adSetId, existingCampaignId or dynamicCreative)." }
                 rfPredictionId: { type: string, description: "Meta only. The RESERVED prediction id the R&F ad set runs on (reserving mints a new id, so pass that one). Requires buyingType RESERVED." }
+                promotion: { $ref: '#/components/schemas/MetaPromotion' }
                 creativeFeatures:
-                  type: object
-                  additionalProperties: { type: string, enum: [OPT_IN, OPT_OUT] }
-                  description: 'Meta only. Advantage+ creative enhancements: a partial map of Meta creative feature keys (snake_case, e.g. enhance_cta, image_brightness_and_contrast, text_optimizations) to enroll status, forwarded as degrees_of_freedom_spec.creative_features_spec. Meta validates the keys; unspecified features default to OPT_OUT. The legacy standard_enhancements bundle is deprecated by Meta and rejected.'
+                  $ref: '#/components/schemas/MetaCreativeFeatures'
+                  description: 'Meta only. Applied to each new creative, including standalone and attach shapes. With creatives[], these are defaults; an item replaces the whole feature map, including an empty map. auto_promotion_tag is an enhancement; an explicit offer uses promotion.'
                 multiAdvertiser:
                   type: string
                   enum: [OPT_IN, OPT_OUT]
@@ -47970,6 +48064,12 @@ paths:
                     required: [headline, body, linkUrl, callToAction]
                     description: "Each creative must supply EXACTLY ONE of `imageUrl` (image creative) or `video` (video creative)."
                     properties:
+                      promotion:
+                        $ref: '#/components/schemas/MetaPromotion'
+                        description: 'Overrides the top-level offer for this item. Omit to inherit; null disables the inherited offer.'
+                      creativeFeatures:
+                        $ref: '#/components/schemas/MetaCreativeFeatures'
+                        description: 'Replaces the entire top-level creativeFeatures map for this item. Omit to inherit; an empty map clears these defaults.'
                       name: { type: string, maxLength: 255, description: "Exact name for this ad. Falls back to `<name> #N` (N = 1-based position)." }
                       headline: { type: string, maxLength: 255 }
                       body: { type: string }
@@ -47993,7 +48093,8 @@ paths:
                     are inherited from the ad set on Meta, and passing `bidStrategy`
                     in attach mode returns 400. To change an existing ad set's
                     bid, use `PUT /v1/ads/ad-sets/{adSetId}`. Mutually exclusive
-                    with `creatives[]`.
+                    with `creatives[]`. `dynamicCreative` returns 400 in attach mode: create
+                    a new dynamic ad set by omitting `adSetId` instead.
 
                     The attached ad takes the full single-creative surface:
                     `headline`/`body`/`description`/`callToAction` plus either
@@ -48300,7 +48401,10 @@ paths:
                     (`imageUrl`, `headline`, `body`, `linkUrl`, `callToAction`) are ignored. Mutually
                     exclusive with the `creatives[]` multi-creative shape. Exactly ONE of `imageUrls` /
                     `videoUrls` is required (Meta allows one ad format per asset feed; sending both →
-                    400). Meta limits: ≤10 images or ≤10 videos, ≤5 bodies / titles / descriptions.
+                    400). Limits remain 10 images or videos and 5 bodies, titles or descriptions.
+                    The ad set is created with `is_dynamic_creative: true`. Combining this field
+                    with `adSetId` returns 400: omit `adSetId` to create a new dynamic ad set.
+                    Multiple headlines go in `titles`; multiple primary texts go in `bodies`.
                   properties:
                     imageUrls:
                       type: array
@@ -48840,10 +48944,10 @@ paths:
                         error_subcode 1885014).
                     productCatalogId:
                       type: string
-                      description: Catalog ID for catalog/Advantage+ Shopping campaigns.
+                      description: "Optional catalog ID. If supplied with productSetId, the set must belong to this catalog. A catalog ID cannot replace productSetId."
                     productSetId:
                       type: string
-                      description: Product Set ID inside the catalog.
+                      description: "Meta product SET ID from GET /v1/ads/catalogs/{catalogId}/product-sets. Zernio checks that the token can read the set and its product_catalog before creation. A catalog ID or inaccessible set returns a precise 400 naming promotedObject.productSetId. A mismatch with productCatalogId names promotedObject.productCatalogId."
                     offlineConversionDataSetId:
                       type: string
                       description: 'Meta only. Offline event set (dataset) to optimise toward. Post-merger these are datasets: the id is the dataset id (for pixel-backed datasets, the pixel id).'
@@ -48851,6 +48955,21 @@ paths:
                       type: string
                       description: 'Meta only. WhatsApp number on messaging-destination ad sets.'
                   additionalProperties: false
+            example:
+              accountId: '69fc524892b3d8e85f893e73'
+              adAccountId: act_123456789
+              name: Autumn promotion
+              goal: traffic
+              budgetAmount: 5
+              budgetType: daily
+              status: PAUSED
+              headline: Save on your next order
+              body: Use SAVE20 at checkout.
+              callToAction: SHOP_NOW
+              linkUrl: https://example.com/shop
+              imageUrl: https://example.com/ad.jpg
+              promotion: { type: PERCENTAGE_OFF, value: 20, code: SAVE20 }
+              creativeFeatures: { auto_promotion_tag: OPT_OUT }
       responses:
         '200':
           description: 'validateOnly dry-run passed, nothing was created'
@@ -50017,7 +50136,7 @@ paths:
       tags: ["Ad Creatives"]
       x-platforms: ["meta"]
       summary: List a catalog's product sets
-      description: "Lists a Meta product catalog's product sets, the unit a catalog ad promotes. Pass the chosen set as `promotedObject.productSetId` on POST /v1/ads/create with `goal: catalog_sales`."
+      description: "Lists a Meta product catalog's product sets, the unit a catalog ad promotes. Pass the chosen set id, not the parent catalog id, as `promotedObject.productSetId` on POST /v1/ads/create with `goal: catalog_sales`. Creation verifies set visibility and returns 400 for a catalog id or an inaccessible set."
       security:
         - bearerAuth: []
       parameters:

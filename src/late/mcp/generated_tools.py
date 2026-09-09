@@ -3638,15 +3638,18 @@ def register_generated_tools(mcp, _get_client):
             openWorldHint=False,
         )
     )
-    def ad_campaigns_get_ad(ad_id: str) -> str:
+    def ad_campaigns_get_ad(ad_id: str, refresh_promotion: bool = False) -> str:
         """Get ad details
 
            Args:
+               refresh_promotion: Meta only. Read current promotion metadata from Meta and include promotionStatus. Omit for stored creative settings with no promotion-specific Graph call.
                ad_id: Zernio `_id` (hex), Meta `platformAdId` (numeric), or one of the creative's effective story/media IDs. See description for details.
         (required)"""
         client = _get_client()
         try:
-            response = client.ad_campaigns.get_ad(ad_id=ad_id)
+            response = client.ad_campaigns.get_ad(
+                refresh_promotion=refresh_promotion, ad_id=ad_id
+            )
             return _format_response(response)
         except Exception as e:
             return f"Error: {e}"
@@ -3689,6 +3692,10 @@ def register_generated_tools(mcp, _get_client):
           GET /v1/ads/creatives and ignores every other field. Meta creatives are
           immutable, so any change creates a new creative and repoints the ad; the old
           creative is retained on the ad account for historical reporting.
+          `promotion` and `creativeFeatures` are Meta-only. Omitted settings are
+          preserved from the live creative, including full rebuilds. Send
+          `promotion: null` to remove the explicit offer from the replacement.
+          A supplied creativeFeatures map overrides individual existing keys.
         - **TikTok**: patch-style. Pass any subset; `headline` is ignored (TikTok creatives
           have no headline slot). `body` becomes the in-feed `ad_text`; `linkUrl` becomes
           `landing_page_url`; `videoUrl` triggers a fresh upload. `description`, `videoId`
@@ -3857,6 +3864,7 @@ def register_generated_tools(mcp, _get_client):
         ad_account_id: str,
         name: str,
         goal: str,
+        creative_features: dict[str, Any] | None = None,
         post_id: str | None = None,
         platform_post_id: str | None = None,
         ad_set_id: str | None = None,
@@ -3889,6 +3897,7 @@ def register_generated_tools(mcp, _get_client):
         """Boost post as ad
 
             Args:
+                creative_features
                 post_id: Zernio post ID (provide this or platformPostId)
                 platform_post_id: Platform post ID (alternative to postId)
                 account_id: Account ID (required)
@@ -4007,6 +4016,7 @@ def register_generated_tools(mcp, _get_client):
         client = _get_client()
         try:
             response = client.ad_campaigns.boost_post(
+                creative_features=creative_features,
                 post_id=post_id,
                 platform_post_id=platform_post_id,
                 account_id=account_id,
@@ -4065,6 +4075,7 @@ def register_generated_tools(mcp, _get_client):
         billing_event: str | None = None,
         buying_type: str | None = None,
         rf_prediction_id: str | None = None,
+        promotion: str | None = None,
         creative_features: dict[str, Any] | None = None,
         multi_advertiser: str | None = None,
         validate_only: bool | None = None,
@@ -4187,7 +4198,8 @@ def register_generated_tools(mcp, _get_client):
                 billing_event: Meta only. Explicit ad-set `billing_event`. Defaults to `IMPRESSIONS`. Forwarded verbatim to Meta, which validates compatibility with the optimization goal.
                 buying_type: Meta only. RESERVED = Reach & Frequency: requires `rfPredictionId` (a RESERVED prediction from /v1/ads/rf-predictions + /reserve). Budget, schedule and pricing come from the reservation, so budgetAmount/budgetType are not required and bid fields are ignored. Only the plain single-ad shape (no creatives[], adSetId, existingCampaignId or dynamicCreative).
                 rf_prediction_id: Meta only. The RESERVED prediction id the R&F ad set runs on (reserving mints a new id, so pass that one). Requires buyingType RESERVED.
-                creative_features: Meta only. Advantage+ creative enhancements: a partial map of Meta creative feature keys (snake_case, e.g. enhance_cta, image_brightness_and_contrast, text_optimizations) to enroll status, forwarded as degrees_of_freedom_spec.creative_features_spec. Meta validates the keys; unspecified features default to OPT_OUT. The legacy standard_enhancements bundle is deprecated by Meta and rejected.
+                promotion
+                creative_features: Meta only. Applied to each new creative, including standalone and attach shapes. With creatives[], these are defaults; an item replaces the whole feature map, including an empty map. auto_promotion_tag is an enhancement; an explicit offer uses promotion.
                 multi_advertiser: Meta only. Multi-advertiser ads: whether Meta may show this ad alongside other advertisers' in one unit. Meta auto-enrols since Aug 2024, so send OPT_OUT to leave. It is a top-level creative field, NOT a `creativeFeatures` key, and Meta rejects it there.
                 validate_only: Meta only, single standalone shape only (no creatives[], adSetId, or RESERVED). Dry-run: each node runs Meta's execution_options validate_only and NOTHING is created or persisted. Children need real parents, so a fresh tree validates the campaign + creative (the ad set needs its campaign to exist, so pass existingCampaignId to validate it too; the ad itself is never validatable pre-create). A Meta validation failure returns the 400 verbatim; success returns 200 with per-node results instead of an ad.
                 budget_amount: Budget in WHOLE currency units (USD: 50 = $50.00), NOT cents. Meta's own Marketing API takes this same number in minor units, so it is an easy and expensive mix-up. Required on legacy + multi-creative shapes. Inherited on attach. OpenAI Ads requires a $1 minimum (its budget is lifetime-only, see budgetType).
@@ -4236,7 +4248,8 @@ def register_generated_tools(mcp, _get_client):
         are inherited from the ad set on Meta, and passing `bidStrategy`
         in attach mode returns 400. To change an existing ad set's
         bid, use `PUT /v1/ads/ad-sets/{adSetId}`. Mutually exclusive
-        with `creatives[]`.
+        with `creatives[]`. `dynamicCreative` returns 400 in attach mode: create
+        a new dynamic ad set by omitting `adSetId` instead.
 
         The attached ad takes the full single-creative surface:
         `headline`/`body`/`description`/`callToAction` plus either
@@ -4380,7 +4393,10 @@ def register_generated_tools(mcp, _get_client):
         (`imageUrl`, `headline`, `body`, `linkUrl`, `callToAction`) are ignored. Mutually
         exclusive with the `creatives[]` multi-creative shape. Exactly ONE of `imageUrls` /
         `videoUrls` is required (Meta allows one ad format per asset feed; sending both →
-        400). Meta limits: ≤10 images or ≤10 videos, ≤5 bodies / titles / descriptions.
+        400). Limits remain 10 images or videos and 5 bodies, titles or descriptions.
+        The ad set is created with `is_dynamic_creative: true`. Combining this field
+        with `adSetId` returns 400: omit `adSetId` to create a new dynamic ad set.
+        Multiple headlines go in `titles`; multiple primary texts go in `bodies`.
                 carousel_cards: Meta only. Hand-built carousel: 2-10 authored cards in DETERMINISTIC order, mapped to
         the creative's `link_data.child_attachments`. Unlike `dynamicCreative`,
         you control the card order and per-card copy/link. Requires top-level `body`
@@ -4624,6 +4640,7 @@ def register_generated_tools(mcp, _get_client):
                 billing_event=billing_event,
                 buying_type=buying_type,
                 rf_prediction_id=rf_prediction_id,
+                promotion=promotion,
                 creative_features=creative_features,
                 multi_advertiser=multi_advertiser,
                 validate_only=validate_only,
@@ -4850,6 +4867,7 @@ def register_generated_tools(mcp, _get_client):
         image_hash: str | None = None,
         carousel_cards: list[dict[str, Any]] | None = None,
         url_tags: str | None = None,
+        promotion: str | None = None,
         creative_features: dict[str, Any] | None = None,
         multi_advertiser: str | None = None,
     ) -> str:
@@ -4867,7 +4885,8 @@ def register_generated_tools(mcp, _get_client):
             image_hash: Existing library image hash (POST /v1/ads/images or GET /v1/ads/images).
             carousel_cards
             url_tags: Appended to every outbound URL (e.g. utm_source=fb).
-            creative_features: Advantage+ creative enhancements: partial map of Meta creative feature keys (snake_case) to enroll status, forwarded as degrees_of_freedom_spec.creative_features_spec. Unspecified features default to OPT_OUT.
+            promotion
+            creative_features: Meta only. Applied to each new creative, including standalone and attach shapes. With creatives[], these are defaults; an item replaces the whole feature map, including an empty map. auto_promotion_tag is an enhancement; an explicit offer uses promotion.
             multi_advertiser: Meta only. Multi-advertiser ads: whether Meta may show this ad alongside other advertisers' in one unit. Meta auto-enrols since Aug 2024, so send OPT_OUT to leave. It is a top-level creative field, NOT a `creativeFeatures` key, and Meta rejects it there."""
         client = _get_client()
         try:
@@ -4883,6 +4902,7 @@ def register_generated_tools(mcp, _get_client):
                 image_hash=image_hash,
                 carousel_cards=carousel_cards,
                 url_tags=url_tags,
+                promotion=promotion,
                 creative_features=creative_features,
                 multi_advertiser=multi_advertiser,
             )
@@ -14809,6 +14829,7 @@ def register_generated_tools(mcp, _get_client):
         ad_account_id: str,
         name: str,
         destination: str,
+        creative_features: dict[str, Any] | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -14849,6 +14870,7 @@ def register_generated_tools(mcp, _get_client):
         """Create messaging ad
 
             Args:
+                creative_features: Meta enhancement settings for single or attached ads, and defaults for creatives[]. An item replaces the entire map, including with an empty object.
                 account_id: Facebook or Instagram SocialAccount ID. (required)
                 ad_account_id: Meta ad account ID, e.g. `act_123456789`. (required)
                 name: Ad display name. Used to derive campaign / ad set names.
@@ -14980,6 +15002,7 @@ def register_generated_tools(mcp, _get_client):
         client = _get_client()
         try:
             response = client.messaging_ads.create_messaging_ad(
+                creative_features=creative_features,
                 account_id=account_id,
                 ad_account_id=ad_account_id,
                 name=name,
@@ -15039,6 +15062,7 @@ def register_generated_tools(mcp, _get_client):
         name: str,
         phone_number: str,
         link_url: str,
+        creative_features: dict[str, Any] | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -15079,6 +15103,7 @@ def register_generated_tools(mcp, _get_client):
         """Create Click-to-Call ad
 
             Args:
+                creative_features: Meta enhancement settings for single or attached ads, and defaults for creatives[]. An item replaces the entire map, including with an empty object.
                 account_id: Facebook or Instagram SocialAccount ID. (required)
                 ad_account_id: Meta ad account ID, e.g. `act_123456789`. (required)
                 name: Ad display name. Used to derive campaign / ad set names.
@@ -15211,6 +15236,7 @@ def register_generated_tools(mcp, _get_client):
         client = _get_client()
         try:
             response = client.messaging_ads.create_call_ad(
+                creative_features=creative_features,
                 account_id=account_id,
                 ad_account_id=ad_account_id,
                 name=name,
@@ -15269,6 +15295,7 @@ def register_generated_tools(mcp, _get_client):
         account_id: str,
         ad_account_id: str,
         name: str,
+        creative_features: dict[str, Any] | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -15309,6 +15336,7 @@ def register_generated_tools(mcp, _get_client):
         """Create CTWA ad (deprecated)
 
             Args:
+                creative_features: Meta enhancement settings for single or attached ads, and defaults for creatives[]. An item replaces the entire map, including with an empty object.
                 account_id: Facebook or Instagram SocialAccount ID. (required)
                 ad_account_id: Meta ad account ID, e.g. `act_123456789`. (required)
                 name: Ad display name. Used to derive campaign / ad set names.
@@ -15439,6 +15467,7 @@ def register_generated_tools(mcp, _get_client):
         client = _get_client()
         try:
             response = client.messaging_ads.create_ctwa_ad(
+                creative_features=creative_features,
                 account_id=account_id,
                 ad_account_id=ad_account_id,
                 name=name,

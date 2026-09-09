@@ -138,7 +138,8 @@ class AdCreativesResource:
         image_hash: str | None = None,
         carousel_cards: list[dict[str, Any]] | None = None,
         url_tags: str | None = None,
-        creative_features: dict[str, Any] | None = None,
+        promotion: Any | None = None,
+        creative_features: Any | None = None,
         multi_advertiser: str | None = None,
     ) -> dict[str, Any]:
         """Create a standalone creative"""
@@ -154,6 +155,7 @@ class AdCreativesResource:
             image_hash=image_hash,
             carousel_cards=carousel_cards,
             url_tags=url_tags,
+            promotion=promotion,
             creative_features=creative_features,
             multi_advertiser=multi_advertiser,
         )
@@ -354,7 +356,8 @@ class AdCreativesResource:
         image_hash: str | None = None,
         carousel_cards: list[dict[str, Any]] | None = None,
         url_tags: str | None = None,
-        creative_features: dict[str, Any] | None = None,
+        promotion: Any | None = None,
+        creative_features: Any | None = None,
         multi_advertiser: str | None = None,
     ) -> dict[str, Any]:
         """Create a standalone creative (async)"""
@@ -370,6 +373,7 @@ class AdCreativesResource:
             image_hash=image_hash,
             carousel_cards=carousel_cards,
             url_tags=url_tags,
+            promotion=promotion,
             creative_features=creative_features,
             multi_advertiser=multi_advertiser,
         )
