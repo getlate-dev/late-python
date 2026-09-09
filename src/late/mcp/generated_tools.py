@@ -8846,7 +8846,7 @@ def register_generated_tools(mcp, _get_client):
             account_id: Instagram or Facebook account ID (required)
             trigger: What fires the automation. 'comment' (keyword comment on a post) or 'story_reply' (keyword reply to an Instagram story). For 'story_reply', platformPostId is the story media id (omit for any story).
             platform_post_id: Platform media/post ID (or story media id when trigger=story_reply). Omit for an account-wide (any-post / any-story) automation.
-            post_id: Zernio post ID. Required only when also targeting a specific post via platformPostId.
+            post_id: Zernio post ID. Optional and never required. Use it INSTEAD of platformPostId to bind a per-post automation to a not-yet-published Zernio post: the automation stays pending and arms itself when that post publishes. For a post already live on the platform, pass platformPostId alone and omit this.
             post_title: Post content snippet for display
             name: Automation label (required)
             keywords: Trigger keywords (empty = any comment triggers)
@@ -19448,11 +19448,60 @@ def register_generated_tools(mcp, _get_client):
 
         Args:
             account_id: The WhatsApp account ID (required)
-            pin: The 6-digit two-step verification PIN set on the number. Omit it only if the number has no PIN of its own."""
+            pin: The 6-digit two-step verification PIN set on the number. Omitting it applies Zernio's managed default registration PIN, the same one every Embedded Signup connect sets automatically."""
         client = _get_client()
         try:
             response = client.whatsapp.register_whats_app_number(
                 account_id=account_id, pin=pin
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Request a Meta re-verification code for a BYO WhatsApp number",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def whatsapp_request_whats_app_verification_code(
+        account_id: str, method: str = "SMS", language: str = "en_US"
+    ) -> str:
+        """Request a Meta re-verification code for a BYO WhatsApp number
+
+        Args:
+            account_id: The WhatsApp account ID (required)
+            method
+            language: Meta locale code for the verification message, e.g. en_US."""
+        client = _get_client()
+        try:
+            response = client.whatsapp.request_whats_app_verification_code(
+                account_id=account_id, method=method, language=language
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Verify the Meta re-verification code for a BYO WhatsApp number",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def whatsapp_verify_whats_app_number(account_id: str, code: str) -> str:
+        """Verify the Meta re-verification code for a BYO WhatsApp number
+
+        Args:
+            account_id: The WhatsApp account ID (required)
+            code: The 6-digit code Meta sent to the phone. Non-digit separators (e.g. "749-456") are stripped automatically. (required)"""
+        client = _get_client()
+        try:
+            response = client.whatsapp.verify_whats_app_number(
+                account_id=account_id, code=code
             )
             return _format_response(response)
         except Exception as e:

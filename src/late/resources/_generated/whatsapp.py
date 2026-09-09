@@ -84,6 +84,31 @@ class WhatsappResource:
             f"/v1/accounts/{account_id}/whatsapp/register", data=payload
         )
 
+    def request_whats_app_verification_code(
+        self,
+        account_id: str,
+        *,
+        method: str | None = "SMS",
+        language: str | None = "en_US",
+    ) -> dict[str, Any]:
+        """Request a Meta re-verification code for a BYO WhatsApp number"""
+        payload = self._build_payload(
+            method=method,
+            language=language,
+        )
+        return self._client._post(
+            f"/v1/accounts/{account_id}/whatsapp/request-code", data=payload
+        )
+
+    def verify_whats_app_number(self, account_id: str, code: str) -> dict[str, Any]:
+        """Verify the Meta re-verification code for a BYO WhatsApp number"""
+        payload = self._build_payload(
+            code=code,
+        )
+        return self._client._post(
+            f"/v1/accounts/{account_id}/whatsapp/verify-code", data=payload
+        )
+
     def get_whats_app_media(self, media_id: str, account_id: str) -> dict[str, Any]:
         """Download WhatsApp media"""
         params = self._build_params(
@@ -576,6 +601,33 @@ class WhatsappResource:
         )
         return await self._client._apost(
             f"/v1/accounts/{account_id}/whatsapp/register", data=payload
+        )
+
+    async def arequest_whats_app_verification_code(
+        self,
+        account_id: str,
+        *,
+        method: str | None = "SMS",
+        language: str | None = "en_US",
+    ) -> dict[str, Any]:
+        """Request a Meta re-verification code for a BYO WhatsApp number (async)"""
+        payload = self._build_payload(
+            method=method,
+            language=language,
+        )
+        return await self._client._apost(
+            f"/v1/accounts/{account_id}/whatsapp/request-code", data=payload
+        )
+
+    async def averify_whats_app_number(
+        self, account_id: str, code: str
+    ) -> dict[str, Any]:
+        """Verify the Meta re-verification code for a BYO WhatsApp number (async)"""
+        payload = self._build_payload(
+            code=code,
+        )
+        return await self._client._apost(
+            f"/v1/accounts/{account_id}/whatsapp/verify-code", data=payload
         )
 
     async def aget_whats_app_media(

@@ -17802,7 +17802,7 @@ paths:
                 pin:
                   type: string
                   pattern: '^\d{6}$'
-                  description: 'The 6-digit two-step verification PIN set on the number. Omit it only if the number has no PIN of its own.'
+                  description: 'The 6-digit two-step verification PIN set on the number. Omitting it applies Zernio''s managed default registration PIN, the same one every Embedded Signup connect sets automatically.'
             example:
               pin: "481902"
       responses:
@@ -17824,6 +17824,124 @@ paths:
           description: WhatsApp account not found
         '422':
           description: 'Meta rejected the registration (e.g. PIN mismatch), or the number cannot be registered through the API.'
+  /v1/accounts/{accountId}/whatsapp/request-code:
+    post:
+      x-resource-group: "accounts"
+      operationId: requestWhatsAppVerificationCode
+      tags: [WhatsApp]
+      summary: Request a Meta re-verification code for a BYO WhatsApp number
+      description: |
+        For a bring-your-own WhatsApp number (its own WABA, migrated off another BSP) that
+        Meta demoted to re-verification, this requests a new OTP from Meta. The code lands
+        on the customer's own handset, so verifying it is necessarily self-service; call
+        POST /v1/accounts/{accountId}/whatsapp/verify-code with the code once it arrives.
+        Rate-limited to one request per 10 minutes per account, and Meta enforces its own
+        cooldown on top of that.
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: { type: string }
+          description: The WhatsApp account ID
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                method:
+                  type: string
+                  enum: [SMS, VOICE]
+                  default: SMS
+                language:
+                  type: string
+                  default: en_US
+                  description: 'Meta locale code for the verification message, e.g. en_US.'
+      responses:
+        '200':
+          description: 'Code requested, or the number was already CONNECTED and no code was needed.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requested: { type: boolean }
+                  alreadyActive: { type: boolean }
+                  method: { type: string }
+                  accountId: { type: string }
+                  phoneNumberId: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: 'Meta already reports this number as VERIFIED. Call POST /v1/accounts/{accountId}/whatsapp/register instead.'
+        '422':
+          description: 'The account has no phone number bound yet, it runs in coexistence with the WhatsApp Business app, or Meta rejected the code request.'
+        '429':
+          description: 'Our own 10-minute-per-account cooldown is active, or Meta has escalated to a multi-hour lockout after repeated attempts.'
+          headers:
+            Retry-After:
+              description: 'Seconds remaining until the cooldown or lockout clears.'
+              schema: { type: integer }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '503':
+          description: "Meta could not dispatch a code for this number yet. Retry shortly."
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before retrying.'
+              schema: { type: integer }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /v1/accounts/{accountId}/whatsapp/verify-code:
+    post:
+      x-resource-group: "accounts"
+      operationId: verifyWhatsAppNumber
+      tags: [WhatsApp]
+      summary: Verify the Meta re-verification code for a BYO WhatsApp number
+      description: |
+        Submits the OTP Meta sent in response to POST /v1/accounts/{accountId}/whatsapp/request-code.
+        This only verifies the number with Meta; it does not register it on the Cloud API.
+        Call POST /v1/accounts/{accountId}/whatsapp/register afterward to complete activation.
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: { type: string }
+          description: The WhatsApp account ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  description: 'The 6-digit code Meta sent to the phone. Non-digit separators (e.g. "749-456") are stripped automatically.'
+            example:
+              code: "749456"
+      responses:
+        '200':
+          description: Number verified with Meta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified: { type: boolean }
+                  accountId: { type: string }
+                  phoneNumberId: { type: string }
+        '400':
+          description: 'The code is malformed, or Meta rejected it as wrong or expired.'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: 'The account has no phone number bound to it yet.'
   /v1/accounts/{accountId}/health:
     get:
       x-resource-group: "accounts"
@@ -41650,7 +41768,7 @@ paths:
                 accountId: { type: string, description: Instagram or Facebook account ID }
                 trigger: { type: string, enum: [comment, story_reply], default: comment, description: "What fires the automation. 'comment' (keyword comment on a post) or 'story_reply' (keyword reply to an Instagram story). For 'story_reply', platformPostId is the story media id (omit for any story)." }
                 platformPostId: { type: string, description: "Platform media/post ID (or story media id when trigger=story_reply). Omit for an account-wide (any-post / any-story) automation." }
-                postId: { type: string, description: "Zernio post ID. Required only when also targeting a specific post via platformPostId." }
+                postId: { type: string, description: "Zernio post ID. Optional and never required. Use it INSTEAD of platformPostId to bind a per-post automation to a not-yet-published Zernio post: the automation stays pending and arms itself when that post publishes. For a post already live on the platform, pass platformPostId alone and omit this." }
                 postTitle: { type: string, description: Post content snippet for display }
                 name: { type: string, description: Automation label }
                 keywords:

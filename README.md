@@ -1022,10 +1022,12 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `whatsapp.register_whats_app_number()` | Register a connected WhatsApp number on the Cloud API |
 | `whatsapp.reject_whats_app_group_join_requests()` | Reject join requests |
 | `whatsapp.remove_whats_app_group_participants()` | Remove participants |
+| `whatsapp.request_whats_app_verification_code()` | Request a Meta re-verification code for a BYO WhatsApp number |
 | `whatsapp.send_whats_app_conversion()` | Send WhatsApp conversion event |
 | `whatsapp.set_whatsapp_business_username()` | Set business username |
 | `whatsapp.unblock_whats_app_users()` | Unblock users |
 | `whatsapp.upload_whats_app_profile_photo()` | Upload profile picture |
+| `whatsapp.verify_whats_app_number()` | Verify the Meta re-verification code for a BYO WhatsApp number |
 
 ### WhatsApp Calling
 | Method | Description |
