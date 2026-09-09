@@ -3471,8 +3471,8 @@ def register_generated_tools(mcp, _get_client):
                 status
                 budget
                 targeting: Meta + TikTok (demographics/interests), Google (keyword and device
-        bid adjustment edits only), and LinkedIn (geo countries). Pinterest / X
-        return 501.
+        bid adjustment edits only), and LinkedIn (countries or regions required).
+        Pinterest / X return 501.
                 creative: Replace or patch the ad's creative. Meta, TikTok, and LinkedIn.
 
         - **Meta**: patch-style. Pass any subset: fields you omit are preserved from the

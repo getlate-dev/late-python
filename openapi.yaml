@@ -29326,17 +29326,24 @@ paths:
                               fbtraceId: { type: string, description: "Meta fbtrace_id, quote this in a Meta bug report" }
                               type: { type: string, description: "Meta error type (e.g. OAuthException)" }
         '400':
-          description: 'Bad request (e.g., attachment not supported for platform, validation error, category combined with a template or attachment, category used on a non-WhatsApp account, or the WhatsApp Business Account is not eligible for Direct Send)'
+          description: 'Bad request (e.g., attachment not supported for platform, validation error, category combined with a template or attachment, category used on a non-WhatsApp account, or the WhatsApp Business Account is not eligible for Direct Send). Meta rejections (e.g. sending outside the messaging window) arrive with code platform_api_error, type platform_error, and platform + platformError set.'
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   error: { type: string }
+                  type:
+                    type: string
+                    description: "Present on Meta pass-through rejections: platform_error when Meta rejected the send (see platform/platformError below), invalid_request_error for validation failures."
+                    enum: [platform_error, invalid_request_error]
                   code:
                     type: string
-                    description: "Stable machine-readable reason. PLATFORM_LIMITATION covers a capability the platform does not offer (e.g. Bluesky and Reddit DMs reject media); MISSING_PARTICIPANT means the stored conversation has no recipient to send to; DIRECT_SEND_NOT_ELIGIBLE and DIRECT_SEND_BLOCKED mean the WhatsApp Business Account needs Meta to grant or restore Direct Send access; DIRECT_SEND_LIMITED is temporary, Meta lifts it on its own."
-                    enum: [PLATFORM_LIMITATION, MISSING_PARTICIPANT, DIRECT_SEND_NOT_ELIGIBLE, DIRECT_SEND_LIMITED, DIRECT_SEND_BLOCKED]
+                    description: "Stable machine-readable reason. PLATFORM_LIMITATION covers a capability the platform does not offer (e.g. Bluesky and Reddit DMs reject media); MISSING_PARTICIPANT means the stored conversation has no recipient to send to; DIRECT_SEND_NOT_ELIGIBLE and DIRECT_SEND_BLOCKED mean the WhatsApp Business Account needs Meta to grant or restore Direct Send access; DIRECT_SEND_LIMITED is temporary, Meta lifts it on its own; platform_api_error means Meta itself rejected the send (see platformError)."
+                    enum: [PLATFORM_LIMITATION, MISSING_PARTICIPANT, DIRECT_SEND_NOT_ELIGIBLE, DIRECT_SEND_LIMITED, DIRECT_SEND_BLOCKED, platform_api_error]
+                  platform:
+                    type: string
+                    description: "Present alongside code platform_api_error. The platform that rejected the send (e.g. instagram, facebook)."
                   platformError:
                     type: object
                     description: "Instagram/Facebook only. Meta's own diagnostic fields for the rejected send, passed through verbatim so you can tell failure classes apart and quote them to Meta. Absent when the failure did not come from Meta."
@@ -29352,9 +29359,14 @@ paths:
             upstream failure (for example WhatsApp 131000) does not say whether
             the message was delivered. Retrying this request may deliver the
             message twice. Retry only if your use case tolerates a duplicate.
+            Meta 5xx failures also arrive as a platform_error envelope (code
+            platform_api_error, with platform and platformError set).
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
-          description: Inbox addon required
+          description: 'Inbox addon required, or Meta rejected the send outside the messaging window (type platform_error, code platform_api_error, platform, platformError with code/subcode/fbtraceId/type)'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '409': { $ref: '#/components/responses/IdempotencyKeyInFlight' }
         '422': { $ref: '#/components/responses/IdempotencyKeyReused' }
 
@@ -44193,9 +44205,11 @@ paths:
           list are removed); a kind left out is untouched. Any other `targeting` field
           returns 400: Google cannot mutate broad targeting post-create without recreating
           the campaign. `creative` returns 501.
-        - **LinkedIn**: status, budget, targeting (geo countries only, applied to the
-          LinkedIn Campaign via PARTIAL_UPDATE), and creative (uploads new media, creates a
-          replacement inline creative on the same campaign, pauses the old one).
+        - **LinkedIn**: status, budget, targeting (countries or regions, excludedLocations (countries),
+          the B2B facets, and audience segments; applied to the LinkedIn Campaign via
+          PARTIAL_UPDATE, and REPLACES the campaign's entire targetingCriteria, not a merge),
+          and creative (uploads new media, creates a replacement inline creative on the same
+          campaign, pauses the old one).
         - **Pinterest / X / OpenAI Ads**: status + budget only. Sending
           `targeting` or `creative` returns 501 with code `unsupported_platform_operation`.
           OpenAI Ads budget is lifetime-only (see `budget.type` below).
@@ -44246,8 +44260,8 @@ paths:
                   type: object
                   description: |
                     Meta + TikTok (demographics/interests), Google (keyword and device
-                    bid adjustment edits only), and LinkedIn (geo countries). Pinterest / X
-                    return 501.
+                    bid adjustment edits only), and LinkedIn (countries or regions required).
+                    Pinterest / X return 501.
                   properties:
                     keywords:
                       type: array
@@ -44348,7 +44362,7 @@ paths:
                   ad: { $ref: '#/components/schemas/Ad' }
                   message: { type: string }
         '400':
-          description: 'Invalid status transition, budget below minimum, or a LinkedIn creative update without imageUrl or videoUrl'
+          description: 'Invalid status transition, budget below minimum, a LinkedIn creative update without imageUrl or videoUrl, or a LinkedIn targeting update without countries or regions'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: 'Returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
