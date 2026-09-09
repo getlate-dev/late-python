@@ -3898,8 +3898,8 @@ def register_generated_tools(mcp, _get_client):
                 ad_set_id: Meta only. Attach the boosted post to this existing ad set instead of creating a campaign. The ad set then owns budget, schedule and targeting; sending those too is a 400.
                 budget: Required unless adSetId is set.
                 instagram_account_id: Meta only. Instagram identity the ad runs AS (creative.instagram_user_id), overriding the account linked to the Page. Live-verified against a Page-post creative.
-                destination_type: Meta only. Ad-set destination_type: where the click LANDS, as opposed to instagramAccountId which is who the ad runs as. Messaging destinations imply their matching CTA and require goal engagement. Lead ads use ON_AD; combining an instant form with a messaging destination is rejected.
-                whatsapp_phone_number: Meta WhatsApp only. E.164 number already paired with the Page. Omit to use the default pairing. Requires WHATSAPP destinationType or WHATSAPP_MESSAGE callToAction.
+                destination_type: Meta only. Ad-set destination_type: where the click LANDS, as opposed to instagramAccountId which is who the ad runs as. Independent of plain link CTAs and their goal. A messaging callToAction selects its destination automatically; an explicit destinationType must then match. Lead ads use ON_AD.
+                whatsapp_phone_number: Meta WhatsApp only. E.164 number already paired with the Page. Omit to use the default pairing. Requires WHATSAPP_MESSAGE callToAction. Stored as creative.whatsappPhoneNumber on the ad.
                 currency: ISO 4217 currency code matching the ad account's currency. Meta only. Optional: Zernio resolves it from the ad account when omitted. The value selects the minor-unit exponent Zernio converts budget/bid amounts by before calling Meta (most currencies are cents; zero-decimal currencies like JPY/KRW are sent as-is).
                 schedule
                 targeting: Same geo/demographic fields as the `TargetingSpec` used by /v1/ads/create.
@@ -3994,7 +3994,7 @@ def register_generated_tools(mcp, _get_client):
         `dsaBeneficiary`: required for EU targeting unless the ad account has
         a default payor.
                 lead_gen_form_id: Lead Gen form ID to attach to the boosted ad's creative. REQUIRED when `goal` is `lead_generation`. On Meta this is the leadgen_forms ID (create one via POST /v1/ads/lead-forms). On LinkedIn this is the adForm ID (create one via POST /v1/ads/lead-forms with a LinkedIn account); the creative's `leadgenCallToAction.destination` is set to `urn:li:adForm:{id}`. Ignored for other goals.
-                status: Meta, TikTok, and LinkedIn. Publish state of the created entities. Omitted or ACTIVE publishes live (default); PAUSED creates them paused so you can review before they spend. On LinkedIn the whole campaign group, campaign, and creative hierarchy stays PAUSED (intendedStatus PAUSED on each).
+                status: Meta, TikTok, and LinkedIn. Publish state of the created entities. Omitted or ACTIVE publishes live (default); PAUSED creates them paused so you can review before they spend. On Meta a new campaign stays paused until explicitly activated; an attached ad is itself paused. On LinkedIn the whole campaign group, campaign, and creative hierarchy stays PAUSED (intendedStatus PAUSED on each).
                 optimization_goal: Meta only. Explicit ad-set `optimization_goal` override. When omitted,
         defaults to the value derived from `goal`. Messaging boosts always
         use CONVERSATIONS and reject another optimizationGoal. Otherwise the value must be compatible
@@ -14858,7 +14858,7 @@ def register_generated_tools(mcp, _get_client):
          (required)
                 existing_post_id: Messaging and CTWA only. Platform post or reel ID, resolved like boost platformPostId. Facebook IDs become object_story_id; Instagram IDs become source_instagram_media_id using the connected Instagram identity. Mutually exclusive with objectStoryId and fresh creative fields.
                 object_story_id: Messaging and CTWA only. Raw Facebook pageId_postId reference, used as object_story_id even with an Instagram account. Mutually exclusive with existingPostId and fresh creative fields.
-                whatsapp_phone_number: WhatsApp only. Optional E.164 number already paired with the Facebook Page. Omit to let Meta select the paired number. Sent to the creative CTA and, when creating a new ad set, its promoted_object. Attach requests do not change the existing ad set.
+                whatsapp_phone_number: WhatsApp only. Optional E.164 number already paired with the Facebook Page. Omit to let Meta select the paired number. Sent to the creative CTA and, when creating a new ad set, its promoted_object. Attach requests do not change the existing ad set. Stored as creative.whatsappPhoneNumber on every created ad.
                 headline: Single-creative shape only. Mutually exclusive with
         `creatives[]`.
                 body: Primary text shown above the image / video. Single-creative
@@ -15088,7 +15088,7 @@ def register_generated_tools(mcp, _get_client):
          (required)
                 existing_post_id: Messaging and CTWA only. Platform post or reel ID, resolved like boost platformPostId. Facebook IDs become object_story_id; Instagram IDs become source_instagram_media_id using the connected Instagram identity. Mutually exclusive with objectStoryId and fresh creative fields.
                 object_story_id: Messaging and CTWA only. Raw Facebook pageId_postId reference, used as object_story_id even with an Instagram account. Mutually exclusive with existingPostId and fresh creative fields.
-                whatsapp_phone_number: WhatsApp only. Optional E.164 number already paired with the Facebook Page. Omit to let Meta select the paired number. Sent to the creative CTA and, when creating a new ad set, its promoted_object. Attach requests do not change the existing ad set.
+                whatsapp_phone_number: WhatsApp only. Optional E.164 number already paired with the Facebook Page. Omit to let Meta select the paired number. Sent to the creative CTA and, when creating a new ad set, its promoted_object. Attach requests do not change the existing ad set. Stored as creative.whatsappPhoneNumber on every created ad.
                 headline: Single-creative shape only. Mutually exclusive with
         `creatives[]`.
                 body: Primary text shown above the image / video. Single-creative
@@ -15318,7 +15318,7 @@ def register_generated_tools(mcp, _get_client):
          (required)
                 existing_post_id: Messaging and CTWA only. Platform post or reel ID, resolved like boost platformPostId. Facebook IDs become object_story_id; Instagram IDs become source_instagram_media_id using the connected Instagram identity. Mutually exclusive with objectStoryId and fresh creative fields.
                 object_story_id: Messaging and CTWA only. Raw Facebook pageId_postId reference, used as object_story_id even with an Instagram account. Mutually exclusive with existingPostId and fresh creative fields.
-                whatsapp_phone_number: WhatsApp only. Optional E.164 number already paired with the Facebook Page. Omit to let Meta select the paired number. Sent to the creative CTA and, when creating a new ad set, its promoted_object. Attach requests do not change the existing ad set.
+                whatsapp_phone_number: WhatsApp only. Optional E.164 number already paired with the Facebook Page. Omit to let Meta select the paired number. Sent to the creative CTA and, when creating a new ad set, its promoted_object. Attach requests do not change the existing ad set. Stored as creative.whatsappPhoneNumber on every created ad.
                 headline: Single-creative shape only. Mutually exclusive with
         `creatives[]`.
                 body: Primary text shown above the image / video. Single-creative
