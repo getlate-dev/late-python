@@ -30292,7 +30292,10 @@ paths:
         '400':
           description: |
             Invalid request, or the postId belongs to a Meta ad creative / ad ID rather than an organic post
-            (code USE_AD_COMMENTS_ENDPOINT; the response includes `adId` and `adCommentsUrl`).
+            (code USE_AD_COMMENTS_ENDPOINT; the response includes `adId` and `adCommentsUrl`), or the upstream
+            platform rejected the request (type platform_error, code platform_api_error; the provider's own
+            payload is in platformError). Meta returns code 100 with error_subcode 33 both for a story past
+            its 24h life and for a deleted post, so the two are indistinguishable from the response.
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: 'Inbox addon required, or the connected account is not permitted to read this post on the platform (code platform_api_error, type platform_error)'
