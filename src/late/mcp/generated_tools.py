@@ -2205,7 +2205,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="List account-level callout extensions",
+            title="List account callouts",
             readOnlyHint=True,
             destructiveHint=False,
             openWorldHint=False,
@@ -2214,11 +2214,11 @@ def register_generated_tools(mcp, _get_client):
     def ad_accounts_list_account_callouts(
         account_id: str, customer_id: str | None = None
     ) -> str:
-        """List account-level callout extensions
+        """List account callouts
 
         Args:
-            account_id: Google ads SocialAccount id. (required)
-            customer_id: Numeric Google Ads customer id (no dashes). Defaults to the account's connected customer."""
+            account_id: (required)
+            customer_id"""
         client = _get_client()
         try:
             response = client.ad_accounts.list_account_callouts(
@@ -2230,7 +2230,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Add account-level callout extensions",
+            title="Add account callouts",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -2239,12 +2239,12 @@ def register_generated_tools(mcp, _get_client):
     def ad_accounts_add_account_callouts(
         account_id: str, callouts: list[str] | None, customer_id: str | None = None
     ) -> str:
-        """Add account-level callout extensions
+        """Add account callouts
 
         Args:
-            account_id: Zernio SocialAccount id owning the Google Ads connection. (required)
-            customer_id: Numeric Google Ads customer id. Only required when the connection has more than one.
-            callouts: Callout text, 1-25 characters each; up to 20 per request (Google's CalloutAsset limits). (required)"""
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            callouts: (required)"""
         client = _get_client()
         try:
             response = client.ad_accounts.add_account_callouts(
@@ -2256,7 +2256,35 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Remove an account-level callout extension",
+            title="Update account callouts",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_update_account_callouts(
+        account_id: str,
+        updates: list[dict[str, Any]] | None,
+        customer_id: str | None = None,
+    ) -> str:
+        """Update account callouts
+
+        Args:
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            updates: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.update_account_callouts(
+                account_id=account_id, customer_id=customer_id, updates=updates
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Remove account callout",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -2265,15 +2293,231 @@ def register_generated_tools(mcp, _get_client):
     def ad_accounts_remove_account_callout(
         account_id: str, asset_id: str, customer_id: str | None = None
     ) -> str:
-        """Remove an account-level callout extension
+        """Remove account callout
 
         Args:
-            account_id: Zernio SocialAccount id owning the Google Ads connection. (required)
-            customer_id: Numeric Google Ads customer id. Only required when the connection has more than one.
-            asset_id: Numeric asset id from GET /v1/ads/accounts/callouts. (required)"""
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            asset_id: (required)"""
         client = _get_client()
         try:
             response = client.ad_accounts.remove_account_callout(
+                account_id=account_id, customer_id=customer_id, asset_id=asset_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List account sitelinks",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_accounts_list_account_sitelinks(
+        account_id: str, customer_id: str | None = None
+    ) -> str:
+        """List account sitelinks
+
+        Args:
+            account_id: (required)
+            customer_id"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.list_account_sitelinks(
+                account_id=account_id, customer_id=customer_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Add account sitelinks",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_add_account_sitelinks(
+        account_id: str,
+        sitelinks: list[dict[str, Any]] | None,
+        customer_id: str | None = None,
+    ) -> str:
+        """Add account sitelinks
+
+        Args:
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            sitelinks: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.add_account_sitelinks(
+                account_id=account_id, customer_id=customer_id, sitelinks=sitelinks
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Update account sitelinks",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_update_account_sitelinks(
+        account_id: str,
+        updates: list[dict[str, Any]] | None,
+        customer_id: str | None = None,
+    ) -> str:
+        """Update account sitelinks
+
+        Args:
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            updates: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.update_account_sitelinks(
+                account_id=account_id, customer_id=customer_id, updates=updates
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Remove account sitelink",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_remove_account_sitelink(
+        account_id: str, asset_id: str, customer_id: str | None = None
+    ) -> str:
+        """Remove account sitelink
+
+        Args:
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            asset_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.remove_account_sitelink(
+                account_id=account_id, customer_id=customer_id, asset_id=asset_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List account snippets",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_accounts_list_account_structured_snippets(
+        account_id: str, customer_id: str | None = None
+    ) -> str:
+        """List account snippets
+
+        Args:
+            account_id: (required)
+            customer_id"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.list_account_structured_snippets(
+                account_id=account_id, customer_id=customer_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Add account snippets",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_add_account_structured_snippets(
+        account_id: str,
+        structured_snippets: list[dict[str, Any]] | None,
+        customer_id: str | None = None,
+    ) -> str:
+        """Add account snippets
+
+        Args:
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            structured_snippets: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.add_account_structured_snippets(
+                account_id=account_id,
+                customer_id=customer_id,
+                structured_snippets=structured_snippets,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Update account snippets",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_update_account_structured_snippets(
+        account_id: str,
+        updates: list[dict[str, Any]] | None,
+        customer_id: str | None = None,
+    ) -> str:
+        """Update account snippets
+
+        Args:
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            updates: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.update_account_structured_snippets(
+                account_id=account_id, customer_id=customer_id, updates=updates
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Remove account snippet",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_remove_account_structured_snippet(
+        account_id: str, asset_id: str, customer_id: str | None = None
+    ) -> str:
+        """Remove account snippet
+
+        Args:
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            asset_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.remove_account_structured_snippet(
                 account_id=account_id, customer_id=customer_id, asset_id=asset_id
             )
             return _format_response(response)
@@ -3858,6 +4102,9 @@ def register_generated_tools(mcp, _get_client):
     )
     def ad_campaigns_update_ad(
         ad_id: str,
+        headlines: list[dict[str, Any]] | None = None,
+        descriptions: list[dict[str, Any]] | None = None,
+        final_urls: list[str] | None = None,
         status: str | None = None,
         budget: dict[str, Any] | None = None,
         targeting: dict[str, Any] | None = None,
@@ -3868,6 +4115,9 @@ def register_generated_tools(mcp, _get_client):
 
             Args:
                 ad_id: (required)
+                headlines: Google RSA only. Replaces the complete headline list. No padding or truncation on update.
+                descriptions: Google RSA only. Replaces the complete description list. No padding or truncation on update.
+                final_urls: Google RSA only. Replaces final URLs. Omitted lists stay unchanged.
                 status
                 budget
                 targeting: Meta + TikTok (demographics/interests), Google (keyword and device
@@ -3904,6 +4154,9 @@ def register_generated_tools(mcp, _get_client):
         try:
             response = client.ad_campaigns.update_ad(
                 ad_id=ad_id,
+                headlines=headlines,
+                descriptions=descriptions,
+                final_urls=final_urls,
                 status=status,
                 budget=budget,
                 targeting=targeting,
@@ -3957,7 +4210,33 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Attach extension assets to a Google Search campaign",
+            title="List campaign assets",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_campaigns_list_campaign_assets(
+        campaign_id: str, account_id: str, customer_id: str | None = None
+    ) -> str:
+        """List campaign assets
+
+        Args:
+            campaign_id: Numeric Google platform id. (required)
+            account_id: (required)
+            customer_id"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.list_campaign_assets(
+                campaign_id=campaign_id, account_id=account_id, customer_id=customer_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Attach campaign assets",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -3971,13 +4250,13 @@ def register_generated_tools(mcp, _get_client):
         callouts: list[str] | None = None,
         structured_snippets: list[dict[str, Any]] | None = None,
     ) -> str:
-        """Attach extension assets to a Google Search campaign
+        """Attach campaign assets
 
         Args:
-            campaign_id: Numeric Google platform campaign id. (required)
-            account_id: Zernio Google Ads SocialAccount id. Resolves the customer id + refresh token. (required)
-            customer_id: Numeric Google Ads customer id. Required when the connection has multiple Google Ads accounts; optional (and inferred) when it has only one.
-            sitelinks: See POST /v1/ads/create sitelinks, same shape.
+            campaign_id: Numeric Google platform id. (required)
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            sitelinks
             callouts
             structured_snippets"""
         client = _get_client()
@@ -3989,6 +4268,209 @@ def register_generated_tools(mcp, _get_client):
                 sitelinks=sitelinks,
                 callouts=callouts,
                 structured_snippets=structured_snippets,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Update campaign assets",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_update_campaign_assets(
+        campaign_id: str,
+        account_id: str,
+        updates: list[dict[str, Any]] | None,
+        customer_id: str | None = None,
+    ) -> str:
+        """Update campaign assets
+
+        Args:
+            campaign_id: Numeric Google platform id. (required)
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            updates: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.update_campaign_assets(
+                campaign_id=campaign_id,
+                account_id=account_id,
+                customer_id=customer_id,
+                updates=updates,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Remove campaign assets",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_remove_campaign_assets(
+        campaign_id: str,
+        account_id: str,
+        asset_resource_names: list[str] | None,
+        campaign_asset_resource_names: list[str] | None,
+        customer_id: str | None = None,
+    ) -> str:
+        """Remove campaign assets
+
+        Args:
+            campaign_id: Numeric Google platform id. (required)
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            asset_resource_names: (required)
+            campaign_asset_resource_names: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.remove_campaign_assets(
+                campaign_id=campaign_id,
+                account_id=account_id,
+                customer_id=customer_id,
+                asset_resource_names=asset_resource_names,
+                campaign_asset_resource_names=campaign_asset_resource_names,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List ad-group assets",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_campaigns_list_ad_group_assets(
+        ad_set_id: str, account_id: str, customer_id: str | None = None
+    ) -> str:
+        """List ad-group assets
+
+        Args:
+            ad_set_id: Numeric Google platform id. (required)
+            account_id: (required)
+            customer_id"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.list_ad_group_assets(
+                ad_set_id=ad_set_id, account_id=account_id, customer_id=customer_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Attach ad-group assets",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_attach_ad_group_assets(
+        ad_set_id: str,
+        account_id: str,
+        customer_id: str | None = None,
+        sitelinks: list[dict[str, Any]] | None = None,
+        callouts: list[str] | None = None,
+        structured_snippets: list[dict[str, Any]] | None = None,
+    ) -> str:
+        """Attach ad-group assets
+
+        Args:
+            ad_set_id: Numeric Google platform id. (required)
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            sitelinks
+            callouts
+            structured_snippets"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.attach_ad_group_assets(
+                ad_set_id=ad_set_id,
+                account_id=account_id,
+                customer_id=customer_id,
+                sitelinks=sitelinks,
+                callouts=callouts,
+                structured_snippets=structured_snippets,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Update ad-group assets",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_update_ad_group_assets(
+        ad_set_id: str,
+        account_id: str,
+        updates: list[dict[str, Any]] | None,
+        customer_id: str | None = None,
+    ) -> str:
+        """Update ad-group assets
+
+        Args:
+            ad_set_id: Numeric Google platform id. (required)
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            updates: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.update_ad_group_assets(
+                ad_set_id=ad_set_id,
+                account_id=account_id,
+                customer_id=customer_id,
+                updates=updates,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Remove ad-group assets",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_remove_ad_group_assets(
+        ad_set_id: str,
+        account_id: str,
+        asset_resource_names: list[str] | None,
+        ad_group_asset_resource_names: list[str] | None,
+        customer_id: str | None = None,
+    ) -> str:
+        """Remove ad-group assets
+
+        Args:
+            ad_set_id: Numeric Google platform id. (required)
+            account_id: Zernio Google Ads connection id. (required)
+            customer_id: Google customer id without dashes. Required when the connection has multiple customers.
+            asset_resource_names: (required)
+            ad_group_asset_resource_names: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.remove_ad_group_assets(
+                ad_set_id=ad_set_id,
+                account_id=account_id,
+                customer_id=customer_id,
+                asset_resource_names=asset_resource_names,
+                ad_group_asset_resource_names=ad_group_asset_resource_names,
             )
             return _format_response(response)
         except Exception as e:
@@ -4335,8 +4817,8 @@ def register_generated_tools(mcp, _get_client):
         keywords: list[Any] | None = None,
         negative_keywords: list[Any] | None = None,
         campaign_negative_keywords: list[Any] | None = None,
-        additional_headlines: list[str] | None = None,
-        additional_descriptions: list[str] | None = None,
+        additional_headlines: list[Any] | None = None,
+        additional_descriptions: list[Any] | None = None,
         sitelinks: list[dict[str, Any]] | None = None,
         callouts: list[str] | None = None,
         structured_snippets: list[dict[str, Any]] | None = None,
@@ -4667,8 +5149,8 @@ def register_generated_tools(mcp, _get_client):
                 keywords: Google Search only. Keywords on the new ad group; entries are strings (BROAD) or { text, matchType }. Editable later via PUT /v1/ads/{adId} targeting.keywords.
                 negative_keywords: Google Search only; other platforms return 400. Ad-group-level negative keywords on the new ad group. Editable later via PUT /v1/ads/{adId} targeting.negativeKeywords.
                 campaign_negative_keywords: Google Search only; other platforms return 400. Campaign-level negative keywords (campaign_criterion.negative), created alongside the ad group. Editable later via PUT /v1/ads/campaigns/{campaignId}/negative-keywords.
-                additional_headlines: Google Search RSA only. Extra headlines.
-                additional_descriptions: Google Search RSA only. Extra descriptions.
+                additional_headlines: Google Search RSA only. Extra text assets as strings or objects with text and optional pinnedField. Existing string input remains supported. The effective create lists, including primary text and deduplication, must contain 3-15 headlines and 2-4 descriptions; excess entries return 400.
+                additional_descriptions: Google Search RSA only. Extra text assets as strings or objects with text and optional pinnedField. Existing string input remains supported. The effective create lists, including primary text and deduplication, must contain 3-15 headlines and 2-4 descriptions; excess entries return 400.
                 sitelinks: Google Search only. Sitelink assets to create and attach at the campaign level.
         Each entry becomes an Asset (with sitelink_asset + Asset.final_urls) plus a
         CampaignAsset link (field_type SITELINK). Approval is async: Google reviews

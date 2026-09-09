@@ -708,6 +708,9 @@ class AdCampaignsResource:
         self,
         ad_id: str,
         *,
+        headlines: list[Any] | None = None,
+        descriptions: list[Any] | None = None,
+        final_urls: list[str] | None = None,
         status: str | None = None,
         budget: dict[str, Any] | None = None,
         targeting: dict[str, Any] | None = None,
@@ -716,6 +719,9 @@ class AdCampaignsResource:
     ) -> dict[str, Any]:
         """Update ad"""
         payload = self._build_payload(
+            headlines=headlines,
+            descriptions=descriptions,
+            final_urls=final_urls,
             status=status,
             budget=budget,
             targeting=targeting,
@@ -735,17 +741,29 @@ class AdCampaignsResource:
         )
         return self._client._put(f"/v1/ads/{ad_id}/status", data=payload)
 
+    def list_campaign_assets(
+        self, campaign_id: str, account_id: str, *, customer_id: str | None = None
+    ) -> dict[str, Any]:
+        """List campaign assets"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+        )
+        return self._client._get(
+            f"/v1/ads/campaigns/{campaign_id}/assets", params=params
+        )
+
     def attach_campaign_assets(
         self,
         campaign_id: str,
         account_id: str,
         *,
         customer_id: str | None = None,
-        sitelinks: list[dict[str, Any]] | None = None,
+        sitelinks: list[Any] | None = None,
         callouts: list[str] | None = None,
-        structured_snippets: list[dict[str, Any]] | None = None,
+        structured_snippets: list[Any] | None = None,
     ) -> dict[str, Any]:
-        """Attach extension assets to a Google Search campaign"""
+        """Attach campaign assets"""
         payload = self._build_payload(
             account_id=account_id,
             customer_id=customer_id,
@@ -756,6 +774,94 @@ class AdCampaignsResource:
         return self._client._post(
             f"/v1/ads/campaigns/{campaign_id}/assets", data=payload
         )
+
+    def update_campaign_assets(
+        self,
+        campaign_id: str,
+        account_id: str,
+        updates: list[Any],
+        *,
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Update campaign assets"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            updates=updates,
+        )
+        return self._client._put(
+            f"/v1/ads/campaigns/{campaign_id}/assets", data=payload
+        )
+
+    def remove_campaign_assets(
+        self,
+        campaign_id: str,
+        account_id: str,
+        asset_resource_names: list[str],
+        campaign_asset_resource_names: list[str],
+        *,
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Remove campaign assets"""
+        return self._client._delete(f"/v1/ads/campaigns/{campaign_id}/assets")
+
+    def list_ad_group_assets(
+        self, ad_set_id: str, account_id: str, *, customer_id: str | None = None
+    ) -> dict[str, Any]:
+        """List ad-group assets"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+        )
+        return self._client._get(f"/v1/ads/ad-sets/{ad_set_id}/assets", params=params)
+
+    def attach_ad_group_assets(
+        self,
+        ad_set_id: str,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        sitelinks: list[Any] | None = None,
+        callouts: list[str] | None = None,
+        structured_snippets: list[Any] | None = None,
+    ) -> dict[str, Any]:
+        """Attach ad-group assets"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            sitelinks=sitelinks,
+            callouts=callouts,
+            structured_snippets=structured_snippets,
+        )
+        return self._client._post(f"/v1/ads/ad-sets/{ad_set_id}/assets", data=payload)
+
+    def update_ad_group_assets(
+        self,
+        ad_set_id: str,
+        account_id: str,
+        updates: list[Any],
+        *,
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Update ad-group assets"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            updates=updates,
+        )
+        return self._client._put(f"/v1/ads/ad-sets/{ad_set_id}/assets", data=payload)
+
+    def remove_ad_group_assets(
+        self,
+        ad_set_id: str,
+        account_id: str,
+        asset_resource_names: list[str],
+        ad_group_asset_resource_names: list[str],
+        *,
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Remove ad-group assets"""
+        return self._client._delete(f"/v1/ads/ad-sets/{ad_set_id}/assets")
 
     def list_campaign_negative_keyword_lists(
         self, campaign_id: str, *, platform: str | None = None
@@ -936,8 +1042,8 @@ class AdCampaignsResource:
         keywords: list[Any] | None = None,
         negative_keywords: list[Any] | None = None,
         campaign_negative_keywords: list[Any] | None = None,
-        additional_headlines: list[str] | None = None,
-        additional_descriptions: list[str] | None = None,
+        additional_headlines: list[Any] | None = None,
+        additional_descriptions: list[Any] | None = None,
         sitelinks: list[dict[str, Any]] | None = None,
         callouts: list[str] | None = None,
         structured_snippets: list[dict[str, Any]] | None = None,
@@ -1713,6 +1819,9 @@ class AdCampaignsResource:
         self,
         ad_id: str,
         *,
+        headlines: list[Any] | None = None,
+        descriptions: list[Any] | None = None,
+        final_urls: list[str] | None = None,
         status: str | None = None,
         budget: dict[str, Any] | None = None,
         targeting: dict[str, Any] | None = None,
@@ -1721,6 +1830,9 @@ class AdCampaignsResource:
     ) -> dict[str, Any]:
         """Update ad (async)"""
         payload = self._build_payload(
+            headlines=headlines,
+            descriptions=descriptions,
+            final_urls=final_urls,
             status=status,
             budget=budget,
             targeting=targeting,
@@ -1740,17 +1852,29 @@ class AdCampaignsResource:
         )
         return await self._client._aput(f"/v1/ads/{ad_id}/status", data=payload)
 
+    async def alist_campaign_assets(
+        self, campaign_id: str, account_id: str, *, customer_id: str | None = None
+    ) -> dict[str, Any]:
+        """List campaign assets (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+        )
+        return await self._client._aget(
+            f"/v1/ads/campaigns/{campaign_id}/assets", params=params
+        )
+
     async def aattach_campaign_assets(
         self,
         campaign_id: str,
         account_id: str,
         *,
         customer_id: str | None = None,
-        sitelinks: list[dict[str, Any]] | None = None,
+        sitelinks: list[Any] | None = None,
         callouts: list[str] | None = None,
-        structured_snippets: list[dict[str, Any]] | None = None,
+        structured_snippets: list[Any] | None = None,
     ) -> dict[str, Any]:
-        """Attach extension assets to a Google Search campaign (async)"""
+        """Attach campaign assets (async)"""
         payload = self._build_payload(
             account_id=account_id,
             customer_id=customer_id,
@@ -1761,6 +1885,100 @@ class AdCampaignsResource:
         return await self._client._apost(
             f"/v1/ads/campaigns/{campaign_id}/assets", data=payload
         )
+
+    async def aupdate_campaign_assets(
+        self,
+        campaign_id: str,
+        account_id: str,
+        updates: list[Any],
+        *,
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Update campaign assets (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            updates=updates,
+        )
+        return await self._client._aput(
+            f"/v1/ads/campaigns/{campaign_id}/assets", data=payload
+        )
+
+    async def aremove_campaign_assets(
+        self,
+        campaign_id: str,
+        account_id: str,
+        asset_resource_names: list[str],
+        campaign_asset_resource_names: list[str],
+        *,
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Remove campaign assets (async)"""
+        return await self._client._adelete(f"/v1/ads/campaigns/{campaign_id}/assets")
+
+    async def alist_ad_group_assets(
+        self, ad_set_id: str, account_id: str, *, customer_id: str | None = None
+    ) -> dict[str, Any]:
+        """List ad-group assets (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+        )
+        return await self._client._aget(
+            f"/v1/ads/ad-sets/{ad_set_id}/assets", params=params
+        )
+
+    async def aattach_ad_group_assets(
+        self,
+        ad_set_id: str,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        sitelinks: list[Any] | None = None,
+        callouts: list[str] | None = None,
+        structured_snippets: list[Any] | None = None,
+    ) -> dict[str, Any]:
+        """Attach ad-group assets (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            sitelinks=sitelinks,
+            callouts=callouts,
+            structured_snippets=structured_snippets,
+        )
+        return await self._client._apost(
+            f"/v1/ads/ad-sets/{ad_set_id}/assets", data=payload
+        )
+
+    async def aupdate_ad_group_assets(
+        self,
+        ad_set_id: str,
+        account_id: str,
+        updates: list[Any],
+        *,
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Update ad-group assets (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            updates=updates,
+        )
+        return await self._client._aput(
+            f"/v1/ads/ad-sets/{ad_set_id}/assets", data=payload
+        )
+
+    async def aremove_ad_group_assets(
+        self,
+        ad_set_id: str,
+        account_id: str,
+        asset_resource_names: list[str],
+        ad_group_asset_resource_names: list[str],
+        *,
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Remove ad-group assets (async)"""
+        return await self._client._adelete(f"/v1/ads/ad-sets/{ad_set_id}/assets")
 
     async def alist_campaign_negative_keyword_lists(
         self, campaign_id: str, *, platform: str | None = None
@@ -1941,8 +2159,8 @@ class AdCampaignsResource:
         keywords: list[Any] | None = None,
         negative_keywords: list[Any] | None = None,
         campaign_negative_keywords: list[Any] | None = None,
-        additional_headlines: list[str] | None = None,
-        additional_descriptions: list[str] | None = None,
+        additional_headlines: list[Any] | None = None,
+        additional_descriptions: list[Any] | None = None,
         sitelinks: list[dict[str, Any]] | None = None,
         callouts: list[str] | None = None,
         structured_snippets: list[dict[str, Any]] | None = None,

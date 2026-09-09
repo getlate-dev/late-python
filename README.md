@@ -400,7 +400,9 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 ### Ad Accounts
 | Method | Description |
 |--------|-------------|
-| `ad_accounts.list_account_callouts()` | List account-level callout extensions |
+| `ad_accounts.list_account_callouts()` | List account callouts |
+| `ad_accounts.list_account_sitelinks()` | List account sitelinks |
+| `ad_accounts.list_account_structured_snippets()` | List account snippets |
 | `ad_accounts.list_ad_accounts()` | List ad accounts |
 | `ad_accounts.list_ad_labels()` | Ad labels |
 | `ad_accounts.list_ad_negative_keyword_lists()` | List negative keyword lists |
@@ -424,15 +426,22 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_accounts.get_dsa_recommendations()` | List DSA beneficiary/payor suggestions |
 | `ad_accounts.get_ios_fourteen_campaign_limits()` | Get iOS 14 campaign limits |
 | `ad_accounts.get_value_rule_set()` | Read a value rule set |
+| `ad_accounts.update_account_callouts()` | Update account callouts |
+| `ad_accounts.update_account_sitelinks()` | Update account sitelinks |
+| `ad_accounts.update_account_structured_snippets()` | Update account snippets |
 | `ad_accounts.update_ad_account()` | Update ad account settings |
 | `ad_accounts.update_ad_negative_keyword_list()` | Rename a negative keyword list |
 | `ad_accounts.update_value_rule_set()` | Replace a value rule set |
 | `ad_accounts.delete_ad_comment()` | Delete an ad comment |
 | `ad_accounts.delete_ad_negative_keyword_list()` | Delete a negative keyword list |
 | `ad_accounts.delete_value_rule_set()` | Delete a value rule set |
-| `ad_accounts.add_account_callouts()` | Add account-level callout extensions |
+| `ad_accounts.add_account_callouts()` | Add account callouts |
+| `ad_accounts.add_account_sitelinks()` | Add account sitelinks |
+| `ad_accounts.add_account_structured_snippets()` | Add account snippets |
 | `ad_accounts.hide_ad_comment()` | Hide or unhide an ad comment |
-| `ad_accounts.remove_account_callout()` | Remove an account-level callout extension |
+| `ad_accounts.remove_account_callout()` | Remove account callout |
+| `ad_accounts.remove_account_sitelink()` | Remove account sitelink |
+| `ad_accounts.remove_account_structured_snippet()` | Remove account snippet |
 | `ad_accounts.replace_ad_negative_keyword_list_keywords()` | Replace negative list keywords |
 | `ad_accounts.reply_to_ad_comment()` | Reply to an ad comment |
 
@@ -451,10 +460,12 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | Method | Description |
 |--------|-------------|
 | `ad_campaigns.list_ad_campaigns()` | List campaigns |
+| `ad_campaigns.list_ad_group_assets()` | List ad-group assets |
 | `ad_campaigns.list_ad_keywords()` | List Search keywords |
 | `ad_campaigns.list_ad_sets()` | List ad sets |
 | `ad_campaigns.list_ads()` | List ads |
 | `ad_campaigns.list_bid_strategies()` | List Google Ads portfolio bid strategies |
+| `ad_campaigns.list_campaign_assets()` | List campaign assets |
 | `ad_campaigns.list_campaign_negative_keyword_lists()` | List campaign negative lists |
 | `ad_campaigns.list_campaign_negative_keywords()` | List campaign-level negative keywords |
 | `ad_campaigns.bulk_update_ad_campaign_status()` | Pause or resume many campaigns |
@@ -471,22 +482,27 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_campaigns.update_ad()` | Update ad |
 | `ad_campaigns.update_ad_campaign()` | Update a campaign |
 | `ad_campaigns.update_ad_campaign_status()` | Pause or resume a campaign |
+| `ad_campaigns.update_ad_group_assets()` | Update ad-group assets |
 | `ad_campaigns.update_ad_keyword()` | Pause or enable a Search keyword |
 | `ad_campaigns.update_ad_set()` | Update an ad set |
 | `ad_campaigns.update_ad_set_status()` | Pause or resume a single ad set |
 | `ad_campaigns.update_ad_status()` | Pause or resume a single ad |
 | `ad_campaigns.update_bid_strategy()` | Update a Google Ads portfolio bid strategy |
+| `ad_campaigns.update_campaign_assets()` | Update campaign assets |
 | `ad_campaigns.update_campaign_targeting()` | Edit a Google campaign's device, location, or language targeting |
 | `ad_campaigns.delete_ad()` | Cancel an ad |
 | `ad_campaigns.delete_ad_campaign()` | Delete a campaign |
 | `ad_campaigns.delete_ad_set()` | Delete an ad set |
 | `ad_campaigns.add_ad_keywords()` | Add Search keywords to an ad group |
-| `ad_campaigns.attach_campaign_assets()` | Attach extension assets to a Google Search campaign |
+| `ad_campaigns.attach_ad_group_assets()` | Attach ad-group assets |
+| `ad_campaigns.attach_campaign_assets()` | Attach campaign assets |
 | `ad_campaigns.boost_post()` | Boost post as ad |
 | `ad_campaigns.duplicate_ad()` | Duplicate an ad |
 | `ad_campaigns.duplicate_ad_campaign()` | Duplicate a campaign |
 | `ad_campaigns.duplicate_ad_set()` | Duplicate an ad set |
+| `ad_campaigns.remove_ad_group_assets()` | Remove ad-group assets |
 | `ad_campaigns.remove_ad_keyword()` | Remove a Search keyword |
+| `ad_campaigns.remove_campaign_assets()` | Remove campaign assets |
 | `ad_campaigns.replace_campaign_negative_keyword_lists()` | Replace campaign negative lists |
 | `ad_campaigns.replace_campaign_negative_keywords()` | Replace campaign-level negative keywords |
 
