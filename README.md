@@ -406,6 +406,8 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_accounts.list_ad_negative_keyword_lists()` | List negative keyword lists |
 | `ad_accounts.list_ad_studies()` | A/B tests and lift studies |
 | `ad_accounts.list_ads_business_centers()` | List TikTok Business Centers |
+| `ad_accounts.list_ads_instagram_accounts()` | List Instagram ad identities |
+| `ad_accounts.list_advertisable_applications()` | List advertisable apps |
 | `ad_accounts.list_custom_conversions()` | List custom conversions |
 | `ad_accounts.list_high_demand_periods()` | High demand periods / budget schedules |
 | `ad_accounts.list_meta_businesses()` | Businesses list |
@@ -420,15 +422,19 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_accounts.get_ads_activity_log()` | Ad account change / audit log |
 | `ad_accounts.get_dsa_defaults()` | Get ad account DSA defaults |
 | `ad_accounts.get_dsa_recommendations()` | List DSA beneficiary/payor suggestions |
+| `ad_accounts.get_ios_fourteen_campaign_limits()` | Get iOS 14 campaign limits |
 | `ad_accounts.get_value_rule_set()` | Read a value rule set |
 | `ad_accounts.update_ad_account()` | Update ad account settings |
 | `ad_accounts.update_ad_negative_keyword_list()` | Rename a negative keyword list |
 | `ad_accounts.update_value_rule_set()` | Replace a value rule set |
+| `ad_accounts.delete_ad_comment()` | Delete an ad comment |
 | `ad_accounts.delete_ad_negative_keyword_list()` | Delete a negative keyword list |
 | `ad_accounts.delete_value_rule_set()` | Delete a value rule set |
 | `ad_accounts.add_account_callouts()` | Add account-level callout extensions |
+| `ad_accounts.hide_ad_comment()` | Hide or unhide an ad comment |
 | `ad_accounts.remove_account_callout()` | Remove an account-level callout extension |
 | `ad_accounts.replace_ad_negative_keyword_list_keywords()` | Replace negative list keywords |
+| `ad_accounts.reply_to_ad_comment()` | Reply to an ad comment |
 
 ### Ad Audiences
 | Method | Description |

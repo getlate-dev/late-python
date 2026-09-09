@@ -83,6 +83,7 @@ class MessagingAdsResource:
         destination: str,
         *,
         creative_features: Any | None = None,
+        tracking: Any | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -123,6 +124,7 @@ class MessagingAdsResource:
         """Create messaging ad"""
         payload = self._build_payload(
             creative_features=creative_features,
+            tracking=tracking,
             account_id=account_id,
             ad_account_id=ad_account_id,
             name=name,
@@ -175,6 +177,7 @@ class MessagingAdsResource:
         link_url: str,
         *,
         creative_features: Any | None = None,
+        tracking: Any | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -215,6 +218,7 @@ class MessagingAdsResource:
         """Create Click-to-Call ad"""
         payload = self._build_payload(
             creative_features=creative_features,
+            tracking=tracking,
             account_id=account_id,
             ad_account_id=ad_account_id,
             name=name,
@@ -266,6 +270,7 @@ class MessagingAdsResource:
         name: str,
         *,
         creative_features: Any | None = None,
+        tracking: Any | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -306,6 +311,7 @@ class MessagingAdsResource:
         """Create CTWA ad (deprecated)"""
         payload = self._build_payload(
             creative_features=creative_features,
+            tracking=tracking,
             account_id=account_id,
             ad_account_id=ad_account_id,
             name=name,
@@ -356,6 +362,7 @@ class MessagingAdsResource:
         destination: str,
         *,
         creative_features: Any | None = None,
+        tracking: Any | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -396,6 +403,7 @@ class MessagingAdsResource:
         """Create messaging ad (async)"""
         payload = self._build_payload(
             creative_features=creative_features,
+            tracking=tracking,
             account_id=account_id,
             ad_account_id=ad_account_id,
             name=name,
@@ -448,6 +456,7 @@ class MessagingAdsResource:
         link_url: str,
         *,
         creative_features: Any | None = None,
+        tracking: Any | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -488,6 +497,7 @@ class MessagingAdsResource:
         """Create Click-to-Call ad (async)"""
         payload = self._build_payload(
             creative_features=creative_features,
+            tracking=tracking,
             account_id=account_id,
             ad_account_id=ad_account_id,
             name=name,
@@ -539,6 +549,7 @@ class MessagingAdsResource:
         name: str,
         *,
         creative_features: Any | None = None,
+        tracking: Any | None = None,
         existing_post_id: str | None = None,
         object_story_id: str | None = None,
         whatsapp_phone_number: str | None = None,
@@ -579,6 +590,7 @@ class MessagingAdsResource:
         """Create CTWA ad (deprecated) (async)"""
         payload = self._build_payload(
             creative_features=creative_features,
+            tracking=tracking,
             account_id=account_id,
             ad_account_id=ad_account_id,
             name=name,

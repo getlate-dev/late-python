@@ -79,15 +79,78 @@ class AdAccountsResource:
         *,
         placement: str | None = None,
         limit: int | None = 25,
+        since: str | None = None,
+        until: str | None = None,
         cursor: str | None = None,
     ) -> dict[str, Any]:
         """List comments on an ad"""
         params = self._build_params(
             placement=placement,
             limit=limit,
+            since=since,
+            until=until,
             cursor=cursor,
         )
         return self._client._get(f"/v1/ads/{ad_id}/comments", params=params)
+
+    def reply_to_ad_comment(
+        self,
+        ad_id: str,
+        comment_id: str,
+        text: str,
+        *,
+        since: str | None = None,
+        until: str | None = None,
+    ) -> dict[str, Any]:
+        """Reply to an ad comment"""
+        params = self._build_params(
+            since=since,
+            until=until,
+        )
+        payload = self._build_payload(
+            text=text,
+        )
+        return self._client._post(
+            f"/v1/ads/{ad_id}/comments/{comment_id}/reply", data=payload, params=params
+        )
+
+    def hide_ad_comment(
+        self,
+        ad_id: str,
+        comment_id: str,
+        hidden: bool,
+        *,
+        since: str | None = None,
+        until: str | None = None,
+    ) -> dict[str, Any]:
+        """Hide or unhide an ad comment"""
+        params = self._build_params(
+            since=since,
+            until=until,
+        )
+        payload = self._build_payload(
+            hidden=hidden,
+        )
+        return self._client._post(
+            f"/v1/ads/{ad_id}/comments/{comment_id}/hide", data=payload, params=params
+        )
+
+    def delete_ad_comment(
+        self,
+        ad_id: str,
+        comment_id: str,
+        *,
+        since: str | None = None,
+        until: str | None = None,
+    ) -> dict[str, Any]:
+        """Delete an ad comment"""
+        params = self._build_params(
+            since=since,
+            until=until,
+        )
+        return self._client._delete(
+            f"/v1/ads/{ad_id}/comments/{comment_id}", params=params
+        )
 
     def list_ads_business_centers(self, account_id: str) -> dict[str, Any]:
         """List TikTok Business Centers"""
@@ -137,6 +200,37 @@ class AdAccountsResource:
             after=after,
         )
         return self._client._get("/v1/ads/studies", params=params)
+
+    def list_ads_instagram_accounts(
+        self, account_id: str, ad_account_id: str
+    ) -> dict[str, Any]:
+        """List Instagram ad identities"""
+        params = self._build_params(
+            account_id=account_id,
+            ad_account_id=ad_account_id,
+        )
+        return self._client._get("/v1/ads/instagram-accounts", params=params)
+
+    def list_advertisable_applications(
+        self, account_id: str, ad_account_id: str
+    ) -> dict[str, Any]:
+        """List advertisable apps"""
+        params = self._build_params(
+            account_id=account_id,
+            ad_account_id=ad_account_id,
+        )
+        return self._client._get("/v1/ads/advertisable-applications", params=params)
+
+    def get_ios_fourteen_campaign_limits(
+        self, account_id: str, ad_account_id: str, application_id: str
+    ) -> dict[str, Any]:
+        """Get iOS 14 campaign limits"""
+        params = self._build_params(
+            account_id=account_id,
+            ad_account_id=ad_account_id,
+            application_id=application_id,
+        )
+        return self._client._get("/v1/ads/ios-fourteen-campaign-limits", params=params)
 
     def list_meta_businesses(
         self, account_id: str, *, limit: int | None = 25, after: str | None = None
@@ -515,15 +609,78 @@ class AdAccountsResource:
         *,
         placement: str | None = None,
         limit: int | None = 25,
+        since: str | None = None,
+        until: str | None = None,
         cursor: str | None = None,
     ) -> dict[str, Any]:
         """List comments on an ad (async)"""
         params = self._build_params(
             placement=placement,
             limit=limit,
+            since=since,
+            until=until,
             cursor=cursor,
         )
         return await self._client._aget(f"/v1/ads/{ad_id}/comments", params=params)
+
+    async def areply_to_ad_comment(
+        self,
+        ad_id: str,
+        comment_id: str,
+        text: str,
+        *,
+        since: str | None = None,
+        until: str | None = None,
+    ) -> dict[str, Any]:
+        """Reply to an ad comment (async)"""
+        params = self._build_params(
+            since=since,
+            until=until,
+        )
+        payload = self._build_payload(
+            text=text,
+        )
+        return await self._client._apost(
+            f"/v1/ads/{ad_id}/comments/{comment_id}/reply", data=payload, params=params
+        )
+
+    async def ahide_ad_comment(
+        self,
+        ad_id: str,
+        comment_id: str,
+        hidden: bool,
+        *,
+        since: str | None = None,
+        until: str | None = None,
+    ) -> dict[str, Any]:
+        """Hide or unhide an ad comment (async)"""
+        params = self._build_params(
+            since=since,
+            until=until,
+        )
+        payload = self._build_payload(
+            hidden=hidden,
+        )
+        return await self._client._apost(
+            f"/v1/ads/{ad_id}/comments/{comment_id}/hide", data=payload, params=params
+        )
+
+    async def adelete_ad_comment(
+        self,
+        ad_id: str,
+        comment_id: str,
+        *,
+        since: str | None = None,
+        until: str | None = None,
+    ) -> dict[str, Any]:
+        """Delete an ad comment (async)"""
+        params = self._build_params(
+            since=since,
+            until=until,
+        )
+        return await self._client._adelete(
+            f"/v1/ads/{ad_id}/comments/{comment_id}", params=params
+        )
 
     async def alist_ads_business_centers(self, account_id: str) -> dict[str, Any]:
         """List TikTok Business Centers (async)"""
@@ -573,6 +730,41 @@ class AdAccountsResource:
             after=after,
         )
         return await self._client._aget("/v1/ads/studies", params=params)
+
+    async def alist_ads_instagram_accounts(
+        self, account_id: str, ad_account_id: str
+    ) -> dict[str, Any]:
+        """List Instagram ad identities (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            ad_account_id=ad_account_id,
+        )
+        return await self._client._aget("/v1/ads/instagram-accounts", params=params)
+
+    async def alist_advertisable_applications(
+        self, account_id: str, ad_account_id: str
+    ) -> dict[str, Any]:
+        """List advertisable apps (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            ad_account_id=ad_account_id,
+        )
+        return await self._client._aget(
+            "/v1/ads/advertisable-applications", params=params
+        )
+
+    async def aget_ios_fourteen_campaign_limits(
+        self, account_id: str, ad_account_id: str, application_id: str
+    ) -> dict[str, Any]:
+        """Get iOS 14 campaign limits (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            ad_account_id=ad_account_id,
+            application_id=application_id,
+        )
+        return await self._client._aget(
+            "/v1/ads/ios-fourteen-campaign-limits", params=params
+        )
 
     async def alist_meta_businesses(
         self, account_id: str, *, limit: int | None = 25, after: str | None = None
