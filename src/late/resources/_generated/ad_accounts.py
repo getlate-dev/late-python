@@ -276,6 +276,120 @@ class AdAccountsResource:
             f"/v1/ads/value-rule-sets/{value_rule_set_id}", params=params
         )
 
+    def list_ad_negative_keyword_lists(
+        self,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> dict[str, Any]:
+        """List negative keyword lists"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+            platform=platform,
+        )
+        return self._client._get(
+            "/v1/ads/accounts/negative-keyword-lists", params=params
+        )
+
+    def create_ad_negative_keyword_list(
+        self,
+        account_id: str,
+        name: str,
+        *,
+        customer_id: str | None = None,
+        platform: str | None = None,
+        keywords: list[Any] | None = None,
+    ) -> dict[str, Any]:
+        """Create a negative keyword list"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            platform=platform,
+            name=name,
+            keywords=keywords,
+        )
+        return self._client._post(
+            "/v1/ads/accounts/negative-keyword-lists", data=payload
+        )
+
+    def get_ad_negative_keyword_list(
+        self,
+        list_id: str,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> dict[str, Any]:
+        """Get a negative keyword list"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+            platform=platform,
+        )
+        return self._client._get(
+            f"/v1/ads/accounts/negative-keyword-lists/{list_id}", params=params
+        )
+
+    def update_ad_negative_keyword_list(
+        self,
+        list_id: str,
+        account_id: str,
+        name: str,
+        *,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> dict[str, Any]:
+        """Rename a negative keyword list"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            platform=platform,
+            name=name,
+        )
+        return self._client._put(
+            f"/v1/ads/accounts/negative-keyword-lists/{list_id}", data=payload
+        )
+
+    def delete_ad_negative_keyword_list(
+        self,
+        list_id: str,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> dict[str, Any]:
+        """Delete a negative keyword list"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+            platform=platform,
+        )
+        return self._client._delete(
+            f"/v1/ads/accounts/negative-keyword-lists/{list_id}", params=params
+        )
+
+    def replace_ad_negative_keyword_list_keywords(
+        self,
+        list_id: str,
+        account_id: str,
+        keywords: list[Any],
+        *,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> dict[str, Any]:
+        """Replace negative list keywords"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            platform=platform,
+            keywords=keywords,
+        )
+        return self._client._put(
+            f"/v1/ads/accounts/negative-keyword-lists/{list_id}/keywords", data=payload
+        )
+
     def list_account_callouts(
         self, account_id: str, *, customer_id: str | None = None
     ) -> dict[str, Any]:
@@ -596,6 +710,120 @@ class AdAccountsResource:
         )
         return await self._client._adelete(
             f"/v1/ads/value-rule-sets/{value_rule_set_id}", params=params
+        )
+
+    async def alist_ad_negative_keyword_lists(
+        self,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> dict[str, Any]:
+        """List negative keyword lists (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+            platform=platform,
+        )
+        return await self._client._aget(
+            "/v1/ads/accounts/negative-keyword-lists", params=params
+        )
+
+    async def acreate_ad_negative_keyword_list(
+        self,
+        account_id: str,
+        name: str,
+        *,
+        customer_id: str | None = None,
+        platform: str | None = None,
+        keywords: list[Any] | None = None,
+    ) -> dict[str, Any]:
+        """Create a negative keyword list (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            platform=platform,
+            name=name,
+            keywords=keywords,
+        )
+        return await self._client._apost(
+            "/v1/ads/accounts/negative-keyword-lists", data=payload
+        )
+
+    async def aget_ad_negative_keyword_list(
+        self,
+        list_id: str,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> dict[str, Any]:
+        """Get a negative keyword list (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+            platform=platform,
+        )
+        return await self._client._aget(
+            f"/v1/ads/accounts/negative-keyword-lists/{list_id}", params=params
+        )
+
+    async def aupdate_ad_negative_keyword_list(
+        self,
+        list_id: str,
+        account_id: str,
+        name: str,
+        *,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> dict[str, Any]:
+        """Rename a negative keyword list (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            platform=platform,
+            name=name,
+        )
+        return await self._client._aput(
+            f"/v1/ads/accounts/negative-keyword-lists/{list_id}", data=payload
+        )
+
+    async def adelete_ad_negative_keyword_list(
+        self,
+        list_id: str,
+        account_id: str,
+        *,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> dict[str, Any]:
+        """Delete a negative keyword list (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            customer_id=customer_id,
+            platform=platform,
+        )
+        return await self._client._adelete(
+            f"/v1/ads/accounts/negative-keyword-lists/{list_id}", params=params
+        )
+
+    async def areplace_ad_negative_keyword_list_keywords(
+        self,
+        list_id: str,
+        account_id: str,
+        keywords: list[Any],
+        *,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> dict[str, Any]:
+        """Replace negative list keywords (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            customer_id=customer_id,
+            platform=platform,
+            keywords=keywords,
+        )
+        return await self._client._aput(
+            f"/v1/ads/accounts/negative-keyword-lists/{list_id}/keywords", data=payload
         )
 
     async def alist_account_callouts(

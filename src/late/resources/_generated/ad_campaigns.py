@@ -351,6 +351,7 @@ class AdCampaignsResource:
         bid_amount: float | None = None,
         roas_average_floor: float | None = None,
         portfolio_bid_strategy_id: str | None = None,
+        allow_shared_budget_update: bool | None = False,
         budget: dict[str, Any] | None = None,
         name: str | None = None,
         platform_specific_data: dict[str, Any] | None = None,
@@ -363,6 +364,7 @@ class AdCampaignsResource:
             bid_amount=bid_amount,
             roas_average_floor=roas_average_floor,
             portfolio_bid_strategy_id=portfolio_bid_strategy_id,
+            allow_shared_budget_update=allow_shared_budget_update,
             budget=budget,
             name=name,
             platform_specific_data=platform_specific_data,
@@ -742,6 +744,29 @@ class AdCampaignsResource:
             f"/v1/ads/campaigns/{campaign_id}/assets", data=payload
         )
 
+    def list_campaign_negative_keyword_lists(
+        self, campaign_id: str, *, platform: str | None = None
+    ) -> dict[str, Any]:
+        """List campaign negative lists"""
+        params = self._build_params(
+            platform=platform,
+        )
+        return self._client._get(
+            f"/v1/ads/campaigns/{campaign_id}/negative-keyword-lists", params=params
+        )
+
+    def replace_campaign_negative_keyword_lists(
+        self, campaign_id: str, list_ids: list[str], *, platform: str | None = None
+    ) -> dict[str, Any]:
+        """Replace campaign negative lists"""
+        payload = self._build_payload(
+            platform=platform,
+            list_ids=list_ids,
+        )
+        return self._client._put(
+            f"/v1/ads/campaigns/{campaign_id}/negative-keyword-lists", data=payload
+        )
+
     def boost_post(
         self,
         account_id: str,
@@ -755,6 +780,7 @@ class AdCampaignsResource:
         budget: dict[str, Any] | None = None,
         instagram_account_id: str | None = None,
         destination_type: str | None = None,
+        whatsapp_phone_number: str | None = None,
         currency: str | None = None,
         schedule: dict[str, Any] | None = None,
         targeting: dict[str, Any] | None = None,
@@ -789,6 +815,7 @@ class AdCampaignsResource:
             budget=budget,
             instagram_account_id=instagram_account_id,
             destination_type=destination_type,
+            whatsapp_phone_number=whatsapp_phone_number,
             currency=currency,
             schedule=schedule,
             targeting=targeting,
@@ -1298,6 +1325,7 @@ class AdCampaignsResource:
         bid_amount: float | None = None,
         roas_average_floor: float | None = None,
         portfolio_bid_strategy_id: str | None = None,
+        allow_shared_budget_update: bool | None = False,
         budget: dict[str, Any] | None = None,
         name: str | None = None,
         platform_specific_data: dict[str, Any] | None = None,
@@ -1310,6 +1338,7 @@ class AdCampaignsResource:
             bid_amount=bid_amount,
             roas_average_floor=roas_average_floor,
             portfolio_bid_strategy_id=portfolio_bid_strategy_id,
+            allow_shared_budget_update=allow_shared_budget_update,
             budget=budget,
             name=name,
             platform_specific_data=platform_specific_data,
@@ -1695,6 +1724,29 @@ class AdCampaignsResource:
             f"/v1/ads/campaigns/{campaign_id}/assets", data=payload
         )
 
+    async def alist_campaign_negative_keyword_lists(
+        self, campaign_id: str, *, platform: str | None = None
+    ) -> dict[str, Any]:
+        """List campaign negative lists (async)"""
+        params = self._build_params(
+            platform=platform,
+        )
+        return await self._client._aget(
+            f"/v1/ads/campaigns/{campaign_id}/negative-keyword-lists", params=params
+        )
+
+    async def areplace_campaign_negative_keyword_lists(
+        self, campaign_id: str, list_ids: list[str], *, platform: str | None = None
+    ) -> dict[str, Any]:
+        """Replace campaign negative lists (async)"""
+        payload = self._build_payload(
+            platform=platform,
+            list_ids=list_ids,
+        )
+        return await self._client._aput(
+            f"/v1/ads/campaigns/{campaign_id}/negative-keyword-lists", data=payload
+        )
+
     async def aboost_post(
         self,
         account_id: str,
@@ -1708,6 +1760,7 @@ class AdCampaignsResource:
         budget: dict[str, Any] | None = None,
         instagram_account_id: str | None = None,
         destination_type: str | None = None,
+        whatsapp_phone_number: str | None = None,
         currency: str | None = None,
         schedule: dict[str, Any] | None = None,
         targeting: dict[str, Any] | None = None,
@@ -1742,6 +1795,7 @@ class AdCampaignsResource:
             budget=budget,
             instagram_account_id=instagram_account_id,
             destination_type=destination_type,
+            whatsapp_phone_number=whatsapp_phone_number,
             currency=currency,
             schedule=schedule,
             targeting=targeting,

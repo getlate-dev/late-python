@@ -873,11 +873,15 @@ components:
         In addition to the `required` list, the request must use
         EXACTLY ONE of the two shapes:
 
-        - Single-creative: `headline`, `body`, and one of
-          `imageUrl` / `video` (mutually exclusive).
+        - Single-creative: `headline`, `body`, and one of `imageUrl` / `video`,
+          OR `existingPostId` / `objectStoryId` to reuse an organic post.
         - Multi-creative: a non-empty `creatives[]` array. Top-level
-          `headline` / `body` / `imageUrl` / `video` must NOT be set
-          on this shape.
+          creative fields must NOT be set on this shape.
+
+        Existing post references work on messaging and CTWA only (not call ads).
+        They cannot be combined with each other or with headline, body, imageUrl,
+        video, or welcomeMessage. No media is uploaded and the organic post is
+        retained. Fresh creatives still require headline, body, and image or video.
 
         The route enforces this at the Zod boundary; OpenAPI's
         `required` cannot express the OR cleanly.
@@ -898,6 +902,18 @@ components:
             On the multi-creative shape, each ad's Meta name gets a
             " #N" suffix (1-indexed) so Ads Manager shows them as a
             numbered batch.
+        existingPostId:
+          type: string
+          minLength: 1
+          description: 'Messaging and CTWA only. Platform post or reel ID, resolved like boost platformPostId. Facebook IDs become object_story_id; Instagram IDs become source_instagram_media_id using the connected Instagram identity. Mutually exclusive with objectStoryId and fresh creative fields.'
+        objectStoryId:
+          type: string
+          pattern: '^\d+_\d+$'
+          description: 'Messaging and CTWA only. Raw Facebook pageId_postId reference, used as object_story_id even with an Instagram account. Mutually exclusive with existingPostId and fresh creative fields.'
+        whatsappPhoneNumber:
+          type: string
+          pattern: '^\+[1-9]\d{6,14}$'
+          description: 'WhatsApp only. Optional E.164 number already paired with the Facebook Page. Omit to let Meta select the paired number. Sent to the creative CTA and, when creating a new ad set, its promoted_object. Attach requests do not change the existing ad set.'
         headline:
           type: string
           minLength: 1
@@ -917,7 +933,7 @@ components:
           description: |
             Image asset for single-creative shape. Mutually exclusive
             with `video` and with `creatives[]`. Required on the
-            single-creative shape if `video` is not supplied.
+            single-creative shape if neither `video` nor an existing post reference is supplied.
         video:
           type: object
           properties:
@@ -935,7 +951,7 @@ components:
           description: |
             Video creative for single-creative shape. Mutually
             exclusive with `imageUrl` and with `creatives[]`. Required
-            on the single-creative shape if `imageUrl` is not supplied.
+            on the single-creative shape if neither `imageUrl` nor an existing post reference is supplied.
         welcomeMessage:
           type: object
           required: [text, prefillText]
@@ -956,15 +972,20 @@ components:
             `body` / `imageUrl` / `video`): setting both is a 400,
             unlike `POST /v1/ads/create` where the top-level fields
             are silently ignored in multi-creative mode. Each entry
-            must supply its own headline, body, and exactly one of
-            `imageUrl` / `video`.
+            supplies headline, body, and image/video, or an existingPostId or
+            objectStoryId reference. Fresh and existing creatives can be mixed.
           items:
             type: object
-            required: [headline, body]
-            description: |
-              Each entry must also include exactly one of `imageUrl`
-              or `video`.
+            description: 'Supply headline, body, and image/video, or exactly one existing post reference. References cannot be combined with fresh creative fields.'
             properties:
+              existingPostId:
+                type: string
+                minLength: 1
+                description: 'Messaging and CTWA only. Platform post or reel ID, resolved like boost platformPostId. Facebook IDs become object_story_id; Instagram IDs become source_instagram_media_id using the connected Instagram identity. Mutually exclusive with objectStoryId and fresh creative fields.'
+              objectStoryId:
+                type: string
+                pattern: '^\d+_\d+$'
+                description: 'Messaging and CTWA only. Raw Facebook pageId_postId reference, used as object_story_id even with an Instagram account. Mutually exclusive with existingPostId and fresh creative fields.'
               headline:
                 type: string
                 minLength: 1
@@ -978,7 +999,7 @@ components:
                 format: uri
                 description: |
                   Image asset. Mutually exclusive with this entry's
-                  `video`. Required if `video` is not supplied.
+                  `video`. Required if neither `video` nor an existing post reference is supplied.
               video:
                 type: object
                 properties:
@@ -994,7 +1015,7 @@ components:
                       platform_error (reason: video_thumbnail_unavailable).
                 description: |
                   Video creative. Mutually exclusive with this entry's
-                  `imageUrl`. Required if `imageUrl` is not supplied.
+                  `imageUrl`. Required if neither `imageUrl` nor an existing post reference is supplied.
               welcomeMessage:
                 type: object
                 required: [text, prefillText]
@@ -5152,6 +5173,7 @@ components:
         url:
           type: string
           format: uri
+          description: 'A media item with a null, missing or empty url is dropped from non-draft posts (drafts keep it as a pending-upload placeholder).'
         title:
           type: string
           description: Optional title for the media item. Used as the document title for LinkedIn PDF/carousel posts. If omitted, falls back to the post title, then the filename.
@@ -8316,6 +8338,41 @@ components:
                 description: "Monetary mirror of `actions` in native currency."
               purchaseValue: { type: number, description: "Sum of purchase-type action values on this day, native currency." }
               roas: { type: number, description: "Derived purchaseValue / spend." }
+    AdNegativeKeywordList:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          pattern: "^\\d+$"
+          description: "Google shared set id."
+        resourceName:
+          type: "string"
+          description: "Google shared set resource name."
+        name:
+          type: "string"
+          description: "List name."
+        memberCount:
+          type: "integer"
+          description: "Number of keywords in the list."
+        referenceCount:
+          type: "integer"
+          description: "Number of resources referencing the list."
+    AdNegativeKeywordListKeyword:
+      type: "object"
+      properties:
+        criterionId:
+          type: "string"
+          pattern: "^\\d+$"
+          description: "Google shared criterion id."
+        text:
+          type: "string"
+          description: "Keyword text."
+        matchType:
+          type: "string"
+          enum:
+            - "broad"
+            - "phrase"
+            - "exact"
     CampaignAnalyticsResponse:
       type: object
       properties:
@@ -8329,13 +8386,34 @@ components:
             name: { type: [string, "null"] }
             platform: { type: string }
             status: { type: [string, "null"], description: "Effective campaign status (ACTIVE when any child ad is active)." }
+            budget:
+              anyOf:
+                - $ref: '#/components/schemas/AdCampaignBudget'
+                - type: "null"
+              description: "Google only. Latest synced campaign budget, or null before sync."
             currency:
               type: [string, "null"]
               description: "ISO 4217 code of the ad account (e.g. USD, THB). All money values in `summary` and `daily` are in this currency."
         analytics:
           type: object
           properties:
-            summary: { $ref: '#/components/schemas/AdMetrics' }
+            summary:
+              allOf:
+                - $ref: '#/components/schemas/AdMetrics'
+                - type: object
+                  properties:
+                    searchImpressionShare: { type: [number, "null"], description: "Google only. Date-range ratio, not a percentage. Null when unavailable; Google's threshold sentinel values are preserved." }
+                    searchBudgetLostImpressionShare: { type: [number, "null"], description: "Google only. Date-range ratio, not a percentage. Null when unavailable; Google's threshold sentinel values are preserved." }
+                    searchRankLostImpressionShare: { type: [number, "null"], description: "Google only. Date-range ratio, not a percentage. Null when unavailable; Google's threshold sentinel values are preserved." }
+                    searchTopImpressionShare: { type: [number, "null"], description: "Google only. Date-range ratio, not a percentage. Null when unavailable; Google's threshold sentinel values are preserved." }
+                    searchAbsoluteTopImpressionShare: { type: [number, "null"], description: "Google only. Date-range ratio, not a percentage. Null when unavailable; Google's threshold sentinel values are preserved." }
+            impressionShareCache:
+              type: object
+              description: "Google only. Cache status of the single date-range impression-share query."
+              properties:
+                cachedAt: { type: [string, "null"], format: date-time }
+                stale: { type: boolean }
+
             daily:
               type: array
               items:
@@ -8712,6 +8790,15 @@ components:
             name: { type: string }
         cachedAt: { type: [string, "null"], format: date-time, description: "When this data was fetched from Google. Null when it was never served from cache." }
         stale: { type: boolean, description: "True when Google's daily API quota was exhausted and this is the last successful fetch, not a live read." }
+    AdCampaignBudget:
+      allOf:
+        - $ref: '#/components/schemas/AdBudget'
+        - type: object
+          properties:
+            amountMicros: { type: string, pattern: '^\d+$', description: "Google only. Exact decimal micros; DAILY uses amount_micros and CUSTOM_PERIOD uses total_amount_micros." }
+            explicitlyShared: { type: [boolean, "null"], description: "Google only. True for a shared budget; null when unavailable. Shared writes require allowSharedBudgetUpdate=true; unknown sharing status cannot be overridden." }
+            resourceName: { type: [string, "null"], description: "Google only. campaign_budget.resource_name, or null when unavailable." }
+            deliveryMethod: { type: [string, "null"], description: "Google only. campaign_budget.delivery_method, typically STANDARD, or null when unavailable." }
     AdBudget:
       type: object
       description: Budget amount in the ad account's native currency (see the campaign's `currency` field for the code).
@@ -9291,17 +9378,15 @@ components:
             type: object
         adCount: { type: integer }
         budget:
-          type: [object, "null"]
-          description: Effective budget (back-compat). Use `budgetLevel` to disambiguate CBO vs ABO.
-          properties:
-            amount: { type: number }
-            type: { type: string, enum: [daily, lifetime] }
+          anyOf:
+            - $ref: '#/components/schemas/AdCampaignBudget'
+            - type: "null"
+          description: "Effective budget. Google metadata arrives after the next successful sync."
         campaignBudget:
-          type: [object, "null"]
-          description: Campaign-level budget (CBO). Null for ABO campaigns.
-          properties:
-            amount: { type: number }
-            type: { type: string, enum: [daily, lifetime] }
+          anyOf:
+            - $ref: '#/components/schemas/AdCampaignBudget'
+            - type: "null"
+          description: "Campaign-level budget. Null for ad-set budgets."
         budgetLevel:
           type: [string, "null"]
           enum: [campaign, adset]
@@ -42684,6 +42769,8 @@ paths:
         Returns campaigns as virtual aggregations over ad documents grouped by platform campaign ID.
         Metrics (spend, impressions, clicks, etc.) are summed across all ads in each campaign.
         Campaign status is derived from child ad statuses (active > pending_review > paused > error > completed > cancelled > rejected).
+        Google campaign budgets include amountMicros, explicitlyShared, resourceName and
+        deliveryMethod after the next successful sync. This endpoint does not fetch Google live.
       security:
         - bearerAuth: []
       parameters:
@@ -42724,6 +42811,19 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/AdCampaign' }
                   pagination: { $ref: '#/components/schemas/Pagination' }
+              example:
+                campaigns:
+                  - platformCampaignId: "123456789"
+                    platform: google
+                    campaignName: "Search campaign"
+                    budget:
+                      amount: 5
+                      amountMicros: "5000000"
+                      type: daily
+                      explicitlyShared: false
+                      resourceName: "customers/9122445560/campaignBudgets/1234567890"
+                      deliveryMethod: STANDARD
+                pagination: { page: 1, limit: 20, total: 1, pages: 1 }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
@@ -42929,7 +43029,7 @@ paths:
         | `bidStrategy` | Yes | Yes | 501 |
         | `bidAmount`, `roasAverageFloor` | 400 (ad-set level) | Yes | 400 |
         | `portfolioBidStrategyId` | 400 | Yes | 400 |
-        | `budget` (CBO; ABO returns 409) | Yes | 501 | 501 |
+        | `budget` (CBO; ABO returns 409) | Yes | Daily only | 501 |
         | `name` | Yes | 501 | 501 |
         | `platformSpecificData.spendCap` | Yes | 400 | 400 |
         | `accountId` (empty campaigns) | Yes | - | - |
@@ -42941,6 +43041,10 @@ paths:
         (exclusive with `bidStrategy`). Setting the standard triplet on a campaign that
         is currently on a PORTFOLIO strategy is rejected: detach it in Google Ads
         first, since it is shared across campaigns.
+
+        Google budget updates read the current budget before mutation. Shared budgets return
+        409 unless allowSharedBudgetUpdate=true is explicitly supplied, because the change
+        affects every campaign using that budget. Unknown sharing state also returns 409.
 
         `accountId` forwards the update straight to Meta for a campaign with zero ads,
         which would otherwise 404; the response then carries `updated: 0`.
@@ -42964,9 +43068,10 @@ paths:
                 bidAmount: { type: number, description: "**Google only.** Whole currency units (USD: 12 = $12.00). Max CPC for LOWEST_COST_WITH_BID_CAP, CPA target for COST_CAP; required for both." }
                 roasAverageFloor: { type: number, description: "**Google only.** Decimal ROAS multiplier (2.0 = 2.0x), required for LOWEST_COST_WITH_MIN_ROAS." }
                 portfolioBidStrategyId: { type: string, pattern: '^\d+$', description: "**Google only.** Attach an existing portfolio bid strategy (numeric id from GET /v1/ads/bid-strategies) instead of setting bidStrategy. Exclusive with bidStrategy." }
+                allowSharedBudgetUpdate: { type: boolean, default: false, description: "Google only. Explicitly allow changing a shared campaign budget, affecting every campaign that uses it. Does not bypass an unknown sharing state." }
                 budget:
                   type: object
-                  description: "**Meta only.** The CBO budget."
+                  description: "Meta CBO or Google daily campaign budget, in whole currency units."
                   required: [amount, type]
                   properties:
                     amount: { type: number, description: Budget amount in the ad account's currency }
@@ -42977,6 +43082,10 @@ paths:
                   description: "**Meta only.** Platform implied by the `platform` body param, same convention as POST /v1/ads/create."
                   properties:
                     spendCap: { type: [number, "null"], description: "Campaign lifetime spend cap, in the ad account's currency (Meta `spend_cap`). Pass null to remove the cap; 0 is rejected by Meta." }
+            example:
+              platform: google
+              budget: { amount: 5, type: daily }
+              allowSharedBudgetUpdate: false
       responses:
         '200':
           description: Campaign updated
@@ -42987,7 +43096,7 @@ paths:
                 description: Echoes back only the fields you sent, plus `updated`.
                 properties:
                   updated: { type: integer, description: "Local Ad documents mirrored. 0 on the empty-campaign path." }
-                  budget: { $ref: '#/components/schemas/AdBudget' }
+                  budget: { $ref: '#/components/schemas/AdCampaignBudget' }
                   budgetLevel: { type: string, enum: [campaign] }
                   bidStrategy: { $ref: '#/components/schemas/BidStrategy' }
                   bidAmount: { type: number }
@@ -42999,7 +43108,7 @@ paths:
         '403':
           description: 'Returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
         '404': { description: Campaign not found }
-        '409': { description: "Campaign is ABO. Route to /v1/ads/ad-sets/{adSetId} instead" }
+        '409': { description: "Meta campaign is ABO, or the Google budget is shared without allowSharedBudgetUpdate=true, or sharing state cannot be verified." }
         '501': { description: Operation not supported on this platform }
 
     delete:
@@ -44545,6 +44654,11 @@ paths:
         without summing thousands of per-ad reads. `campaignId` is the platform campaign id; pass
         `platform` when a campaign id could be ambiguous across platforms. If no date range is provided,
         defaults to the last 90 days. Date range is capped at 730 days max.
+        Google adds searchImpressionShare, searchBudgetLostImpressionShare,
+        searchRankLostImpressionShare, searchTopImpressionShare and searchAbsoluteTopImpressionShare
+        under analytics.summary for the requested inclusive range. These ratios are queried
+        together without daily segmentation and cached for 10 minutes. Unavailable values are
+        null. analytics.impressionShareCache reports cachedAt and stale independently of synced metrics.
       security:
         - bearerAuth: []
       parameters:
@@ -44571,6 +44685,17 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CampaignAnalyticsResponse' }
+              example:
+                campaign: { id: "123456789", platform: google }
+                analytics:
+                  summary:
+                    searchImpressionShare: 0.42
+                    searchBudgetLostImpressionShare: 0.13
+                    searchRankLostImpressionShare: 0.45
+                    searchTopImpressionShare: 0.31
+                    searchAbsoluteTopImpressionShare: null
+                  impressionShareCache: { cachedAt: "2026-09-09T10:00:00Z", stale: false }
+                  daily: []
         '202':
           description: Historical data is incomplete and backfill remains pending.
           headers:
@@ -44594,6 +44719,7 @@ paths:
         '403':
           description: Ads access required. Legacy plans need the Ads add-on; included by default on usage-based plans.
         '404': { $ref: '#/components/responses/NotFound' }
+        '429': { description: "Google operations budget or quota exhausted without a cached impression-share result." }
 
   /v1/ads/preview:
     post:
@@ -46157,6 +46283,766 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '501': { description: Only supported on Meta (facebook/instagram) }
 
+  /v1/ads/accounts/negative-keyword-lists:
+    get:
+      x-resource-group: "ads"
+      operationId: "listAdNegativeKeywordLists"
+      tags:
+        - "Ad Accounts"
+      x-platforms:
+        - "google"
+      summary: "List negative keyword lists"
+      description: "Google Ads shared negative keyword lists (shared_set type NEGATIVE_KEYWORDS). Reads are cached for 10 minutes; quota exhaustion may return the last successful result for up to 7 days with stale=true. Customer selection is limited to this connection and its account scope."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: "accountId"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            pattern: "^[a-fA-F0-9]{24}$"
+            description: "Zernio SocialAccount id."
+        - name: "customerId"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+            pattern: "^\\d+$"
+            description: "Connected Google Ads customer id, without dashes. Required when the connection has multiple customers."
+        - name: "platform"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+            enum:
+              - "facebook"
+              - "instagram"
+              - "tiktok"
+              - "linkedin"
+              - "pinterest"
+              - "google"
+              - "twitter"
+              - "openai"
+            description: "Optional courtesy field. The resolved account or campaign determines support; other platforms return 501."
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  lists:
+                    type: "array"
+                    items:
+                      $ref: "#/components/schemas/AdNegativeKeywordList"
+                  customerId:
+                    type: "string"
+                    pattern: "^\\d+$"
+                    description: "Resolved Google Ads customer id."
+                  cachedAt:
+                    type:
+                      - "string"
+                      - "null"
+                    format: "date-time"
+                    description: "Last successful fetch time, or null without cache storage."
+                  stale:
+                    type: "boolean"
+                    description: "True when quota exhaustion caused the last successful cached result to be served."
+              example:
+                lists:
+                  - id: "1234567890"
+                    resourceName: "customers/9122445560/sharedSets/1234567890"
+                    name: "Excluded searches"
+                    memberCount: 2
+                    referenceCount: 0
+                customerId: "9122445560"
+                cachedAt: "2026-09-09T10:00:00Z"
+                stale: false
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Ads access and permission to the selected account are required."
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+        "422":
+          description: "Google Ads connection is missing or unavailable."
+        "429":
+          description: "Google Ads operations budget or platform quota exhausted."
+        "501":
+          description: "Available only on Google Ads."
+    post:
+      x-resource-group: "ads"
+      operationId: "createAdNegativeKeywordList"
+      tags:
+        - "Ad Accounts"
+      x-platforms:
+        - "google"
+      summary: "Create a negative keyword list"
+      description: "Creates one Google Ads shared negative keyword list with optional initial keywords in a single atomic mutation. Daily quota is reserved for every mutate item, so large batches may return 429 before any change. This operation is not idempotent. The list is not attached to any campaign."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              required:
+                - "accountId"
+                - "name"
+              properties:
+                accountId:
+                  type: "string"
+                  pattern: "^[a-fA-F0-9]{24}$"
+                  description: "Zernio SocialAccount id."
+                customerId:
+                  type: "string"
+                  pattern: "^\\d+$"
+                  description: "Connected Google Ads customer id, without dashes. Required when the connection has multiple customers."
+                platform:
+                  type: "string"
+                  enum:
+                    - "facebook"
+                    - "instagram"
+                    - "tiktok"
+                    - "linkedin"
+                    - "pinterest"
+                    - "google"
+                    - "twitter"
+                    - "openai"
+                  description: "Optional courtesy field. The resolved account or campaign determines support; other platforms return 501."
+                name:
+                  type: "string"
+                  minLength: 1
+                  maxLength: 255
+                  description: "Nonempty list name, trimmed before use."
+                keywords:
+                  type: "array"
+                  maxItems: 5000
+                  items:
+                    $ref: "#/components/schemas/KeywordEntry"
+                  description: "Full desired keyword set. Bare strings use broad match. Send [] to clear the list."
+            example:
+              accountId: "69ce75d483e990e1c01ccfe4"
+              customerId: "9122445560"
+              name: "Excluded searches"
+              keywords:
+                - "free"
+                - text: "jobs"
+                  matchType: "phrase"
+      responses:
+        "201":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  id:
+                    type: "string"
+                    pattern: "^\\d+$"
+                    description: "New shared set id."
+                  resourceName:
+                    type: "string"
+                    description: "New shared set resource name."
+                  created:
+                    type: "integer"
+                    description: "Number of initial keyword criteria created."
+                  customerId:
+                    type: "string"
+                    pattern: "^\\d+$"
+                    description: "Resolved Google Ads customer id."
+              example:
+                id: "1234567890"
+                resourceName: "customers/9122445560/sharedSets/1234567890"
+                created: 2
+                customerId: "9122445560"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Ads access and permission to the selected account are required."
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+        "422":
+          description: "Google Ads connection is missing or unavailable."
+        "429":
+          description: "Google Ads operations budget or platform quota exhausted."
+        "501":
+          description: "Available only on Google Ads."
+  /v1/ads/accounts/negative-keyword-lists/{listId}:
+    get:
+      x-resource-group: "ads"
+      operationId: "getAdNegativeKeywordList"
+      tags:
+        - "Ad Accounts"
+      x-platforms:
+        - "google"
+      summary: "Get a negative keyword list"
+      description: "Google Ads shared negative keyword lists (shared_set type NEGATIVE_KEYWORDS). Reads are cached for 10 minutes; quota exhaustion may return the last successful result for up to 7 days with stale=true. Customer selection is limited to this connection and its account scope. Includes the keywords and their criterion ids."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: "listId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            pattern: "^\\d+$"
+            description: "Google shared set id."
+        - name: "accountId"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            pattern: "^[a-fA-F0-9]{24}$"
+            description: "Zernio SocialAccount id."
+        - name: "customerId"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+            pattern: "^\\d+$"
+            description: "Connected Google Ads customer id, without dashes. Required when the connection has multiple customers."
+        - name: "platform"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+            enum:
+              - "facebook"
+              - "instagram"
+              - "tiktok"
+              - "linkedin"
+              - "pinterest"
+              - "google"
+              - "twitter"
+              - "openai"
+            description: "Optional courtesy field. The resolved account or campaign determines support; other platforms return 501."
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  list:
+                    allOf:
+                      - $ref: "#/components/schemas/AdNegativeKeywordList"
+                      - type: "object"
+                        properties:
+                          keywords:
+                            type: "array"
+                            items:
+                              $ref: "#/components/schemas/AdNegativeKeywordListKeyword"
+                  customerId:
+                    type: "string"
+                    pattern: "^\\d+$"
+                    description: "Resolved Google Ads customer id."
+                  cachedAt:
+                    type:
+                      - "string"
+                      - "null"
+                    format: "date-time"
+                    description: "Last successful fetch time, or null without cache storage."
+                  stale:
+                    type: "boolean"
+                    description: "True when quota exhaustion caused the last successful cached result to be served."
+              example:
+                list:
+                  id: "1234567890"
+                  resourceName: "customers/9122445560/sharedSets/1234567890"
+                  name: "Excluded searches"
+                  memberCount: 2
+                  referenceCount: 0
+                  keywords:
+                    - criterionId: "111"
+                      text: "free"
+                      matchType: "broad"
+                    - criterionId: "222"
+                      text: "jobs"
+                      matchType: "phrase"
+                customerId: "9122445560"
+                cachedAt: "2026-09-09T10:00:00Z"
+                stale: false
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Ads access and permission to the selected account are required."
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+        "422":
+          description: "Google Ads connection is missing or unavailable."
+        "429":
+          description: "Google Ads operations budget or platform quota exhausted."
+        "501":
+          description: "Available only on Google Ads."
+    put:
+      x-resource-group: "ads"
+      operationId: "updateAdNegativeKeywordList"
+      tags:
+        - "Ad Accounts"
+      x-platforms:
+        - "google"
+      summary: "Rename a negative keyword list"
+      description: "Renames a shared negative keyword list. Keywords and campaign associations are unchanged. Use the keywords endpoint to edit the desired keyword set."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: "listId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            pattern: "^\\d+$"
+            description: "Google shared set id."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              required:
+                - "accountId"
+                - "name"
+              properties:
+                accountId:
+                  type: "string"
+                  pattern: "^[a-fA-F0-9]{24}$"
+                  description: "Zernio SocialAccount id."
+                customerId:
+                  type: "string"
+                  pattern: "^\\d+$"
+                  description: "Connected Google Ads customer id, without dashes. Required when the connection has multiple customers."
+                platform:
+                  type: "string"
+                  enum:
+                    - "facebook"
+                    - "instagram"
+                    - "tiktok"
+                    - "linkedin"
+                    - "pinterest"
+                    - "google"
+                    - "twitter"
+                    - "openai"
+                  description: "Optional courtesy field. The resolved account or campaign determines support; other platforms return 501."
+                name:
+                  type: "string"
+                  minLength: 1
+                  maxLength: 255
+                  description: "Nonempty list name, trimmed before use."
+            example:
+              accountId: "69ce75d483e990e1c01ccfe4"
+              customerId: "9122445560"
+              name: "Excluded searches renamed"
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  updated:
+                    type: "boolean"
+                  customerId:
+                    type: "string"
+                    pattern: "^\\d+$"
+                    description: "Resolved Google Ads customer id."
+              example:
+                updated: true
+                customerId: "9122445560"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Ads access and permission to the selected account are required."
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+        "422":
+          description: "Google Ads connection is missing or unavailable."
+        "429":
+          description: "Google Ads operations budget or platform quota exhausted."
+        "501":
+          description: "Available only on Google Ads."
+    delete:
+      x-resource-group: "ads"
+      operationId: "deleteAdNegativeKeywordList"
+      tags:
+        - "Ad Accounts"
+      x-platforms:
+        - "google"
+      summary: "Delete a negative keyword list"
+      description: "Removes the Google shared negative keyword list. Detach it from all campaigns first; an in-use list is rejected. Only NEGATIVE_KEYWORDS shared sets are supported."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: "listId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            pattern: "^\\d+$"
+            description: "Google shared set id."
+        - name: "accountId"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            pattern: "^[a-fA-F0-9]{24}$"
+            description: "Zernio SocialAccount id."
+        - name: "customerId"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+            pattern: "^\\d+$"
+            description: "Connected Google Ads customer id, without dashes. Required when the connection has multiple customers."
+        - name: "platform"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+            enum:
+              - "facebook"
+              - "instagram"
+              - "tiktok"
+              - "linkedin"
+              - "pinterest"
+              - "google"
+              - "twitter"
+              - "openai"
+            description: "Optional courtesy field. The resolved account or campaign determines support; other platforms return 501."
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  removed:
+                    type: "boolean"
+                  customerId:
+                    type: "string"
+                    pattern: "^\\d+$"
+                    description: "Resolved Google Ads customer id."
+              example:
+                removed: true
+                customerId: "9122445560"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Ads access and permission to the selected account are required."
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+        "422":
+          description: "Google Ads connection is missing or unavailable."
+        "429":
+          description: "Google Ads operations budget or platform quota exhausted."
+        "501":
+          description: "Available only on Google Ads."
+  /v1/ads/accounts/negative-keyword-lists/{listId}/keywords:
+    put:
+      x-resource-group: "ads"
+      operationId: "replaceAdNegativeKeywordListKeywords"
+      tags:
+        - "Ad Accounts"
+      x-platforms:
+        - "google"
+      summary: "Replace negative list keywords"
+      description: "Replaces the full desired keyword set. Existing keywords are diffed by normalized text and match type; creates and removals are applied atomically in one mutation. Unchanged criteria retain their ids. Send an empty keywords array to clear the list. Changes affect every campaign using this list. Each create or removal consumes one daily operation; the entire batch must fit the remaining quota."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: "listId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            pattern: "^\\d+$"
+            description: "Google shared set id."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              required:
+                - "accountId"
+                - "keywords"
+              properties:
+                accountId:
+                  type: "string"
+                  pattern: "^[a-fA-F0-9]{24}$"
+                  description: "Zernio SocialAccount id."
+                customerId:
+                  type: "string"
+                  pattern: "^\\d+$"
+                  description: "Connected Google Ads customer id, without dashes. Required when the connection has multiple customers."
+                platform:
+                  type: "string"
+                  enum:
+                    - "facebook"
+                    - "instagram"
+                    - "tiktok"
+                    - "linkedin"
+                    - "pinterest"
+                    - "google"
+                    - "twitter"
+                    - "openai"
+                  description: "Optional courtesy field. The resolved account or campaign determines support; other platforms return 501."
+                keywords:
+                  type: "array"
+                  maxItems: 5000
+                  items:
+                    $ref: "#/components/schemas/KeywordEntry"
+                  description: "Full desired keyword set. Bare strings use broad match. Send [] to clear the list."
+            example:
+              accountId: "69ce75d483e990e1c01ccfe4"
+              customerId: "9122445560"
+              keywords:
+                - "free"
+                - text: "jobs"
+                  matchType: "phrase"
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  created:
+                    type: "integer"
+                    description: "New criteria or campaign links created."
+                  removed:
+                    type: "integer"
+                    description: "Existing criteria or campaign links removed."
+                  customerId:
+                    type: "string"
+                    pattern: "^\\d+$"
+                    description: "Resolved Google Ads customer id."
+              example:
+                created: 1
+                removed: 1
+                customerId: "9122445560"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Ads access and permission to the selected account are required."
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+        "422":
+          description: "Google Ads connection is missing or unavailable."
+        "429":
+          description: "Google Ads operations budget or platform quota exhausted."
+        "501":
+          description: "Available only on Google Ads."
+  /v1/ads/campaigns/{campaignId}/negative-keyword-lists:
+    get:
+      x-resource-group: "ads"
+      operationId: "listCampaignNegativeKeywordLists"
+      tags:
+        - "Ad Campaigns"
+      x-platforms:
+        - "google"
+      summary: "List campaign negative lists"
+      description: "Returns shared negative keyword lists attached to the campaign, separate from campaign-level negative keywords. Google Ads shared negative keyword lists (shared_set type NEGATIVE_KEYWORDS). Reads are cached for 10 minutes; quota exhaustion may return the last successful result for up to 7 days with stale=true. Customer selection is limited to this connection and its account scope."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: "campaignId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            pattern: "^\\d+$"
+            description: "Google campaign id."
+        - name: "platform"
+          in: "query"
+          schema:
+            type: "string"
+            enum:
+              - "facebook"
+              - "instagram"
+              - "tiktok"
+              - "linkedin"
+              - "pinterest"
+              - "google"
+              - "twitter"
+              - "openai"
+            description: "Optional courtesy field. The resolved account or campaign determines support; other platforms return 501."
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  lists:
+                    type: "array"
+                    items:
+                      $ref: "#/components/schemas/AdNegativeKeywordList"
+                  customerId:
+                    type: "string"
+                    pattern: "^\\d+$"
+                    description: "Resolved Google Ads customer id."
+                  cachedAt:
+                    type:
+                      - "string"
+                      - "null"
+                    format: "date-time"
+                    description: "Last successful fetch time, or null without cache storage."
+                  stale:
+                    type: "boolean"
+                    description: "True when quota exhaustion caused the last successful cached result to be served."
+              example:
+                lists:
+                  - id: "1234567890"
+                    resourceName: "customers/9122445560/sharedSets/1234567890"
+                    name: "Excluded searches"
+                    memberCount: 2
+                    referenceCount: 1
+                customerId: "9122445560"
+                cachedAt: "2026-09-09T10:00:00Z"
+                stale: false
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Ads access and permission to the selected account are required."
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+        "422":
+          description: "Google Ads connection is missing or unavailable."
+        "429":
+          description: "Google Ads operations budget or platform quota exhausted."
+        "501":
+          description: "Available only on Google Ads."
+    put:
+      x-resource-group: "ads"
+      operationId: "replaceCampaignNegativeKeywordLists"
+      tags:
+        - "Ad Campaigns"
+      x-platforms:
+        - "google"
+      summary: "Replace campaign negative lists"
+      description: "Sets the full desired set of shared negative keyword list associations on this campaign. Send listIds=[] to detach all negative keyword lists. Only campaign_shared_set links are changed; the lists and their keywords are preserved. Every list must belong to the campaign customer and have type NEGATIVE_KEYWORDS."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: "campaignId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            pattern: "^\\d+$"
+            description: "Google campaign id."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              required:
+                - "listIds"
+              properties:
+                platform:
+                  type: "string"
+                  enum:
+                    - "facebook"
+                    - "instagram"
+                    - "tiktok"
+                    - "linkedin"
+                    - "pinterest"
+                    - "google"
+                    - "twitter"
+                    - "openai"
+                  description: "Optional courtesy field. The resolved account or campaign determines support; other platforms return 501."
+                listIds:
+                  type: "array"
+                  maxItems: 20
+                  items:
+                    type: "string"
+                    pattern: "^\\d+$"
+                    description: "Shared negative keyword list id."
+            example:
+              platform: "google"
+              listIds:
+                - "1234567890"
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  created:
+                    type: "integer"
+                    description: "New criteria or campaign links created."
+                  removed:
+                    type: "integer"
+                    description: "Existing criteria or campaign links removed."
+                  customerId:
+                    type: "string"
+                    pattern: "^\\d+$"
+                    description: "Resolved Google Ads customer id."
+              example:
+                created: 1
+                removed: 0
+                customerId: "9122445560"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Ads access and permission to the selected account are required."
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+        "422":
+          description: "Google Ads connection is missing or unavailable."
+        "429":
+          description: "Google Ads operations budget or platform quota exhausted."
+        "501":
+          description: "Available only on Google Ads."
+
   /v1/ads/accounts/callouts:
     get:
       x-resource-group: "ads"
@@ -46548,7 +47434,7 @@ paths:
       x-resource-group: "ads"
       operationId: boostPost
       tags: ["Ad Campaigns"]
-      x-platforms: ["meta"]
+      x-platforms: ["meta", "google", "tiktok", "linkedin", "pinterest", "x"]
       summary: Boost post as ad
       description: |
         Creates a paid ad from an existing published post, keeping the post's
@@ -46561,8 +47447,20 @@ paths:
         `adSetId` is a 400 rather than a silent drop. `budget` is required only
         without `adSetId`.
 
-        `instagramAccountId`, `destinationType` and `adSetId` are Meta-only and
-        return 400 on other platforms.
+        `instagramAccountId`, `destinationType`, `whatsappPhoneNumber` and `adSetId`
+        are Meta-only and return 400 on other platforms.
+
+        **Messaging boosts (Meta).** Use `goal: engagement` with
+        `callToAction: WHATSAPP_MESSAGE`, `MESSAGE_PAGE`, or `INSTAGRAM_MESSAGE`.
+        The CTA implies WHATSAPP, MESSENGER, or INSTAGRAM_DIRECT respectively;
+        `destinationType` alone also selects the matching CTA. Omit `linkUrl`.
+        The campaign uses OUTCOME_ENGAGEMENT and the ad set uses CONVERSATIONS
+        with the promoted Page. Optional `whatsappPhoneNumber` selects a number
+        already paired with that Page. Conflicting CTA/destination, instant form,
+        goal, or optimizationGoal inputs return 400. Attach requires the target
+        ad set destination to match. Existing post references preserve social proof;
+        an Instagram reel rejected by Meta is not re-uploaded as a new post for
+        a messaging boost.
 
         **Retries.** Boosts are NOT idempotent and can take minutes when Meta requires re-hosting an
         Instagram video, so do not retry on client timeout. Send an
@@ -46600,7 +47498,8 @@ paths:
                     amount: { type: number, description: "Minimum varies: TikTok=$20, Pinterest=$5, others=$1" }
                     type: { type: string, enum: [daily, lifetime] }
                 instagramAccountId: { type: string, description: "Meta only. Instagram identity the ad runs AS (creative.instagram_user_id), overriding the account linked to the Page. Live-verified against a Page-post creative." }
-                destinationType: { type: string, enum: [INSTAGRAM_PROFILE, WEBSITE, ON_AD, MESSENGER, WHATSAPP], description: "Meta only. Ad-set destination_type: where the click LANDS, as opposed to instagramAccountId which is who the ad runs as. Lead ads force ON_AD and ignore this." }
+                destinationType: { type: string, enum: [INSTAGRAM_PROFILE, WEBSITE, ON_AD, MESSENGER, WHATSAPP, INSTAGRAM_DIRECT], description: "Meta only. Ad-set destination_type: where the click LANDS, as opposed to instagramAccountId which is who the ad runs as. Messaging destinations imply their matching CTA and require goal engagement. Lead ads use ON_AD; combining an instant form with a messaging destination is rejected." }
+                whatsappPhoneNumber: { type: string, pattern: '^\+[1-9]\d{6,14}$', description: 'Meta WhatsApp only. E.164 number already paired with the Page. Omit to use the default pairing. Requires WHATSAPP destinationType or WHATSAPP_MESSAGE callToAction.' }
                 currency: { type: string, minLength: 3, maxLength: 3, example: USD, description: "ISO 4217 currency code matching the ad account's currency. Meta only. Optional: Zernio resolves it from the ad account when omitted. The value selects the minor-unit exponent Zernio converts budget/bid amounts by before calling Meta (most currencies are cents; zero-decimal currencies like JPY/KRW are sent as-is)." }
                 schedule:
                   type: object
@@ -46778,7 +47677,7 @@ paths:
                   type: string
                   format: uri
                   description: |
-                    Destination URL for the CTA button. Send it together with `callToAction`.
+                    Website URL for non-messaging CTA buttons. Send it with `callToAction`. Omit for messaging boosts.
 
                     **Meta**: adds a top-level `call_to_action` to the post-reference creative.
                     This is what gives a `traffic` boost a clickable destination without
@@ -46795,12 +47694,14 @@ paths:
                 callToAction:
                   type: string
                   description: |
-                    CTA button label. Send it together with `linkUrl`: a CTA without a
-                    destination produces a button that goes nowhere, so sending one alone is a 400.
+                    CTA button label. Non-messaging CTAs require `linkUrl`.
+                    WHATSAPP_MESSAGE, MESSAGE_PAGE, and INSTAGRAM_MESSAGE do not
+                    require a URL and reject linkUrl.
 
                     **Meta**: the CTA enum of POST /v1/ads/create plus
-                    `VIEW_INSTAGRAM_PROFILE`, which is accepted on boost only. For that
-                    value `linkUrl` is typically the Instagram profile URL.
+                    `VIEW_INSTAGRAM_PROFILE`, `WHATSAPP_MESSAGE`, `MESSAGE_PAGE`,
+                    and `INSTAGRAM_MESSAGE`. VIEW_INSTAGRAM_PROFILE requires linkUrl;
+                    the messaging CTAs select their destination automatically.
 
                     **TikTok**: pass-through to `call_to_action` on the Spark Ad creative; the
                     platform validates the value. See TikTok's "Enumeration - Call-to-Action".
@@ -46838,13 +47739,23 @@ paths:
                   type: string
                   description: |
                     Meta only. Explicit ad-set `optimization_goal` override. When omitted,
-                    defaults to the value derived from `goal`. The value must be compatible
+                    defaults to the value derived from `goal`. Messaging boosts always
+                    use CONVERSATIONS and reject another optimizationGoal. Otherwise the value must be compatible
                     with the objective Meta derives from `goal`, not with the objective used
                     by `POST /v1/ads/create` for the same `goal` name: boost maps `goal:
                     "engagement"` to objective `OUTCOME_AWARENESS`, which accepts
                     `REACH`, `IMPRESSIONS`, `AD_RECALL_LIFT`, or THRUPLAY-class values, and
                     rejects `POST_ENGAGEMENT` (that value is only valid under
                     `OUTCOME_ENGAGEMENT`, which create uses for the same goal name).
+            example:
+              accountId: '69ca62446cb7b8cf4cb13603'
+              adAccountId: act_757082720485182
+              platformPostId: '811889972008357_123456789'
+              name: WhatsApp post boost
+              goal: engagement
+              callToAction: WHATSAPP_MESSAGE
+              budget: { amount: 2.61, type: daily }
+              status: PAUSED
       responses:
         '201':
           description: Ad created
@@ -50881,7 +51792,7 @@ paths:
       operationId: createMessagingAd
       tags: ["Messaging Ads"]
       x-platforms: ["meta"]
-      summary: Create click-to-message ad (WhatsApp / Messenger / Instagram Direct)
+      summary: Create messaging ad
       description: |-
         Creates a click-to-message ad; `destination` selects where the tapped ad opens a
         conversation: WhatsApp, the Page's Messenger inbox or the linked Instagram account's Direct inbox.
@@ -50889,6 +51800,10 @@ paths:
         CONVERSATIONS optimization; the campaign objective defaults to OUTCOME_ENGAGEMENT.
         Supports single-creative and multi-creative shapes. Supersedes POST /v1/ads/ctwa
         (deprecated, equivalent to `destination: whatsapp`).
+        Existing posts and reels are supported through `existingPostId` or
+        `objectStoryId`, either per creative or at the top level. Omit fresh
+        media and copy for that creative. Optional `whatsappPhoneNumber` selects
+        a number already paired with the Page (WhatsApp destination only).
       security:
         - bearerAuth: []
       requestBody:
@@ -50905,6 +51820,16 @@ paths:
                       type: string
                       enum: [whatsapp, messenger, instagram_direct]
                       description: Where the conversation opens when the ad is tapped.
+            example:
+              accountId: '69ca62446cb7b8cf4cb13603'
+              adAccountId: act_757082720485182
+              name: WhatsApp existing post
+              destination: whatsapp
+              creatives:
+                - objectStoryId: '811889972008357_123456789'
+              budgetAmount: 2.61
+              budgetType: daily
+              status: PAUSED
       responses:
         '201':
           description: |
@@ -50994,7 +51919,7 @@ paths:
       operationId: createCtwaAd
       tags: ["Messaging Ads"]
       x-platforms: ["meta"]
-      summary: Create Click-to-WhatsApp ad (deprecated)
+      summary: Create CTWA ad (deprecated)
       deprecated: true
       description: |-
         Deprecated: use POST /v1/ads/messaging with `destination: whatsapp`. This endpoint stays available for back-compat; no removal planned.
@@ -51003,13 +51928,17 @@ paths:
 
         Supports two mutually-exclusive shapes:
 
-        - **Single-creative**: supply top-level `headline`, `body`, and one of `imageUrl` / `video`. Creates 1 campaign + 1 ad set + 1 ad.
+        - **Single-creative**: supply top-level `headline`, `body`, and one of `imageUrl` / `video`, or an `existingPostId` / `objectStoryId` reference. Creates 1 campaign + 1 ad set + 1 ad.
 
-        - **Multi-creative**: supply a `creatives[]` array with N entries (each carrying its own headline, body, and image/video). Creates 1 campaign + 1 ad set + N ads sharing budget and targeting so Meta A/Bs the creatives inside a single auction instead of fragmenting budget across N parallel campaigns. Recommended when launching multiple creative variants for the same campaign.
+        - **Multi-creative**: supply a `creatives[]` array with N entries (each carrying fresh media and copy or an existing post reference). Creates 1 campaign + 1 ad set + N ads sharing budget and targeting so Meta A/Bs the creatives inside a single auction instead of fragmenting budget across N parallel campaigns. Recommended when launching multiple creative variants for the same campaign.
 
         **Attach shape.** Send `adSetId` (with either creative shape) to add the ads to an EXISTING messaging ad set instead of building a campaign, so the ad set keeps its learning phase, the way to refresh a CTWA creative without resetting delivery. The ad set then owns budget, targeting and schedule, so `budgetAmount`, `budgetType`, `endDate`, `objective`, `countries`, `interests` and `audienceId` are rejected with a 400 alongside it rather than silently dropped. The target ad set's `destination_type` must match the ad's destination (a WhatsApp ad needs a `WHATSAPP` ad set), otherwise Meta would accept an ad that never delivers.
 
         Prerequisites enforced by Meta (surfaced as platform_error on failure): the Facebook Page must be paired with a verified WhatsApp Business number, the WhatsApp Business Account must be business-verified, and the Meta access token must carry ads_management.
+        Existing posts and reels are supported through `existingPostId` or
+        `objectStoryId`, either per creative or at the top level. Omit fresh
+        media and copy for that creative. Optional `whatsappPhoneNumber` selects
+        a number already paired with the Page (WhatsApp destination only).
       security:
         - bearerAuth: []
       requestBody:
@@ -51018,6 +51947,15 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CtwaAdRequestBody'
+            example:
+              accountId: '69ca62446cb7b8cf4cb13603'
+              adAccountId: act_757082720485182
+              name: WhatsApp existing post
+              creatives:
+                - objectStoryId: '811889972008357_123456789'
+              budgetAmount: 2.61
+              budgetType: daily
+              status: PAUSED
       responses:
         '201':
           description: |

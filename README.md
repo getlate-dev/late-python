@@ -403,26 +403,32 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_accounts.list_account_callouts()` | List account-level callout extensions |
 | `ad_accounts.list_ad_accounts()` | List ad accounts |
 | `ad_accounts.list_ad_labels()` | Ad labels |
+| `ad_accounts.list_ad_negative_keyword_lists()` | List negative keyword lists |
 | `ad_accounts.list_ad_studies()` | A/B tests and lift studies |
 | `ad_accounts.list_ads_business_centers()` | List TikTok Business Centers |
 | `ad_accounts.list_custom_conversions()` | List custom conversions |
 | `ad_accounts.list_high_demand_periods()` | High demand periods / budget schedules |
 | `ad_accounts.list_meta_businesses()` | Businesses list |
 | `ad_accounts.list_value_rule_sets()` | List value rule sets |
+| `ad_accounts.create_ad_negative_keyword_list()` | Create a negative keyword list |
 | `ad_accounts.create_custom_conversion()` | Create or reuse a custom conversion |
 | `ad_accounts.create_high_demand_period()` | Schedule a budget increase |
 | `ad_accounts.create_value_rule_set()` | Create a value rule set |
 | `ad_accounts.get_ad_account_finance()` | Ad account finances |
 | `ad_accounts.get_ad_comments()` | List comments on an ad |
+| `ad_accounts.get_ad_negative_keyword_list()` | Get a negative keyword list |
 | `ad_accounts.get_ads_activity_log()` | Ad account change / audit log |
 | `ad_accounts.get_dsa_defaults()` | Get ad account DSA defaults |
 | `ad_accounts.get_dsa_recommendations()` | List DSA beneficiary/payor suggestions |
 | `ad_accounts.get_value_rule_set()` | Read a value rule set |
 | `ad_accounts.update_ad_account()` | Update ad account settings |
+| `ad_accounts.update_ad_negative_keyword_list()` | Rename a negative keyword list |
 | `ad_accounts.update_value_rule_set()` | Replace a value rule set |
+| `ad_accounts.delete_ad_negative_keyword_list()` | Delete a negative keyword list |
 | `ad_accounts.delete_value_rule_set()` | Delete a value rule set |
 | `ad_accounts.add_account_callouts()` | Add account-level callout extensions |
 | `ad_accounts.remove_account_callout()` | Remove an account-level callout extension |
+| `ad_accounts.replace_ad_negative_keyword_list_keywords()` | Replace negative list keywords |
 
 ### Ad Audiences
 | Method | Description |
@@ -443,6 +449,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_campaigns.list_ad_sets()` | List ad sets |
 | `ad_campaigns.list_ads()` | List ads |
 | `ad_campaigns.list_bid_strategies()` | List Google Ads portfolio bid strategies |
+| `ad_campaigns.list_campaign_negative_keyword_lists()` | List campaign negative lists |
 | `ad_campaigns.list_campaign_negative_keywords()` | List campaign-level negative keywords |
 | `ad_campaigns.bulk_update_ad_campaign_status()` | Pause or resume many campaigns |
 | `ad_campaigns.create_ad_campaign()` | Create a standalone campaign |
@@ -474,6 +481,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_campaigns.duplicate_ad_campaign()` | Duplicate a campaign |
 | `ad_campaigns.duplicate_ad_set()` | Duplicate an ad set |
 | `ad_campaigns.remove_ad_keyword()` | Remove a Search keyword |
+| `ad_campaigns.replace_campaign_negative_keyword_lists()` | Replace campaign negative lists |
 | `ad_campaigns.replace_campaign_negative_keywords()` | Replace campaign-level negative keywords |
 
 ### Ad Creatives
@@ -826,8 +834,8 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | Method | Description |
 |--------|-------------|
 | `messaging_ads.create_call_ad()` | Create Click-to-Call ad |
-| `messaging_ads.create_ctwa_ad()` | Create Click-to-WhatsApp ad (deprecated) |
-| `messaging_ads.create_messaging_ad()` | Create click-to-message ad (WhatsApp / Messenger / Instagram Direct) |
+| `messaging_ads.create_ctwa_ad()` | Create CTWA ad (deprecated) |
+| `messaging_ads.create_messaging_ad()` | Create messaging ad |
 
 ### Phone Numbers
 | Method | Description |

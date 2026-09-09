@@ -1823,6 +1823,206 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
+            title="List negative keyword lists",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_accounts_list_ad_negative_keyword_lists(
+        account_id: str, customer_id: str | None = None, platform: str | None = None
+    ) -> str:
+        """List negative keyword lists
+
+        Args:
+            account_id: (required)
+            customer_id
+            platform"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.list_ad_negative_keyword_lists(
+                account_id=account_id, customer_id=customer_id, platform=platform
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Create a negative keyword list",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_create_ad_negative_keyword_list(
+        account_id: str,
+        name: str,
+        customer_id: str | None = None,
+        platform: str | None = None,
+        keywords: list[Any] | None = None,
+    ) -> str:
+        """Create a negative keyword list
+
+        Args:
+            account_id: Zernio SocialAccount id. (required)
+            customer_id: Connected Google Ads customer id, without dashes. Required when the connection has multiple customers.
+            platform: Optional courtesy field. The resolved account or campaign determines support; other platforms return 501.
+            name: Nonempty list name, trimmed before use. (required)
+            keywords: Full desired keyword set. Bare strings use broad match. Send [] to clear the list."""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.create_ad_negative_keyword_list(
+                account_id=account_id,
+                customer_id=customer_id,
+                platform=platform,
+                name=name,
+                keywords=keywords,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get a negative keyword list",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_accounts_get_ad_negative_keyword_list(
+        list_id: str,
+        account_id: str,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> str:
+        """Get a negative keyword list
+
+        Args:
+            list_id: (required)
+            account_id: (required)
+            customer_id
+            platform"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.get_ad_negative_keyword_list(
+                list_id=list_id,
+                account_id=account_id,
+                customer_id=customer_id,
+                platform=platform,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Rename a negative keyword list",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_update_ad_negative_keyword_list(
+        list_id: str,
+        account_id: str,
+        name: str,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> str:
+        """Rename a negative keyword list
+
+        Args:
+            list_id: (required)
+            account_id: Zernio SocialAccount id. (required)
+            customer_id: Connected Google Ads customer id, without dashes. Required when the connection has multiple customers.
+            platform: Optional courtesy field. The resolved account or campaign determines support; other platforms return 501.
+            name: Nonempty list name, trimmed before use. (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.update_ad_negative_keyword_list(
+                list_id=list_id,
+                account_id=account_id,
+                customer_id=customer_id,
+                platform=platform,
+                name=name,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Delete a negative keyword list",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_delete_ad_negative_keyword_list(
+        list_id: str,
+        account_id: str,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> str:
+        """Delete a negative keyword list
+
+        Args:
+            list_id: (required)
+            account_id: (required)
+            customer_id
+            platform"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.delete_ad_negative_keyword_list(
+                list_id=list_id,
+                account_id=account_id,
+                customer_id=customer_id,
+                platform=platform,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Replace negative list keywords",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_replace_ad_negative_keyword_list_keywords(
+        list_id: str,
+        account_id: str,
+        keywords: list[Any] | None,
+        customer_id: str | None = None,
+        platform: str | None = None,
+    ) -> str:
+        """Replace negative list keywords
+
+        Args:
+            list_id: (required)
+            account_id: Zernio SocialAccount id. (required)
+            customer_id: Connected Google Ads customer id, without dashes. Required when the connection has multiple customers.
+            platform: Optional courtesy field. The resolved account or campaign determines support; other platforms return 501.
+            keywords: Full desired keyword set. Bare strings use broad match. Send [] to clear the list. (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.replace_ad_negative_keyword_list_keywords(
+                list_id=list_id,
+                account_id=account_id,
+                customer_id=customer_id,
+                platform=platform,
+                keywords=keywords,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
             title="List account-level callout extensions",
             readOnlyHint=True,
             destructiveHint=False,
@@ -2770,6 +2970,7 @@ def register_generated_tools(mcp, _get_client):
         bid_amount: float | None = None,
         roas_average_floor: float | None = None,
         portfolio_bid_strategy_id: str | None = None,
+        allow_shared_budget_update: bool = False,
         budget: dict[str, Any] | None = None,
         name: str | None = None,
         platform_specific_data: dict[str, Any] | None = None,
@@ -2784,7 +2985,8 @@ def register_generated_tools(mcp, _get_client):
             bid_amount: **Google only.** Whole currency units (USD: 12 = $12.00). Max CPC for LOWEST_COST_WITH_BID_CAP, CPA target for COST_CAP; required for both.
             roas_average_floor: **Google only.** Decimal ROAS multiplier (2.0 = 2.0x), required for LOWEST_COST_WITH_MIN_ROAS.
             portfolio_bid_strategy_id: **Google only.** Attach an existing portfolio bid strategy (numeric id from GET /v1/ads/bid-strategies) instead of setting bidStrategy. Exclusive with bidStrategy.
-            budget: **Meta only.** The CBO budget.
+            allow_shared_budget_update: Google only. Explicitly allow changing a shared campaign budget, affecting every campaign that uses it. Does not bypass an unknown sharing state.
+            budget: Meta CBO or Google daily campaign budget, in whole currency units.
             name: **Meta only.** Rename the campaign.
             platform_specific_data: **Meta only.** Platform implied by the `platform` body param, same convention as POST /v1/ads/create."""
         client = _get_client()
@@ -2797,6 +2999,7 @@ def register_generated_tools(mcp, _get_client):
                 bid_amount=bid_amount,
                 roas_average_floor=roas_average_floor,
                 portfolio_bid_strategy_id=portfolio_bid_strategy_id,
+                allow_shared_budget_update=allow_shared_budget_update,
                 budget=budget,
                 name=name,
                 platform_specific_data=platform_specific_data,
@@ -3592,6 +3795,57 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
+            title="List campaign negative lists",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_campaigns_list_campaign_negative_keyword_lists(
+        campaign_id: str, platform: str | None = None
+    ) -> str:
+        """List campaign negative lists
+
+        Args:
+            campaign_id: (required)
+            platform"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.list_campaign_negative_keyword_lists(
+                campaign_id=campaign_id, platform=platform
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Replace campaign negative lists",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_campaigns_replace_campaign_negative_keyword_lists(
+        campaign_id: str, list_ids: list[str] | None, platform: str | None = None
+    ) -> str:
+        """Replace campaign negative lists
+
+        Args:
+            campaign_id: (required)
+            platform: Optional courtesy field. The resolved account or campaign determines support; other platforms return 501.
+            list_ids: (required)"""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.replace_campaign_negative_keyword_lists(
+                campaign_id=campaign_id, platform=platform, list_ids=list_ids
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
             title="Boost post as ad",
             readOnlyHint=False,
             destructiveHint=True,
@@ -3609,6 +3863,7 @@ def register_generated_tools(mcp, _get_client):
         budget: dict[str, Any] | None = None,
         instagram_account_id: str | None = None,
         destination_type: str | None = None,
+        whatsapp_phone_number: str | None = None,
         currency: str | None = None,
         schedule: dict[str, Any] | None = None,
         targeting: dict[str, Any] | None = None,
@@ -3643,7 +3898,8 @@ def register_generated_tools(mcp, _get_client):
                 ad_set_id: Meta only. Attach the boosted post to this existing ad set instead of creating a campaign. The ad set then owns budget, schedule and targeting; sending those too is a 400.
                 budget: Required unless adSetId is set.
                 instagram_account_id: Meta only. Instagram identity the ad runs AS (creative.instagram_user_id), overriding the account linked to the Page. Live-verified against a Page-post creative.
-                destination_type: Meta only. Ad-set destination_type: where the click LANDS, as opposed to instagramAccountId which is who the ad runs as. Lead ads force ON_AD and ignore this.
+                destination_type: Meta only. Ad-set destination_type: where the click LANDS, as opposed to instagramAccountId which is who the ad runs as. Messaging destinations imply their matching CTA and require goal engagement. Lead ads use ON_AD; combining an instant form with a messaging destination is rejected.
+                whatsapp_phone_number: Meta WhatsApp only. E.164 number already paired with the Page. Omit to use the default pairing. Requires WHATSAPP destinationType or WHATSAPP_MESSAGE callToAction.
                 currency: ISO 4217 currency code matching the ad account's currency. Meta only. Optional: Zernio resolves it from the ad account when omitted. The value selects the minor-unit exponent Zernio converts budget/bid amounts by before calling Meta (most currencies are cents; zero-decimal currencies like JPY/KRW are sent as-is).
                 schedule
                 targeting: Same geo/demographic fields as the `TargetingSpec` used by /v1/ads/create.
@@ -3698,7 +3954,7 @@ def register_generated_tools(mcp, _get_client):
                 special_ad_category_country: Meta (metaads) only. 2-letter ISO country codes the special ad category applies to. Requires specialAdCategories to be set (400 otherwise).
                 regional_regulated_categories: Meta only. Regional regulation categories required when the ad set targets certain countries (e.g. BRAZIL_REGULATION, SINGAPORE_UNIVERSAL, TAIWAN_UNIVERSAL, THAILAND_UNIVERSAL, AUSTRALIA_FINSERV, INDIA_FINSERV, TAIWAN_FINSERV). Forwarded to the ad set.
                 regional_regulation_identities: Meta only. Beneficiary/payer entity IDs for regionalRegulatedCategories. Values are numeric IDs from Meta verification. Keys vary by category (e.g. universal_beneficiary / universal_payer for BRAZIL_REGULATION and THAILAND_UNIVERSAL). If omitted, Meta uses Ads Manager defaults when configured.
-                link_url: Destination URL for the CTA button. Send it together with `callToAction`.
+                link_url: Website URL for non-messaging CTA buttons. Send it with `callToAction`. Omit for messaging boosts.
 
         **Meta**: adds a top-level `call_to_action` to the post-reference creative.
         This is what gives a `traffic` boost a clickable destination without
@@ -3712,12 +3968,14 @@ def register_generated_tools(mcp, _get_client):
 
         Ignored on LinkedIn / Pinterest / X / Google, which infer the destination
         from the boosted post.
-                call_to_action: CTA button label. Send it together with `linkUrl`: a CTA without a
-        destination produces a button that goes nowhere, so sending one alone is a 400.
+                call_to_action: CTA button label. Non-messaging CTAs require `linkUrl`.
+        WHATSAPP_MESSAGE, MESSAGE_PAGE, and INSTAGRAM_MESSAGE do not
+        require a URL and reject linkUrl.
 
         **Meta**: the CTA enum of POST /v1/ads/create plus
-        `VIEW_INSTAGRAM_PROFILE`, which is accepted on boost only. For that
-        value `linkUrl` is typically the Instagram profile URL.
+        `VIEW_INSTAGRAM_PROFILE`, `WHATSAPP_MESSAGE`, `MESSAGE_PAGE`,
+        and `INSTAGRAM_MESSAGE`. VIEW_INSTAGRAM_PROFILE requires linkUrl;
+        the messaging CTAs select their destination automatically.
 
         **TikTok**: pass-through to `call_to_action` on the Spark Ad creative; the
         platform validates the value. See TikTok's "Enumeration - Call-to-Action".
@@ -3738,7 +3996,8 @@ def register_generated_tools(mcp, _get_client):
                 lead_gen_form_id: Lead Gen form ID to attach to the boosted ad's creative. REQUIRED when `goal` is `lead_generation`. On Meta this is the leadgen_forms ID (create one via POST /v1/ads/lead-forms). On LinkedIn this is the adForm ID (create one via POST /v1/ads/lead-forms with a LinkedIn account); the creative's `leadgenCallToAction.destination` is set to `urn:li:adForm:{id}`. Ignored for other goals.
                 status: Meta, TikTok, and LinkedIn. Publish state of the created entities. Omitted or ACTIVE publishes live (default); PAUSED creates them paused so you can review before they spend. On LinkedIn the whole campaign group, campaign, and creative hierarchy stays PAUSED (intendedStatus PAUSED on each).
                 optimization_goal: Meta only. Explicit ad-set `optimization_goal` override. When omitted,
-        defaults to the value derived from `goal`. The value must be compatible
+        defaults to the value derived from `goal`. Messaging boosts always
+        use CONVERSATIONS and reject another optimizationGoal. Otherwise the value must be compatible
         with the objective Meta derives from `goal`, not with the objective used
         by `POST /v1/ads/create` for the same `goal` name: boost maps `goal:
         "engagement"` to objective `OUTCOME_AWARENESS`, which accepts
@@ -3758,6 +4017,7 @@ def register_generated_tools(mcp, _get_client):
                 budget=budget,
                 instagram_account_id=instagram_account_id,
                 destination_type=destination_type,
+                whatsapp_phone_number=whatsapp_phone_number,
                 currency=currency,
                 schedule=schedule,
                 targeting=targeting,
@@ -14538,7 +14798,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Create click-to-message ad (WhatsApp / Messenger / Instagram Direct)",
+            title="Create messaging ad",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -14549,6 +14809,9 @@ def register_generated_tools(mcp, _get_client):
         ad_account_id: str,
         name: str,
         destination: str,
+        existing_post_id: str | None = None,
+        object_story_id: str | None = None,
+        whatsapp_phone_number: str | None = None,
         headline: str | None = None,
         body: str | None = None,
         image_url: str | None = None,
@@ -14583,7 +14846,7 @@ def register_generated_tools(mcp, _get_client):
         regional_regulated_categories: list[str] | None = None,
         regional_regulation_identities: dict[str, Any] | None = None,
     ) -> str:
-        """Create click-to-message ad (WhatsApp / Messenger / Instagram Direct)
+        """Create messaging ad
 
             Args:
                 account_id: Facebook or Instagram SocialAccount ID. (required)
@@ -14593,16 +14856,19 @@ def register_generated_tools(mcp, _get_client):
         " #N" suffix (1-indexed) so Ads Manager shows them as a
         numbered batch.
          (required)
+                existing_post_id: Messaging and CTWA only. Platform post or reel ID, resolved like boost platformPostId. Facebook IDs become object_story_id; Instagram IDs become source_instagram_media_id using the connected Instagram identity. Mutually exclusive with objectStoryId and fresh creative fields.
+                object_story_id: Messaging and CTWA only. Raw Facebook pageId_postId reference, used as object_story_id even with an Instagram account. Mutually exclusive with existingPostId and fresh creative fields.
+                whatsapp_phone_number: WhatsApp only. Optional E.164 number already paired with the Facebook Page. Omit to let Meta select the paired number. Sent to the creative CTA and, when creating a new ad set, its promoted_object. Attach requests do not change the existing ad set.
                 headline: Single-creative shape only. Mutually exclusive with
         `creatives[]`.
                 body: Primary text shown above the image / video. Single-creative
         shape only. Mutually exclusive with `creatives[]`.
                 image_url: Image asset for single-creative shape. Mutually exclusive
         with `video` and with `creatives[]`. Required on the
-        single-creative shape if `video` is not supplied.
+        single-creative shape if neither `video` nor an existing post reference is supplied.
                 video: Video creative for single-creative shape. Mutually
         exclusive with `imageUrl` and with `creatives[]`. Required
-        on the single-creative shape if `imageUrl` is not supplied.
+        on the single-creative shape if neither `imageUrl` nor an existing post reference is supplied.
                 welcome_message: Custom chat welcome message (Meta's `page_welcome_message`,
         "Mensaje de bienvenida" / "Mensaje predefinido" in Ads Manager).
         Single-creative shape only; for `creatives[]` set it per entry.
@@ -14612,8 +14878,8 @@ def register_generated_tools(mcp, _get_client):
         `body` / `imageUrl` / `video`): setting both is a 400,
         unlike `POST /v1/ads/create` where the top-level fields
         are silently ignored in multi-creative mode. Each entry
-        must supply its own headline, body, and exactly one of
-        `imageUrl` / `video`.
+        supplies headline, body, and image/video, or an existingPostId or
+        objectStoryId reference. Fresh and existing creatives can be mixed.
                 ad_set_id: Attach the creatives to this EXISTING messaging ad set instead of
         building a campaign, so the ad set keeps its learning phase. It then
         owns budget, targeting and schedule, so `budgetAmount`, `budgetType`,
@@ -14717,6 +14983,9 @@ def register_generated_tools(mcp, _get_client):
                 account_id=account_id,
                 ad_account_id=ad_account_id,
                 name=name,
+                existing_post_id=existing_post_id,
+                object_story_id=object_story_id,
+                whatsapp_phone_number=whatsapp_phone_number,
                 headline=headline,
                 body=body,
                 image_url=image_url,
@@ -14770,6 +15039,9 @@ def register_generated_tools(mcp, _get_client):
         name: str,
         phone_number: str,
         link_url: str,
+        existing_post_id: str | None = None,
+        object_story_id: str | None = None,
+        whatsapp_phone_number: str | None = None,
         headline: str | None = None,
         body: str | None = None,
         image_url: str | None = None,
@@ -14814,16 +15086,19 @@ def register_generated_tools(mcp, _get_client):
         " #N" suffix (1-indexed) so Ads Manager shows them as a
         numbered batch.
          (required)
+                existing_post_id: Messaging and CTWA only. Platform post or reel ID, resolved like boost platformPostId. Facebook IDs become object_story_id; Instagram IDs become source_instagram_media_id using the connected Instagram identity. Mutually exclusive with objectStoryId and fresh creative fields.
+                object_story_id: Messaging and CTWA only. Raw Facebook pageId_postId reference, used as object_story_id even with an Instagram account. Mutually exclusive with existingPostId and fresh creative fields.
+                whatsapp_phone_number: WhatsApp only. Optional E.164 number already paired with the Facebook Page. Omit to let Meta select the paired number. Sent to the creative CTA and, when creating a new ad set, its promoted_object. Attach requests do not change the existing ad set.
                 headline: Single-creative shape only. Mutually exclusive with
         `creatives[]`.
                 body: Primary text shown above the image / video. Single-creative
         shape only. Mutually exclusive with `creatives[]`.
                 image_url: Image asset for single-creative shape. Mutually exclusive
         with `video` and with `creatives[]`. Required on the
-        single-creative shape if `video` is not supplied.
+        single-creative shape if neither `video` nor an existing post reference is supplied.
                 video: Video creative for single-creative shape. Mutually
         exclusive with `imageUrl` and with `creatives[]`. Required
-        on the single-creative shape if `imageUrl` is not supplied.
+        on the single-creative shape if neither `imageUrl` nor an existing post reference is supplied.
                 welcome_message: Custom chat welcome message (Meta's `page_welcome_message`,
         "Mensaje de bienvenida" / "Mensaje predefinido" in Ads Manager).
         Single-creative shape only; for `creatives[]` set it per entry.
@@ -14833,8 +15108,8 @@ def register_generated_tools(mcp, _get_client):
         `body` / `imageUrl` / `video`): setting both is a 400,
         unlike `POST /v1/ads/create` where the top-level fields
         are silently ignored in multi-creative mode. Each entry
-        must supply its own headline, body, and exactly one of
-        `imageUrl` / `video`.
+        supplies headline, body, and image/video, or an existingPostId or
+        objectStoryId reference. Fresh and existing creatives can be mixed.
                 ad_set_id: Attach the creatives to this EXISTING messaging ad set instead of
         building a campaign, so the ad set keeps its learning phase. It then
         owns budget, targeting and schedule, so `budgetAmount`, `budgetType`,
@@ -14939,6 +15214,9 @@ def register_generated_tools(mcp, _get_client):
                 account_id=account_id,
                 ad_account_id=ad_account_id,
                 name=name,
+                existing_post_id=existing_post_id,
+                object_story_id=object_story_id,
+                whatsapp_phone_number=whatsapp_phone_number,
                 headline=headline,
                 body=body,
                 image_url=image_url,
@@ -14981,7 +15259,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Create Click-to-WhatsApp ad (deprecated)",
+            title="Create CTWA ad (deprecated)",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -14991,6 +15269,9 @@ def register_generated_tools(mcp, _get_client):
         account_id: str,
         ad_account_id: str,
         name: str,
+        existing_post_id: str | None = None,
+        object_story_id: str | None = None,
+        whatsapp_phone_number: str | None = None,
         headline: str | None = None,
         body: str | None = None,
         image_url: str | None = None,
@@ -15025,7 +15306,7 @@ def register_generated_tools(mcp, _get_client):
         regional_regulated_categories: list[str] | None = None,
         regional_regulation_identities: dict[str, Any] | None = None,
     ) -> str:
-        """Create Click-to-WhatsApp ad (deprecated)
+        """Create CTWA ad (deprecated)
 
             Args:
                 account_id: Facebook or Instagram SocialAccount ID. (required)
@@ -15035,16 +15316,19 @@ def register_generated_tools(mcp, _get_client):
         " #N" suffix (1-indexed) so Ads Manager shows them as a
         numbered batch.
          (required)
+                existing_post_id: Messaging and CTWA only. Platform post or reel ID, resolved like boost platformPostId. Facebook IDs become object_story_id; Instagram IDs become source_instagram_media_id using the connected Instagram identity. Mutually exclusive with objectStoryId and fresh creative fields.
+                object_story_id: Messaging and CTWA only. Raw Facebook pageId_postId reference, used as object_story_id even with an Instagram account. Mutually exclusive with existingPostId and fresh creative fields.
+                whatsapp_phone_number: WhatsApp only. Optional E.164 number already paired with the Facebook Page. Omit to let Meta select the paired number. Sent to the creative CTA and, when creating a new ad set, its promoted_object. Attach requests do not change the existing ad set.
                 headline: Single-creative shape only. Mutually exclusive with
         `creatives[]`.
                 body: Primary text shown above the image / video. Single-creative
         shape only. Mutually exclusive with `creatives[]`.
                 image_url: Image asset for single-creative shape. Mutually exclusive
         with `video` and with `creatives[]`. Required on the
-        single-creative shape if `video` is not supplied.
+        single-creative shape if neither `video` nor an existing post reference is supplied.
                 video: Video creative for single-creative shape. Mutually
         exclusive with `imageUrl` and with `creatives[]`. Required
-        on the single-creative shape if `imageUrl` is not supplied.
+        on the single-creative shape if neither `imageUrl` nor an existing post reference is supplied.
                 welcome_message: Custom chat welcome message (Meta's `page_welcome_message`,
         "Mensaje de bienvenida" / "Mensaje predefinido" in Ads Manager).
         Single-creative shape only; for `creatives[]` set it per entry.
@@ -15054,8 +15338,8 @@ def register_generated_tools(mcp, _get_client):
         `body` / `imageUrl` / `video`): setting both is a 400,
         unlike `POST /v1/ads/create` where the top-level fields
         are silently ignored in multi-creative mode. Each entry
-        must supply its own headline, body, and exactly one of
-        `imageUrl` / `video`.
+        supplies headline, body, and image/video, or an existingPostId or
+        objectStoryId reference. Fresh and existing creatives can be mixed.
                 ad_set_id: Attach the creatives to this EXISTING messaging ad set instead of
         building a campaign, so the ad set keeps its learning phase. It then
         owns budget, targeting and schedule, so `budgetAmount`, `budgetType`,
@@ -15158,6 +15442,9 @@ def register_generated_tools(mcp, _get_client):
                 account_id=account_id,
                 ad_account_id=ad_account_id,
                 name=name,
+                existing_post_id=existing_post_id,
+                object_story_id=object_story_id,
+                whatsapp_phone_number=whatsapp_phone_number,
                 headline=headline,
                 body=body,
                 image_url=image_url,
