@@ -9496,6 +9496,10 @@ def register_generated_tools(mcp, _get_client):
         headless: bool = False,
         login_method: str = "instagram_login",
         onboarding: str | None = None,
+        signup: str | None = None,
+        brand_name: str | None = None,
+        primary_color: str | None = None,
+        language: str | None = None,
     ) -> str:
         """Get OAuth connect URL
 
@@ -9570,7 +9574,35 @@ def register_generated_tools(mcp, _get_client):
 
         `api`: standard Embedded Signup, showing Meta's WABA/number picker. Use this to connect a phone number already on Cloud API elsewhere.
 
-        `business_app`: coexistence, i.e. 'Connect existing WhatsApp Business app' (a number shared between Cloud API and the consumer WhatsApp Business app)."""
+        `business_app`: coexistence, i.e. 'Connect existing WhatsApp Business app' (a number shared between Cloud API and the consumer WhatsApp Business app).
+                signup: WhatsApp only. Rejected with 400 `INVALID_FIELD_VALUE` on any other platform.
+
+        `hosted`: `authUrl` points at a Zernio-hosted page on zernio.com instead of Meta's OAuth dialog, and
+        the response carries `authUrl` only (no `state`). That page opens Meta's Embedded Signup popup itself,
+        so it learns which WhatsApp Business Account and number the user picked inside the popup and connects
+        exactly that one. Use it when your users' Facebook logins manage several WhatsApp accounts: on the
+        default redirect flow Meta only returns an authorization code, so when that login can see more than
+        one number the user lands on Zernio's number picker and has to choose again. Nothing to embed on your
+        side and no domain setup: send the user to `authUrl`, and they come back to `redirect_url` with the
+        same params as the redirect flow. Success: `connected=whatsapp`, `profileId`, `accountId`, `username`
+        (plus `connect_token` for API-key callers). Failure: `error` and `platform=whatsapp`, with the same
+        values and extras as the redirect flow (`one_whatsapp_per_profile`, `whatsapp_number_already_connected`
+        and `whatsapp_number_pinned_to_profile` with `is_user_fixable=true`; `payment_required` with `reason`
+        and `dashboard_url`; `whatsapp_error` with `error_message` when Meta reported one), plus two of its own:
+        `connection_cancelled` when the popup was closed before finishing (`error_message` carries Meta's last
+        reported step or error when there is one) and `session_expired` when the user took longer than the
+        60 minute window the hosted page is valid for; restart the flow with a new call in that case.
+        `onboarding` is carried through and a pre-verified Zernio-provisioned number is attached like on the
+        redirect flow. `headless` has no effect here because there is no selection step left to hand you.
+        When a previously disconnected account for this profile can simply be re-enabled, this endpoint
+        re-enables it and returns the account directly instead of a URL, exactly like the redirect flow.
+        The page shows the same guidance as the Zernio dashboard: a pre-verified Zernio-provisioned number is
+        called out by name ("choose it in Meta's list, no code will be asked"), coexistence and standard signups
+        get their explainer video, and a step-by-step follow-along checklist stays visible while Meta's popup is
+        open. Skin it with `brandName`, `primaryColor` and `language` below.
+                brand_name: Hosted signup page only (`signup=hosted`, WhatsApp): name shown in the page title ("Connect your WhatsApp number to <brandName>") instead of Zernio. The Zernio logo stays: the page is co-branded, not white-label. Trimmed; 1 to 60 characters. Rejected with 400 `INVALID_FIELD_VALUE` without `signup=hosted`. Stored on the signup session at issue time, so the page URL cannot change it.
+                primary_color: Hosted signup page only (`signup=hosted`, WhatsApp): hex colour (`#RRGGBB`) for the primary button and step accents. Validated server-side; anything else is a 400 `INVALID_FIELD_VALUE`. Rejected without `signup=hosted`.
+                language: Hosted signup page only (`signup=hosted`, WhatsApp): language of the page and its follow-along guide. Explainer videos stay in English. Default `en`. Rejected without `signup=hosted`."""
         client = _get_client()
         try:
             response = client.connect.get_connect_url(
@@ -9580,6 +9612,10 @@ def register_generated_tools(mcp, _get_client):
                 headless=headless,
                 login_method=login_method,
                 onboarding=onboarding,
+                signup=signup,
+                brand_name=brand_name,
+                primary_color=primary_color,
+                language=language,
             )
             return _format_response(response)
         except Exception as e:
@@ -10356,6 +10392,8 @@ def register_generated_tools(mcp, _get_client):
         phone_number_id: str | None = None,
         is_coexistence: bool | None = None,
         expected_phone_number: str | None = None,
+        redirect_url: str | None = None,
+        echo_connect_token: bool | None = None,
     ) -> str:
         """Connect WhatsApp from Embedded Signup
 
@@ -10365,7 +10403,9 @@ def register_generated_tools(mcp, _get_client):
             waba_id: WhatsApp Business Account id, when the SDK reported one
             phone_number_id
             is_coexistence: Number is also live in the WhatsApp Business app
-            expected_phone_number: Rejects the connect when Meta returns a different number"""
+            expected_phone_number: Rejects the connect when Meta returns a different number
+            redirect_url: Hosted signup page only. When present, the response also carries `redirectUrl`, the URL the user should land on, with the outcome mapped exactly like the redirect flow (success params, or `error` and `platform` with the same values). Must be an absolute http(s) URL or a custom app scheme.
+            echo_connect_token: Hosted signup page only. Append the connect token to the success redirect, as the redirect flow does for API-key callers."""
         client = _get_client()
         try:
             response = client.connect.connect_whats_app_embedded_signup(
@@ -10375,7 +10415,26 @@ def register_generated_tools(mcp, _get_client):
                 phone_number_id=phone_number_id,
                 is_coexistence=is_coexistence,
                 expected_phone_number=expected_phone_number,
+                redirect_url=redirect_url,
+                echo_connect_token=echo_connect_token,
             )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get Embedded Signup SDK config",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def connect_get_whats_app_sdk_config() -> str:
+        """Get Embedded Signup SDK config"""
+        client = _get_client()
+        try:
+            response = client.connect.get_whats_app_sdk_config()
             return _format_response(response)
         except Exception as e:
             return f"Error: {e}"

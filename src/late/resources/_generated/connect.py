@@ -82,6 +82,10 @@ class ConnectResource:
         headless: bool | None = False,
         login_method: str | None = "instagram_login",
         onboarding: str | None = None,
+        signup: str | None = None,
+        brand_name: str | None = None,
+        primary_color: str | None = None,
+        language: str | None = None,
     ) -> dict[str, Any]:
         """Get OAuth connect URL"""
         params = self._build_params(
@@ -90,6 +94,10 @@ class ConnectResource:
             headless=headless,
             login_method=login_method,
             onboarding=onboarding,
+            signup=signup,
+            brand_name=brand_name,
+            primary_color=primary_color,
+            language=language,
         )
         return self._client._get(f"/v1/connect/{platform}", params=params)
 
@@ -473,10 +481,13 @@ class ConnectResource:
         code: str,
         profile_id: str,
         *,
+        x_connect_token: str | None = None,
         waba_id: str | None = None,
         phone_number_id: str | None = None,
         is_coexistence: bool | None = None,
         expected_phone_number: str | None = None,
+        redirect_url: str | None = None,
+        echo_connect_token: bool | None = None,
     ) -> dict[str, Any]:
         """Connect WhatsApp from Embedded Signup"""
         payload = self._build_payload(
@@ -486,8 +497,24 @@ class ConnectResource:
             phone_number_id=phone_number_id,
             is_coexistence=is_coexistence,
             expected_phone_number=expected_phone_number,
+            redirect_url=redirect_url,
+            echo_connect_token=echo_connect_token,
         )
-        return self._client._post("/v1/connect/whatsapp/embedded-signup", data=payload)
+        headers: dict[str, str] = {}
+        if x_connect_token is not None:
+            headers["X-Connect-Token"] = x_connect_token
+        return self._client._post(
+            "/v1/connect/whatsapp/embedded-signup", data=payload, headers=headers
+        )
+
+    def get_whats_app_sdk_config(
+        self, *, x_connect_token: str | None = None
+    ) -> dict[str, Any]:
+        """Get Embedded Signup SDK config"""
+        headers: dict[str, str] = {}
+        if x_connect_token is not None:
+            headers["X-Connect-Token"] = x_connect_token
+        return self._client._get("/v1/connect/whatsapp/sdk-config", headers=headers)
 
     def connect_discord_channel(
         self, guild_id: str, channel_id: str, profile_id: str
@@ -801,6 +828,10 @@ class ConnectResource:
         headless: bool | None = False,
         login_method: str | None = "instagram_login",
         onboarding: str | None = None,
+        signup: str | None = None,
+        brand_name: str | None = None,
+        primary_color: str | None = None,
+        language: str | None = None,
     ) -> dict[str, Any]:
         """Get OAuth connect URL (async)"""
         params = self._build_params(
@@ -809,6 +840,10 @@ class ConnectResource:
             headless=headless,
             login_method=login_method,
             onboarding=onboarding,
+            signup=signup,
+            brand_name=brand_name,
+            primary_color=primary_color,
+            language=language,
         )
         return await self._client._aget(f"/v1/connect/{platform}", params=params)
 
@@ -1216,10 +1251,13 @@ class ConnectResource:
         code: str,
         profile_id: str,
         *,
+        x_connect_token: str | None = None,
         waba_id: str | None = None,
         phone_number_id: str | None = None,
         is_coexistence: bool | None = None,
         expected_phone_number: str | None = None,
+        redirect_url: str | None = None,
+        echo_connect_token: bool | None = None,
     ) -> dict[str, Any]:
         """Connect WhatsApp from Embedded Signup (async)"""
         payload = self._build_payload(
@@ -1229,9 +1267,25 @@ class ConnectResource:
             phone_number_id=phone_number_id,
             is_coexistence=is_coexistence,
             expected_phone_number=expected_phone_number,
+            redirect_url=redirect_url,
+            echo_connect_token=echo_connect_token,
         )
+        headers: dict[str, str] = {}
+        if x_connect_token is not None:
+            headers["X-Connect-Token"] = x_connect_token
         return await self._client._apost(
-            "/v1/connect/whatsapp/embedded-signup", data=payload
+            "/v1/connect/whatsapp/embedded-signup", data=payload, headers=headers
+        )
+
+    async def aget_whats_app_sdk_config(
+        self, *, x_connect_token: str | None = None
+    ) -> dict[str, Any]:
+        """Get Embedded Signup SDK config (async)"""
+        headers: dict[str, str] = {}
+        if x_connect_token is not None:
+            headers["X-Connect-Token"] = x_connect_token
+        return await self._client._aget(
+            "/v1/connect/whatsapp/sdk-config", headers=headers
         )
 
     async def aconnect_discord_channel(

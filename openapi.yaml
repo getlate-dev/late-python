@@ -18702,6 +18702,47 @@ paths:
             `api`: standard Embedded Signup, showing Meta's WABA/number picker. Use this to connect a phone number already on Cloud API elsewhere.
 
             `business_app`: coexistence, i.e. 'Connect existing WhatsApp Business app' (a number shared between Cloud API and the consumer WhatsApp Business app).
+        - name: signup
+          in: query
+          schema: { type: string, enum: [hosted] }
+          description: |
+            WhatsApp only. Rejected with 400 `INVALID_FIELD_VALUE` on any other platform.
+
+            `hosted`: `authUrl` points at a Zernio-hosted page on zernio.com instead of Meta's OAuth dialog, and
+            the response carries `authUrl` only (no `state`). That page opens Meta's Embedded Signup popup itself,
+            so it learns which WhatsApp Business Account and number the user picked inside the popup and connects
+            exactly that one. Use it when your users' Facebook logins manage several WhatsApp accounts: on the
+            default redirect flow Meta only returns an authorization code, so when that login can see more than
+            one number the user lands on Zernio's number picker and has to choose again. Nothing to embed on your
+            side and no domain setup: send the user to `authUrl`, and they come back to `redirect_url` with the
+            same params as the redirect flow. Success: `connected=whatsapp`, `profileId`, `accountId`, `username`
+            (plus `connect_token` for API-key callers). Failure: `error` and `platform=whatsapp`, with the same
+            values and extras as the redirect flow (`one_whatsapp_per_profile`, `whatsapp_number_already_connected`
+            and `whatsapp_number_pinned_to_profile` with `is_user_fixable=true`; `payment_required` with `reason`
+            and `dashboard_url`; `whatsapp_error` with `error_message` when Meta reported one), plus two of its own:
+            `connection_cancelled` when the popup was closed before finishing (`error_message` carries Meta's last
+            reported step or error when there is one) and `session_expired` when the user took longer than the
+            60 minute window the hosted page is valid for; restart the flow with a new call in that case.
+            `onboarding` is carried through and a pre-verified Zernio-provisioned number is attached like on the
+            redirect flow. `headless` has no effect here because there is no selection step left to hand you.
+            When a previously disconnected account for this profile can simply be re-enabled, this endpoint
+            re-enables it and returns the account directly instead of a URL, exactly like the redirect flow.
+            The page shows the same guidance as the Zernio dashboard: a pre-verified Zernio-provisioned number is
+            called out by name ("choose it in Meta's list, no code will be asked"), coexistence and standard signups
+            get their explainer video, and a step-by-step follow-along checklist stays visible while Meta's popup is
+            open. Skin it with `brandName`, `primaryColor` and `language` below.
+        - name: brandName
+          in: query
+          schema: { type: string, minLength: 1, maxLength: 60 }
+          description: 'Hosted signup page only (`signup=hosted`, WhatsApp): name shown in the page title ("Connect your WhatsApp number to <brandName>") instead of Zernio. The Zernio logo stays: the page is co-branded, not white-label. Trimmed; 1 to 60 characters. Rejected with 400 `INVALID_FIELD_VALUE` without `signup=hosted`. Stored on the signup session at issue time, so the page URL cannot change it.'
+        - name: primaryColor
+          in: query
+          schema: { type: string, pattern: '^#[0-9a-fA-F]{6}$' }
+          description: 'Hosted signup page only (`signup=hosted`, WhatsApp): hex colour (`#RRGGBB`) for the primary button and step accents. Validated server-side; anything else is a 400 `INVALID_FIELD_VALUE`. Rejected without `signup=hosted`.'
+        - name: language
+          in: query
+          schema: { type: string, enum: [en, es] }
+          description: 'Hosted signup page only (`signup=hosted`, WhatsApp): language of the page and its follow-along guide. Explainer videos stay in English. Default `en`. Rejected without `signup=hosted`.'
       security:
         - bearerAuth: []
       responses:
@@ -22738,7 +22779,19 @@ paths:
       operationId: connectWhatsAppEmbeddedSignup
       tags: [Connect]
       summary: Connect WhatsApp from Embedded Signup
-      description: 'Exchange the authorization code Meta Embedded Signup returns to your browser SDK. This is the headless completion path for WhatsApp: the code never passes through a redirect_uri, so POST /v1/connect/{platform} cannot accept it.'
+      description: |
+        Exchange the authorization code Meta's Embedded Signup popup returned. This is the call the Zernio-hosted
+        signup page makes after the popup closes (`GET /v1/connect/whatsapp?signup=hosted`), sending the `wabaId`
+        and `phoneNumberId` Meta reported so exactly the chosen number is connected; when both are omitted the
+        first number the token can see is used. The code never passes through a `redirect_uri`, so
+        `POST /v1/connect/{platform}` cannot accept it. Authenticates with an API key, or with the connect token
+        the hosted flow issues (`X-Connect-Token` header).
+      parameters:
+        - name: X-Connect-Token
+          in: header
+          required: false
+          schema: { type: string }
+          description: Connect token issued by the hosted signup flow, accepted instead of an API key.
       requestBody:
         required: true
         content:
@@ -22753,12 +22806,72 @@ paths:
                 phoneNumberId: { type: string }
                 isCoexistence: { type: boolean, description: 'Number is also live in the WhatsApp Business app' }
                 expectedPhoneNumber: { type: string, description: 'Rejects the connect when Meta returns a different number' }
+                redirectUrl:
+                  type: string
+                  description: 'Hosted signup page only. When present, the response also carries `redirectUrl`, the URL the user should land on, with the outcome mapped exactly like the redirect flow (success params, or `error` and `platform` with the same values). Must be an absolute http(s) URL or a custom app scheme.'
+                echoConnectToken: { type: boolean, description: 'Hosted signup page only. Append the connect token to the success redirect, as the redirect flow does for API-key callers.' }
       responses:
-        '200': { description: Number connected }
+        '200':
+          description: Number connected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  account:
+                    type: object
+                    properties:
+                      accountId: { type: string }
+                      platform: { type: string, enum: [whatsapp] }
+                      username: { type: string }
+                      displayName: { type: string }
+                      isActive: { type: boolean }
+                      selectedPhoneNumber: { type: string }
+                  redirectUrl: { type: string, description: 'Present only when `redirectUrl` was sent; also present on error responses.' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '402': { $ref: '#/components/responses/PaymentRequired' }
         '409': { description: 'The number is already connected on another profile or team' }
+
+  /v1/connect/whatsapp/sdk-config:
+    get:
+      x-resource-group: "accounts"
+      operationId: getWhatsAppSdkConfig
+      tags: [Connect]
+      summary: Get Embedded Signup SDK config
+      description: |
+        The Meta app id and Embedded Signup configuration id the Zernio-hosted signup page uses to open Meta's
+        popup. Integrators do not need this endpoint: start the hosted flow with
+        `GET /v1/connect/whatsapp?signup=hosted` and send the user to the returned `authUrl`. Authenticates with
+        an API key or with the connect token the hosted flow issues (`X-Connect-Token` header).
+      parameters:
+        - name: X-Connect-Token
+          in: header
+          required: false
+          schema: { type: string }
+          description: Connect token issued by the hosted signup flow, accepted instead of an API key.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Meta app configuration for Embedded Signup
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [appId, configId, branding]
+                properties:
+                  appId: { type: string, description: Meta app id }
+                  configId: { type: string, description: Embedded Signup configuration id }
+                  branding:
+                    type: [object, "null"]
+                    description: 'Skin chosen when the hosted signup session was issued (`brandName`, `primaryColor`, `language` on `GET /v1/connect/whatsapp?signup=hosted`). Null for API-key callers and for sessions issued without one.'
+                    properties:
+                      brandName: { type: [string, "null"] }
+                      primaryColor: { type: [string, "null"], description: 'Hex colour, #RRGGBB' }
+                      language: { type: [string, "null"], enum: [en, es, null] }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /v1/connect/discord:
     post:
@@ -48479,7 +48592,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
-          description: Ads access required. Legacy plans need the Ads add-on; included by default on usage-based plans.
+          description: "Ads access required (legacy plans need the Ads add-on; included on usage-based plans), or `payment_required`: the billing owner has no payment method on file and no legacy paid plan. Searches are free; the card keeps the shared archive quota for real accounts."
         '404': { description: Account not found }
         '501': { description: Only supported on Meta and LinkedIn accounts }
         '503': { description: "Meta's Ad Library is unavailable on Zernio's side (`PLATFORM_DISABLED`); LinkedIn searches are unaffected." }
