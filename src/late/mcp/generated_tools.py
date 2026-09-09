@@ -3962,7 +3962,7 @@ def register_generated_tools(mcp, _get_client):
                 descriptions: Meta only. Optional description variations for Multiple Text Options. Sent alongside `bodies` and `headlines`.
                 call_to_action: Required on legacy + attach shapes for Meta. Honoured on TikTok (passes through to the Spark Ad creative's `call_to_action`) and on LinkedIn (the CTA button on the ad; defaults to LEARN_MORE when `linkUrl` is set). LinkedIn accepts: LEARN_MORE, SIGN_UP, DOWNLOAD, SUBSCRIBE, REGISTER, JOIN, ATTEND, REQUEST_DEMO, VIEW_QUOTE, APPLY, SEE_MORE, SHOP_NOW, BUY_NOW. Ignored by Google, Pinterest, and X.
                 link_url: Required on legacy + attach shapes (skip for multi-creative). On LinkedIn it's the ad's destination URL; required for `traffic` ads, optional for `engagement` / `awareness`. NOT required when `goal` is `lead_generation` (the ad opens a Lead Gen form instead of a destination). On LinkedIn, `imageUrl` + `linkUrl` publishes an ARTICLE-content creative; this is LinkedIn's article ad format, with the image as thumbnail and `longHeadline` as description. Required for OpenAI Ads (the chat card's target_url).
-                lead_gen_form_id: Lead Gen form ID to attach to the ad's creative. REQUIRED when `goal` is `lead_generation`. Create one via POST /v1/ads/lead-forms. On Meta (facebook/instagram) this is the leadgen_forms ID; the ad set's promoted_object.page_id + LEAD_GENERATION optimization + destination_type ON_AD are derived automatically from the goal. On LinkedIn this is the adForm ID; the creative's `leadgenCallToAction.destination` is set to `urn:li:adForm:{id}` and the campaign objective is set to MAX_LEAD. Forms must be owned by the sponsoredAccount (not the organization) for the URN to resolve. Also required on every Meta ATTACH (`adSetId`) call that targets a lead ad set (the form attaches per-ad; Meta rejects a formless ad in a lead ad set). Both `placementAssets` (per-placement creative) and `dynamicCreative` (multi-text / multi-asset pool, e.g. multiple headlines and primary texts) ARE supported on Meta instant-form lead ads.
+                lead_gen_form_id: Lead Gen form ID to attach to the ad's creative. REQUIRED when `goal` is `lead_generation`. Create one via POST /v1/ads/lead-forms. On Meta (facebook/instagram) this is the leadgen_forms ID; the ad set's promoted_object.page_id + LEAD_GENERATION optimization + destination_type ON_AD are derived automatically from the goal. On LinkedIn this is the adForm ID; the creative's `leadgenCallToAction.destination` is set to `urn:li:adForm:{id}` and the campaign objective is set to MAX_LEAD. Forms must be owned by the sponsoredAccount (not the organization) for the URN to resolve. Also required on every Meta ATTACH (`adSetId`) call that targets a lead ad set (the form attaches per-ad; Meta rejects a formless ad in a lead ad set). `placementAssets`, `dynamicCreative` and `carouselCards` (Meta multi-card Instant-Form lead ad; `linkUrl` and per-card `linkUrl` are optional and forwarded as real destinations when sent, falling back to Meta's lead-form link when omitted) ARE supported on Meta instant-form lead ads.
                 image_url: Image creative for Meta/Google/Pinterest/LinkedIn on legacy + attach shapes (mutually exclusive with `video`). Required for LinkedIn ads unless `video` is set. Not required for Google Search campaigns. For TikTok, this field carries the VIDEO URL (the TikTok ads endpoint is video-only; the field retains the `imageUrl` name for cross-platform consistency). Ignored for X. For Google Display, treated as the landscape image (alias of `images.landscape`); supply `images.square` alongside or the request is rejected. For LinkedIn the image is uploaded to LinkedIn under the authoring Company Page (see `organizationId`); recommended ratio 1.91:1 (e.g. 1200×627). Required for OpenAI Ads (uploaded as the chat card's image; OpenAI has no video ad format).
                 images: Google Display (Responsive Display Ads) only. Google RDA requires both a landscape (1.91:1) and a square (1:1) marketing image; sending only one is rejected upstream as 'Too few.' (NOT_ENOUGH_*_MARKETING_IMAGE_ASSET). Supply both URLs here. Either this field or the legacy `imageUrl` can provide the landscape, but `square` has no legacy counterpart so it must be set here for Display.
                 video: Meta (facebook, instagram) and LinkedIn. Creates a single VIDEO ad. Mutually exclusive with `imageUrl`. Supply `url` to upload a file, or `id` to reuse a video already on the ad account (list them with GET /v1/ads/videos). Works on the single-ad and attach (`adSetId`) shapes; for Meta multi-creative, set `video` per entry inside `creatives[]` instead. For LinkedIn the video is uploaded to LinkedIn under the authoring Company Page (see `organizationId`) and the campaign format is set to SINGLE_VIDEO; LinkedIn ignores `thumbnailUrl` (it auto-generates the poster frame). Supply MP4 H.264/AAC, 3s-30min, 75KB-500MB.
@@ -3989,27 +3989,43 @@ def register_generated_tools(mcp, _get_client):
         to build N full ads sharing one ad set: create the first ad
         via the normal shape, then attach the rest one call each.
 
-        Supported on Meta (facebook, instagram), TikTok, and
-        LinkedIn. On TikTok the `adSetId` is the ad group ID; the
+        Supported on Meta (facebook, instagram), Google Ads, TikTok,
+        and LinkedIn. On TikTok the `adSetId` is the ad group ID; the
         new ad inherits the ad group's bid + budget + targeting.
         On LinkedIn the `adSetId` is the LinkedIn Campaign ID
         (numeric); we attach a new Creative to that Campaign, so
         the Campaign's `platformSpecificData` bidding, targeting,
         budget and schedule are inherited (passing those fields
         returns 400).
-                existing_campaign_id: Meta + LinkedIn. On Meta: add the new ad set under this
-        EXISTING campaign instead of creating a new one
-        (multi-ad-set audience testing). The new ad set's budget
-        is matched to the campaign's mode automatically: for a
-        CBO campaign (campaign-level budget) omit
+
+        On Google Ads the `adSetId` is the AD GROUP id. `goal` is
+        still REQUIRED even though budget and targeting are
+        inherited from the ad group. Send `campaignType: "search"`
+        to attach into a Search ad group, including one created by
+        `POST /v1/ads/ad-sets` (always SEARCH_STANDARD): without it
+        the request is treated as Display and requires
+        `images.landscape` + `images.square` + `businessName`, and
+        the resulting display creative does not match a Search ad
+        group.
+        `budgetAmount`/`budgetType` and bidding fields
+        (`bidStrategy`, `bidAmount`, `portfolioBidStrategyId`)
+        return 400 on this shape; the ad group already owns them.
+                existing_campaign_id: Meta, Google Ads, and LinkedIn. On Meta: add the new ad
+        set under this EXISTING campaign instead of creating a new
+        one (multi-ad-set audience testing). The new ad set's
+        budget is matched to the campaign's mode automatically:
+        for a CBO campaign (campaign-level budget) omit
         `budgetAmount`/`budgetType`, since the campaign owns the
         budget; for an ABO campaign pass them (they go on the new
         ad set). On LinkedIn: create a new Campaign (and its
-        Creative) under this EXISTING CampaignGroup. On failure
-        only the entities we authored are cleaned up; the
-        pre-existing parent is left untouched and is never
-        (re)activated. Mutually exclusive with `adSetId` and
-        `creatives[]`.
+        Creative) under this EXISTING CampaignGroup. On Google
+        Ads: create a new ad group under this EXISTING campaign;
+        the new ad group inherits the campaign's budget, so omit
+        `budgetAmount`/`budgetType` (and any bidding field), or
+        the request returns 400. On failure only the entities we
+        authored are cleaned up; the pre-existing parent is left
+        untouched and is never (re)activated. Mutually exclusive
+        with `adSetId` and `creatives[]`.
                 existing_creative_id: Meta only. Reuse an EXISTING ad creative by id instead of
         building a new one from the copy/media fields (which are then
         ignored). Combine with `existingCampaignId` to build a
@@ -4107,12 +4123,16 @@ def register_generated_tools(mcp, _get_client):
         400). Meta limits: ≤10 images or ≤10 videos, ≤5 bodies / titles / descriptions.
                 carousel_cards: Meta only. Hand-built carousel: 2-10 authored cards in DETERMINISTIC order, mapped to
         the creative's `link_data.child_attachments`. Unlike `dynamicCreative`,
-        you control the card order and per-card copy/link. Requires top-level `body`,
-        `linkUrl` and `callToAction`. Those become the ad's own Destination and
-        button (`link_data.link` / `link_data.call_to_action`), and double as the per-card fallback when a card omits its own.
+        you control the card order and per-card copy/link. Requires top-level `body`
+        and `callToAction`; `linkUrl` is also required UNLESS `leadGenFormId` is set. Those
+        become the ad's own Destination and button (`link_data.link` / `link_data.call_to_action`),
+        and double as the per-card fallback when a card omits its own.
         Mutually exclusive with `imageUrl`/`video`, `creatives[]`, `dynamicCreative`,
-        `placementAssets`, `existingCreativeId`, `adSetId`, `leadGenFormId` and goal
-        `catalog_sales`.
+        `placementAssets`, `existingCreativeId`, `adSetId` and goal
+        `catalog_sales`. Combines with `leadGenFormId` to build a carousel Instant-Form
+        lead ad: `linkUrl` and per-card `linkUrl` become OPTIONAL and, when sent, are
+        forwarded as the real card and top-level destinations; when omitted, the
+        destination falls back to Meta's lead-form link.
                 default_locale: Meta only. Language the top-level copy is written in (e.g. `en`, `pt_BR`), used by the `translations` default rule. Defaults to `en`. Meta rejects a language asset feed whose default rule carries no locales of its own. Must NOT also appear as an entry in `translations`.
                 translations: Meta only. Multi-language ads (Dynamic Language Optimization): ONE ad carrying
         per-locale copy and, optionally, per-locale media: the "Languages" toggle in Ads
