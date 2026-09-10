@@ -414,6 +414,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_accounts.list_high_demand_periods()` | High demand periods / budget schedules |
 | `ad_accounts.list_meta_businesses()` | Businesses list |
 | `ad_accounts.list_value_rule_sets()` | List value rule sets |
+| `ad_accounts.create_ad_account()` | Create Meta ad account |
 | `ad_accounts.create_ad_negative_keyword_list()` | Create a negative keyword list |
 | `ad_accounts.create_custom_conversion()` | Create or reuse a custom conversion |
 | `ad_accounts.create_high_demand_period()` | Schedule a budget increase |

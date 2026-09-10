@@ -2549,6 +2549,72 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
+            title="Create Meta ad account",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_accounts_create_ad_account(
+        account_id: str,
+        business_id: str,
+        name: str,
+        currency: str,
+        timezone_id: int,
+        end_advertiser: str = "NONE",
+        media_agency: str = "NONE",
+        partner: str = "NONE",
+        invoice: bool | None = None,
+        invoice_group_id: str | None = None,
+        invoicing_emails: list[str] | None = None,
+        io: bool | None = None,
+        po_number: str | None = None,
+        funding_id: str | None = None,
+        ad_account_created_from_bm_flag: bool | None = None,
+    ) -> str:
+        """Create Meta ad account
+
+        Args:
+            account_id: Zernio metaads SocialAccount ID. (required)
+            business_id: Business portfolio that will own the account. (required)
+            name: Ad account name. Whitespace is trimmed. (required)
+            currency: Uppercase ISO 4217 currency supported by Meta. (required)
+            timezone_id: Numeric Meta timezone ID from the linked timezone list. For example 1 is America/Los_Angeles. (required)
+            end_advertiser: End advertiser business or page ID. NONE uses the owning business.
+            media_agency: Media agency business or page ID. NONE for self-serve customers.
+            partner: Partner business or page ID. NONE for self-serve customers.
+            invoice: Request Meta invoicing. Eligibility is determined by Meta.
+            invoice_group_id: Existing Meta invoice group ID.
+            invoicing_emails: Addresses for Meta invoices.
+            io: Meta insertion-order invoicing option.
+            po_number: Purchase order number.
+            funding_id: Existing Meta funding reference. Does not add a payment method.
+            ad_account_created_from_bm_flag: Meta Business Manager creation flag."""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.create_ad_account(
+                account_id=account_id,
+                business_id=business_id,
+                name=name,
+                currency=currency,
+                timezone_id=timezone_id,
+                end_advertiser=end_advertiser,
+                media_agency=media_agency,
+                partner=partner,
+                invoice=invoice,
+                invoice_group_id=invoice_group_id,
+                invoicing_emails=invoicing_emails,
+                io=io,
+                po_number=po_number,
+                funding_id=funding_id,
+                ad_account_created_from_bm_flag=ad_account_created_from_bm_flag,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
             title="List ad accounts",
             readOnlyHint=True,
             destructiveHint=False,
