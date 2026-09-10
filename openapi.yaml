@@ -36148,6 +36148,7 @@ paths:
                         smsAvailable: { type: boolean, description: Whether this country's number type can do SMS. Use it to filter the picker when the buyer wants SMS (pair with `wantsSms` on purchase). }
                         outboundCallingAvailable: { type: boolean, description: "WhatsApp Business Calling (BIC) outbound availability, a Meta feature blocked in some countries. NOT the PSTN Calls feature (`callsAvailable`)." }
                         inStock: { type: boolean, description: "Live carrier-stock snapshot (refreshed every 6h + on availability checks): false when NO offered type currently has deliverable inventory, so a purchase would fail. Treat as advisory; the purchase itself re-checks." }
+                        preOrderable: { type: boolean, description: "At least one out-of-stock type here can be pre-ordered (see `types[].preOrderable`)." }
                         types:
                           type: array
                           description: >
@@ -36160,13 +36161,15 @@ paths:
                             type: object
                             properties:
                               numberType: { type: string, enum: [local, mobile, national, toll_free] }
-                              tier: { type: integer, enum: [1, 2, 3, 4] }
+                              tier: { type: [integer, "null"], enum: [1, 2, 3, 4, null], description: "Null on a `fulfilment: request` type, whose document tier is only known once its requirements are read." }
                               needsKyc: { type: boolean }
                               monthlyCents: { type: integer, description: "Price a NEW number of this type costs per month, in cents." }
                               whatsappAvailable: { type: boolean, description: "Always false for toll_free (WhatsApp does not reliably register toll-free numbers)." }
                               smsAvailable: { type: boolean }
                               callsAvailable: { type: boolean }
                               inStock: { type: boolean }
+                              fulfilment: { type: string, enum: [instant, request], description: "`request`: the carrier stocks this type nowhere and only sources it to order, so it is always a pre-order." }
+                              preOrderable: { type: boolean, description: "Out of stock but orderable anyway. Submit KYC as usual (POST /v1/phone-numbers/kyc) and the carrier sources the number after review, usually about 3 weeks and never guaranteed. Only document tiers (3/4) qualify, and nothing is billed until the number is active." }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /v1/phone-numbers/available:
@@ -36245,6 +36248,7 @@ paths:
                   country: { type: string }
                   numberType: { type: string }
                   available: { type: boolean, description: Whether deliverable voice inventory exists right now. }
+                  preOrderable: { type: boolean, description: "Nothing deliverable now, but this pair can be pre-ordered: submit KYC as usual and the carrier sources the number after review (usually about 3 weeks, never guaranteed). Only document tiers (3/4) qualify." }
                   addressConstraint: { type: string, enum: [geo, country, none] }
                   areas:
                     type: array
@@ -36630,6 +36634,7 @@ paths:
                   country: { type: string }
                   numberType: { type: string }
                   available: { type: boolean, description: Whether deliverable voice inventory exists right now. }
+                  preOrderable: { type: boolean, description: "Nothing deliverable now, but this pair can be pre-ordered: submit KYC as usual and the carrier sources the number after review (usually about 3 weeks, never guaranteed). Only document tiers (3/4) qualify." }
                   addressConstraint: { type: string, enum: [geo, country, none] }
                   areas:
                     type: array
@@ -36814,6 +36819,7 @@ paths:
                 type: object
                 properties:
                   status: { type: string, enum: [kyc_submitted, kyc_reused, kyc_already_submitted] }
+                  preOrder: { type: boolean, description: "True when nothing was in stock and this submission placed a pre-order. The number stays `pending_regulatory` until the carrier sources it (usually about 3 weeks) and is not billed until active. A pre-order is one number: `quantity` above 1 is rejected with 400." }
                   phoneNumber:
                     type: object
                     description: The first/primary number, kept at the top level for backward compatibility. See `numbers` for the full set when `quantity` > 1.
@@ -37807,6 +37813,7 @@ paths:
                 type: object
                 properties:
                   status: { type: string, enum: [kyc_submitted, kyc_reused, kyc_already_submitted] }
+                  preOrder: { type: boolean, description: "True when nothing was in stock and this submission placed a pre-order. The number stays `pending_regulatory` until the carrier sources it (usually about 3 weeks) and is not billed until active. A pre-order is one number: `quantity` above 1 is rejected with 400." }
                   phoneNumber:
                     type: object
                     description: The first/primary number, kept at the top level for backward compatibility. See `numbers` for the full set when `quantity` > 1.
@@ -38279,9 +38286,9 @@ paths:
         it if you miss the stock. Up to 20 watches at once.
 
         Countries and types marked `fulfilment: request` by
-        GET /v1/phone-numbers/countries can also be watched. Those are sourced
-        by a carrier request rather than held in stock, so a watch records
-        interest and no date is implied.
+        GET /v1/phone-numbers/countries can also be watched, but anything with
+        `preOrderable: true` does not need a watch: submit KYC and the carrier
+        sources the number to order.
       security:
         - bearerAuth: []
       requestBody:
