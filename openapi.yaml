@@ -51037,7 +51037,7 @@ paths:
                   description: "Meta only. Multi-advertiser ads: whether Meta may show this ad alongside other advertisers' in one unit. Meta auto-enrols since Aug 2024, so send OPT_OUT to leave. It is a top-level creative field, NOT a `creativeFeatures` key, and Meta rejects it there."
                 validateOnly:
                   type: boolean
-                  description: 'Google Performance Max validates the complete atomic campaign and asset group with no resource creation or local persistence. Google validation still downloads image URLs and consumes quota. On Meta, validates the complete inline campaign, ad set, creative and ad with execution_options validate_only. Nothing is uploaded or created, and validation bypasses Idempotency-Key storage. Supports a single image, existing video.id or existingCreativeId; media pools, new video uploads, creatives[], adSetId and RESERVED buying return 400. Existing campaign or creative nodes are marked skipped. Success returns 200 with per-node results; Meta rejection returns an error.'
+                  description: 'Google Performance Max validates the complete atomic campaign and asset group with no resource creation or local persistence. Google validation still downloads image URLs and consumes quota. On Meta, validates the complete inline campaign, ad set, creative and ad with execution_options validate_only. Nothing is uploaded or created, and validation bypasses Idempotency-Key storage. Supports a single image, all-image placementAssets with per-rule copy, existing video.id or existingCreativeId; other media pools, new video uploads, creatives[], adSetId and RESERVED buying return 400. Placement validation uses existing Instagram identities only. Existing campaign or creative nodes are marked skipped. Success returns 200 with per-node results; Meta rejection returns an error.'
                 budgetAmount: { type: number, description: "Budget in WHOLE currency units (USD: 50 = $50.00), NOT cents. Meta's own Marketing API takes this same number in minor units, so it is an easy and expensive mix-up. Required on legacy, multi-creative and Performance Max shapes. Inherited on attach. OpenAI Ads requires a $1 minimum (its budget is lifetime-only, see budgetType)." }
                 budgetType: { type: string, enum: [daily, lifetime], description: "Required on legacy, multi-creative and Performance Max shapes. Inherited on attach. OpenAI Ads accepts lifetime only (no daily-budget concept on the platform); sending daily returns 422. OpenAI Ads lifetime budgets require `endDate` to give the lifetime cap a spend window." }
                 status:
@@ -51080,7 +51080,7 @@ paths:
                     `body` field is used as the `object_story_spec.link_data.message` (the preview text) and
                     `headlines` must also be present. On a video creative the copy lands in
                     `video_data.message` / `video_data.title` instead of `link_data`. Mutually exclusive
-                    with `dynamicCreative`, `placementAssets`, `carouselCards`, and `creatives[]`.
+                    with `dynamicCreative`, `placementAssets`, `carouselCards`, and `creatives[]`. For placement-specific copy, use the singular `placementAssets.rules[].body` and `headline` fields instead.
                 headlines:
                   type: array
                   minItems: 1
@@ -51596,20 +51596,36 @@ paths:
                     on the legacy single shape AND the attach shape (`adSetId` + placementAssets adds one
                     placement-customized ad to an existing ad set, the way to build N per-placement ads
                     sharing one ad set: create the first normally, attach the rest). Cannot be combined
-                    with `creatives[]`. Shared copy (headline, body, link,
-                    CTA) comes from the top-level single-creative fields since only the asset varies by
-                    placement. Each rule's `placements` accepts the same fields as the top-level
+                    with `creatives[]` or top-level `bodies`/`headlines`/`descriptions` arrays. Each rule
+                    can override `headline`, `body` and `description` with one string per field. Omitted
+                    fields and unmatched placements use the top-level copy; `linkUrl` and `callToAction`
+                    remain shared. Zernio emits labelled text with `optimization_type: PLACEMENT`.
+                    Multiple text options rotating within a placement are not supported by this input. Each rule's `placements` accepts the same fields as the top-level
                     `placements` object; Meta enforces co-selection rules and returns an actionable error.
 
-                    Note on text rendering: Meta suppresses primary text and headline on fullscreen
-                    placements (Stories and Reels) in actual ad delivery; the fields are accepted and
-                    the ad publishes, but the copy is not shown to users. For visible copy on those
-                    placements, bake the text into the creative image or video itself.
+                    Meta controls text rendering by placement and format. Validation accepts these fields
+                    but does not prove that every field appears in delivery. Preview the ad; put copy that
+                    must always be visible into the image or video itself.
+
+                    `validateOnly: true` supports all-image placementAssets without uploading or creating
+                    anything. Video placement validation remains unsupported because it requires uploads.
 
                     A block is all-image OR all-video, never mixed (Meta's asset_feed_spec carries one ad
                     format). Image mode: `defaultImageUrl` + `rules[].imageUrl`. Video mode:
                     `defaultVideoUrl` + `rules[].videoUrl` (optional `thumbnailUrl`/`defaultThumbnailUrl`
                     posters; Meta auto-generates when omitted). Exactly one catch-all default is required.
+                  example:
+                    defaultImageUrl: 'https://example.com/feed-4x5.jpg'
+                    rules:
+                      - imageUrl: 'https://example.com/feed-4x5.jpg'
+                        headline: 'Build with Zernio'
+                        body: 'Schedule social posts from your app.'
+                        description: 'One API for your social content.'
+                        placements: { publisherPlatforms: [facebook], facebookPositions: [feed] }
+                      - imageUrl: 'https://example.com/story-9x16.jpg'
+                        headline: 'Your next story'
+                        body: 'Bring your social workflow to Zernio.'
+                        placements: { publisherPlatforms: [facebook], facebookPositions: [story, facebook_reels] }
                   required: [rules]
                   properties:
                     defaultImageUrl:
@@ -51645,6 +51661,20 @@ paths:
                             type: string
                             format: uri
                             description: "Video mode (optional). Poster image for this rule's video; auto-generated when omitted."
+                          headline:
+                            type: string
+                            minLength: 1
+                            maxLength: 255
+                            description: "One headline pinned to this rule. Omit to inherit the top-level headline."
+                          body:
+                            type: string
+                            minLength: 1
+                            description: "One primary text pinned to this rule. Omit to inherit the top-level body."
+                          description:
+                            type: string
+                            minLength: 1
+                            maxLength: 255
+                            description: "One link description pinned to this rule. Omit to inherit the top-level description."
                           placements:
                             type: object
                             description: "Placements this asset is pinned to. At least one field must be set (an empty rule is invalid; that role is served by the default asset). Same enums as the top-level `placements` object."
