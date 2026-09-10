@@ -11102,16 +11102,23 @@ def register_generated_tools(mcp, _get_client):
             openWorldHint=False,
         )
     )
-    def connect_list_facebook_pages(profile_id: str, temp_token: str) -> str:
+    def connect_list_facebook_pages(
+        profile_id: str | None = None,
+        temp_token: str | None = None,
+        selection_token: str | None = None,
+    ) -> str:
         """List Facebook pages
 
         Args:
-            profile_id: Profile ID from your connection flow (required)
-            temp_token: Temporary Facebook access token from the OAuth callback redirect (required)"""
+            profile_id: Profile ID from your classic connection flow. Required with tempToken.
+            temp_token: Temporary Facebook access token from the classic OAuth callback. Required with profileId.
+            selection_token: Encrypted dashboard business-login grant. Send alone instead of profileId and tempToken. Expires after ten minutes."""
         client = _get_client()
         try:
             response = client.connect.list_facebook_pages(
-                profile_id=profile_id, temp_token=temp_token
+                profile_id=profile_id,
+                temp_token=temp_token,
+                selection_token=selection_token,
             )
             return _format_response(response)
         except Exception as e:
@@ -11125,30 +11132,14 @@ def register_generated_tools(mcp, _get_client):
             openWorldHint=True,
         )
     )
-    def connect_select_facebook_page(
-        profile_id: str,
-        page_id: str,
-        temp_token: str,
-        user_profile: dict[str, Any] | None,
-        redirect_url: str | None = None,
-    ) -> str:
+    def connect_select_facebook_page(body: dict[str, Any]) -> str:
         """Select Facebook page
 
         Args:
-            profile_id: Profile ID from your connection flow (required)
-            page_id: The Facebook Page ID selected by the user (required)
-            temp_token: Temporary Facebook access token from OAuth (required)
-            user_profile: Decoded user profile object from the OAuth callback (required)
-            redirect_url: Optional custom redirect URL to return to after selection"""
+            body: Full request body as documented in the API reference. (required)"""
         client = _get_client()
         try:
-            response = client.connect.select_facebook_page(
-                profile_id=profile_id,
-                page_id=page_id,
-                temp_token=temp_token,
-                user_profile=user_profile,
-                redirect_url=redirect_url,
-            )
+            response = client.connect.select_facebook_page(body=body)
             return _format_response(response)
         except Exception as e:
             return f"Error: {e}"

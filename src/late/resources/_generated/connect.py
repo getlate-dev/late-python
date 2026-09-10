@@ -184,32 +184,24 @@ class ConnectResource:
         )
         return self._client._patch("/v1/connect/tiktok-ads", data=payload)
 
-    def list_facebook_pages(self, profile_id: str, temp_token: str) -> dict[str, Any]:
+    def list_facebook_pages(
+        self,
+        *,
+        profile_id: str | None = None,
+        temp_token: str | None = None,
+        selection_token: str | None = None,
+    ) -> dict[str, Any]:
         """List Facebook pages"""
         params = self._build_params(
             profile_id=profile_id,
             temp_token=temp_token,
+            selection_token=selection_token,
         )
         return self._client._get("/v1/connect/facebook/select-page", params=params)
 
-    def select_facebook_page(
-        self,
-        profile_id: str,
-        page_id: str,
-        temp_token: str,
-        user_profile: dict[str, Any],
-        *,
-        redirect_url: str | None = None,
-    ) -> dict[str, Any]:
+    def select_facebook_page(self, body: dict[str, Any]) -> dict[str, Any]:
         """Select Facebook page"""
-        payload = self._build_payload(
-            profile_id=profile_id,
-            page_id=page_id,
-            temp_token=temp_token,
-            user_profile=user_profile,
-            redirect_url=redirect_url,
-        )
-        return self._client._post("/v1/connect/facebook/select-page", data=payload)
+        return self._client._post("/v1/connect/facebook/select-page", data=body)
 
     def list_instagram_pages(self, profile_id: str, temp_token: str) -> dict[str, Any]:
         """List Pages with a linked Instagram account"""
@@ -946,37 +938,25 @@ class ConnectResource:
         return await self._client._apatch("/v1/connect/tiktok-ads", data=payload)
 
     async def alist_facebook_pages(
-        self, profile_id: str, temp_token: str
+        self,
+        *,
+        profile_id: str | None = None,
+        temp_token: str | None = None,
+        selection_token: str | None = None,
     ) -> dict[str, Any]:
         """List Facebook pages (async)"""
         params = self._build_params(
             profile_id=profile_id,
             temp_token=temp_token,
+            selection_token=selection_token,
         )
         return await self._client._aget(
             "/v1/connect/facebook/select-page", params=params
         )
 
-    async def aselect_facebook_page(
-        self,
-        profile_id: str,
-        page_id: str,
-        temp_token: str,
-        user_profile: dict[str, Any],
-        *,
-        redirect_url: str | None = None,
-    ) -> dict[str, Any]:
+    async def aselect_facebook_page(self, body: dict[str, Any]) -> dict[str, Any]:
         """Select Facebook page (async)"""
-        payload = self._build_payload(
-            profile_id=profile_id,
-            page_id=page_id,
-            temp_token=temp_token,
-            user_profile=user_profile,
-            redirect_url=redirect_url,
-        )
-        return await self._client._apost(
-            "/v1/connect/facebook/select-page", data=payload
-        )
+        return await self._client._apost("/v1/connect/facebook/select-page", data=body)
 
     async def alist_instagram_pages(
         self, profile_id: str, temp_token: str
