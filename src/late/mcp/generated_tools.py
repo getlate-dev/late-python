@@ -10012,7 +10012,7 @@ def register_generated_tools(mcp, _get_client):
             account_id: Instagram or Facebook account ID (required)
             trigger: What fires the automation. 'comment' (keyword comment on a post) or 'story_reply' (keyword reply to an Instagram story). For 'story_reply', platformPostId is the story media id (omit for any story).
             platform_post_id: Platform media/post ID (or story media id when trigger=story_reply). Omit for an account-wide (any-post / any-story) automation.
-            post_id: Zernio post ID. Optional and never required. Use it INSTEAD of platformPostId to bind a per-post automation to a not-yet-published Zernio post: the automation stays pending and arms itself when that post publishes. For a post already live on the platform, pass platformPostId alone and omit this.
+            post_id: Zernio post ID (24 hexadecimal characters); platform IDs return 400. Optional and never required. Use it INSTEAD of platformPostId to bind a per-post automation to a not-yet-published Zernio post: the automation stays pending and arms itself when that post publishes. For a post already live on the platform, pass platformPostId alone and omit this.
             post_title: Post content snippet for display
             name: Automation label (required)
             keywords: Trigger keywords (empty = any comment triggers)
@@ -14644,7 +14644,7 @@ def register_generated_tools(mcp, _get_client):
             account_id: Filter to a single connected account. LinkedIn ads accounts switch to the live fetch.
             ad_account_id: LinkedIn only: the LinkedIn ad account id whose responses to read (owner-scoped finder).
             limit
-            since: Unix seconds; only leads created at/after this timestamp.
+            since: Unix seconds; only leads created at/after this timestamp. Millisecond timestamps return 400 with instructions to divide by 1000.
             cursor: Keyset cursor from a previous response's pagination.cursor (Meta: AdLead id; LinkedIn: numeric start offset)."""
         client = _get_client()
         try:
@@ -19076,6 +19076,34 @@ def register_generated_tools(mcp, _get_client):
         client = _get_client()
         try:
             response = client.sms.reuse_sms_registration_for_number(id=id)
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    # TOOLS
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Download a TikTok video",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def tools_download_tik_tok_video(
+        url: str, action: str = "download", format_id: str | None = None
+    ) -> str:
+        """Download a TikTok video
+
+        Args:
+            url: TikTok video URL or numeric video ID. (required)
+            action: Return a download URL or the available formats.
+            format_id: Format ID from the formats response. Omit to select the first available format."""
+        client = _get_client()
+        try:
+            response = client.tools.download_tik_tok_video(
+                url=url, action=action, format_id=format_id
+            )
             return _format_response(response)
         except Exception as e:
             return f"Error: {e}"

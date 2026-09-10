@@ -22,17 +22,19 @@ class ToolsResource:
         self._client = client
 
     def _build_params(self, **kwargs: Any) -> dict[str, Any]:
-        """Build query parameters, filtering None values."""
+        """Build query parameters, filtering None and empty-string values.
 
-        def to_camel(s: str) -> str:
-            parts = s.split("_")
-            return parts[0] + "".join(p.title() for p in parts[1:])
+        Empty strings are filtered because MCP tool wrappers pass ``""`` as the
+        default for optional string args, and the API rejects empty query
+        values (e.g. ``platform=``) with a 400. Filtering here keeps both direct
+        SDK callers and MCP tool callers safe.
 
-        return {to_camel(k): v for k, v in kwargs.items() if v is not None}
-
-    def _build_payload(self, **kwargs: Any) -> dict[str, Any]:
-        """Build request payload, filtering None values."""
-        from datetime import datetime
+        Enum members are unwrapped to their value: httpx serializes params
+        via str(), which yields "ClassName.MEMBER" for Enum members, so
+        e.g. ``status=PostStatus.FAILED`` would otherwise reach the API as
+        ``status=PostStatus.FAILED`` instead of ``status=failed``.
+        """
+        from enum import Enum
 
         def to_camel(s: str) -> str:
             parts = s.split("_")
@@ -40,6 +42,29 @@ class ToolsResource:
 
         result: dict[str, Any] = {}
         for k, v in kwargs.items():
+            if isinstance(v, Enum):
+                v = v.value
+            if v is None or v == "":
+                continue
+            result[to_camel(k)] = v
+        return result
+
+    def _build_payload(self, **kwargs: Any) -> dict[str, Any]:
+        """Build request payload, filtering None values. Enum members are
+        unwrapped to their value so JSON bodies carry e.g. "failed" rather
+        than a raw Enum member (plain Enum members are not JSON-serializable).
+        """
+        from datetime import datetime
+        from enum import Enum
+
+        def to_camel(s: str) -> str:
+            parts = s.split("_")
+            return parts[0] + "".join(p.title() for p in parts[1:])
+
+        result: dict[str, Any] = {}
+        for k, v in kwargs.items():
+            if isinstance(v, Enum):
+                v = v.value
             if v is None:
                 continue
             if isinstance(v, datetime):
@@ -48,53 +73,10 @@ class ToolsResource:
                 result[to_camel(k)] = v
         return result
 
-    def download_you_tube_video(
-        self,
-        url: str,
-        *,
-        action: str | None = "download",
-        format: str | None = "video",
-        quality: str | None = "hd",
-        format_id: str | None = None,
-    ) -> dict[str, Any]:
-        """Download YouTube video"""
-        params = self._build_params(
-            url=url,
-            action=action,
-            format=format,
-            quality=quality,
-            format_id=format_id,
-        )
-        return self._client._get("/v1/tools/youtube/download", params=params)
-
-    def get_you_tube_transcript(
-        self, url: str, *, lang: str | None = "en"
-    ) -> dict[str, Any]:
-        """Get YouTube transcript"""
-        params = self._build_params(
-            url=url,
-            lang=lang,
-        )
-        return self._client._get("/v1/tools/youtube/transcript", params=params)
-
-    def download_instagram_media(self, url: str) -> dict[str, Any]:
-        """Download Instagram media"""
-        params = self._build_params(
-            url=url,
-        )
-        return self._client._get("/v1/tools/instagram/download", params=params)
-
-    def check_instagram_hashtags(self, hashtags: list[str]) -> dict[str, Any]:
-        """Check IG hashtag bans"""
-        payload = self._build_payload(
-            hashtags=hashtags,
-        )
-        return self._client._post("/v1/tools/instagram/hashtag-checker", data=payload)
-
     def download_tik_tok_video(
         self, url: str, *, action: str | None = "download", format_id: str | None = None
     ) -> dict[str, Any]:
-        """Download TikTok video"""
+        """Download a TikTok video"""
         params = self._build_params(
             url=url,
             action=action,
@@ -102,122 +84,13 @@ class ToolsResource:
         )
         return self._client._get("/v1/tools/tiktok/download", params=params)
 
-    def download_twitter_media(
-        self, url: str, *, action: str | None = "download", format_id: str | None = None
-    ) -> dict[str, Any]:
-        """Download Twitter/X media"""
-        params = self._build_params(
-            url=url,
-            action=action,
-            format_id=format_id,
-        )
-        return self._client._get("/v1/tools/twitter/download", params=params)
-
-    def download_facebook_video(self, url: str) -> dict[str, Any]:
-        """Download Facebook video"""
-        params = self._build_params(
-            url=url,
-        )
-        return self._client._get("/v1/tools/facebook/download", params=params)
-
-    def download_linked_in_video(self, url: str) -> dict[str, Any]:
-        """Download LinkedIn video"""
-        params = self._build_params(
-            url=url,
-        )
-        return self._client._get("/v1/tools/linkedin/download", params=params)
-
-    def download_bluesky_media(self, url: str) -> dict[str, Any]:
-        """Download Bluesky media"""
-        params = self._build_params(
-            url=url,
-        )
-        return self._client._get("/v1/tools/bluesky/download", params=params)
-
-    async def adownload_you_tube_video(
-        self,
-        url: str,
-        *,
-        action: str | None = "download",
-        format: str | None = "video",
-        quality: str | None = "hd",
-        format_id: str | None = None,
-    ) -> dict[str, Any]:
-        """Download YouTube video (async)"""
-        params = self._build_params(
-            url=url,
-            action=action,
-            format=format,
-            quality=quality,
-            format_id=format_id,
-        )
-        return await self._client._aget("/v1/tools/youtube/download", params=params)
-
-    async def aget_you_tube_transcript(
-        self, url: str, *, lang: str | None = "en"
-    ) -> dict[str, Any]:
-        """Get YouTube transcript (async)"""
-        params = self._build_params(
-            url=url,
-            lang=lang,
-        )
-        return await self._client._aget("/v1/tools/youtube/transcript", params=params)
-
-    async def adownload_instagram_media(self, url: str) -> dict[str, Any]:
-        """Download Instagram media (async)"""
-        params = self._build_params(
-            url=url,
-        )
-        return await self._client._aget("/v1/tools/instagram/download", params=params)
-
-    async def acheck_instagram_hashtags(self, hashtags: list[str]) -> dict[str, Any]:
-        """Check IG hashtag bans (async)"""
-        payload = self._build_payload(
-            hashtags=hashtags,
-        )
-        return await self._client._apost(
-            "/v1/tools/instagram/hashtag-checker", data=payload
-        )
-
     async def adownload_tik_tok_video(
         self, url: str, *, action: str | None = "download", format_id: str | None = None
     ) -> dict[str, Any]:
-        """Download TikTok video (async)"""
+        """Download a TikTok video (async)"""
         params = self._build_params(
             url=url,
             action=action,
             format_id=format_id,
         )
         return await self._client._aget("/v1/tools/tiktok/download", params=params)
-
-    async def adownload_twitter_media(
-        self, url: str, *, action: str | None = "download", format_id: str | None = None
-    ) -> dict[str, Any]:
-        """Download Twitter/X media (async)"""
-        params = self._build_params(
-            url=url,
-            action=action,
-            format_id=format_id,
-        )
-        return await self._client._aget("/v1/tools/twitter/download", params=params)
-
-    async def adownload_facebook_video(self, url: str) -> dict[str, Any]:
-        """Download Facebook video (async)"""
-        params = self._build_params(
-            url=url,
-        )
-        return await self._client._aget("/v1/tools/facebook/download", params=params)
-
-    async def adownload_linked_in_video(self, url: str) -> dict[str, Any]:
-        """Download LinkedIn video (async)"""
-        params = self._build_params(
-            url=url,
-        )
-        return await self._client._aget("/v1/tools/linkedin/download", params=params)
-
-    async def adownload_bluesky_media(self, url: str) -> dict[str, Any]:
-        """Download Bluesky media (async)"""
-        params = self._build_params(
-            url=url,
-        )
-        return await self._client._aget("/v1/tools/bluesky/download", params=params)

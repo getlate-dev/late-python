@@ -217,6 +217,8 @@ servers:
   - url: http://localhost:3000/api
     description: Local
 tags:
+  - name: Tools
+    description: "Media tools for authenticated API consumers."
   - name: Posts
     description: |
       Create, schedule, list, update, and delete posts across all connected accounts.
@@ -607,6 +609,28 @@ components:
             type: invalid_request_error
             code: ads_connection_required
             param: accountId
+    TemporarilyUnavailable:
+      description: 'An upstream service or database is temporarily unavailable. Retry after the indicated delay. A timed-out write may have completed upstream; check its outcome before resubmitting.'
+      headers:
+        Retry-After:
+          schema: { type: integer, example: 5 }
+          description: 'Minimum delay in seconds before retrying.'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            error: 'Temporary connection issue while reaching an upstream service. Please retry the request.'
+            type: api_error
+            code: temporarily_unavailable
+    UpstreamFailure:
+      description: 'The platform returned a server error.'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            error: 'The platform could not complete the request.'
+            type: platform_error
+            code: platform_api_error
     IdempotencyKeyInFlight:
       description: Same Idempotency-Key still processing; retry after a short backoff
     IdempotencyKeyReused:
@@ -12599,6 +12623,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/YouTubeScopeMissingResponse'
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
+        '502': { $ref: '#/components/responses/UpstreamFailure' }
 
   /v1/analytics/linkedin/org-aggregate-analytics:
     get:
@@ -13831,6 +13857,8 @@ paths:
                       hasAnalyticsScope: { type: boolean, example: false }
                       requiresReauthorization: { type: boolean, example: true }
                       reauthorizeUrl: { type: string }
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
+        '502': { $ref: '#/components/responses/UpstreamFailure' }
 
   /v1/analytics/daily-metrics:
     get:
@@ -14447,6 +14475,8 @@ paths:
                 type: object
                 properties:
                   error: { type: string, example: "Access denied to this account" }
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
+        '502': { $ref: '#/components/responses/UpstreamFailure' }
 
   /v1/analytics/googlebusiness/search-keywords:
     get:
@@ -14540,6 +14570,9 @@ paths:
                 type: object
                 properties:
                   error: { type: string, example: "Access denied to this account" }
+
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
+        '502': { $ref: '#/components/responses/UpstreamFailure' }
 
   # ─── Inbox analytics ───────────────────────────────────────────────────
   # Same `[Analytics]` tag as the posting endpoints above so the rendered
@@ -16831,6 +16864,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
+        '502': { $ref: '#/components/responses/UpstreamFailure' }
+        '401': { description: 'The platform authorization has expired. Reconnect the account.' }
+        '403': { description: 'The account is inactive or the platform denied access.' }
+
   /v1/posts/{postId}:
     get:
       x-resource-group: "publishing"
@@ -18042,6 +18080,8 @@ paths:
                     hasAnalyticsAccess: false
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
+
   /v1/accounts/follower-stats:
     get:
       x-resource-group: "analytics"
@@ -18749,6 +18789,9 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: 'X analytics capability not enabled for this account (code X_ANALYTICS_NOT_ENABLED)' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
+        '502': { $ref: '#/components/responses/UpstreamFailure' }
+
   /v1/accounts/{accountId}/follow-status/{userId}:
     get:
       operationId: getInstagramFollowStatus
@@ -20552,6 +20595,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
+        '502': { $ref: '#/components/responses/UpstreamFailure' }
 
   /v1/accounts/{accountId}/gmb-verifications:
     get:
@@ -24518,6 +24563,8 @@ paths:
                     error: "Post not found. The URN may be invalid or the post may have been deleted."
                     code: "post_not_found"
                     postUrn: "urn:li:share:123"
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
+        '502': { $ref: '#/components/responses/UpstreamFailure' }
 
   /v1/accounts/{accountId}/linkedin-post-reactions:
     get:
@@ -29329,6 +29376,9 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Inbox addon required
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
+        '502': { $ref: '#/components/responses/UpstreamFailure' }
+
     post:
       x-resource-group: "messages"
       operationId: sendInboxMessage
@@ -30033,6 +30083,8 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '409': { $ref: '#/components/responses/IdempotencyKeyInFlight' }
         '422': { $ref: '#/components/responses/IdempotencyKeyReused' }
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
+        '502': { $ref: '#/components/responses/UpstreamFailure' }
 
   /v1/whatsapp/media/{mediaId}:
     get:
@@ -42397,6 +42449,8 @@ paths:
                         createdAt: { type: string, format: date-time }
         '400': { description: Invalid request }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
+
     post:
       x-resource-group: "messages"
       operationId: createCommentAutomation
@@ -42451,7 +42505,7 @@ paths:
                 accountId: { type: string, description: Instagram or Facebook account ID }
                 trigger: { type: string, enum: [comment, story_reply], default: comment, description: "What fires the automation. 'comment' (keyword comment on a post) or 'story_reply' (keyword reply to an Instagram story). For 'story_reply', platformPostId is the story media id (omit for any story)." }
                 platformPostId: { type: string, description: "Platform media/post ID (or story media id when trigger=story_reply). Omit for an account-wide (any-post / any-story) automation." }
-                postId: { type: string, description: "Zernio post ID. Optional and never required. Use it INSTEAD of platformPostId to bind a per-post automation to a not-yet-published Zernio post: the automation stays pending and arms itself when that post publishes. For a post already live on the platform, pass platformPostId alone and omit this." }
+                postId: { type: string, pattern: "^[a-fA-F0-9]{24}$", description: "Zernio post ID (24 hexadecimal characters); platform IDs return 400. Optional and never required. Use it INSTEAD of platformPostId to bind a per-post automation to a not-yet-published Zernio post: the automation stays pending and arms itself when that post publishes. For a post already live on the platform, pass platformPostId alone and omit this." }
                 postTitle: { type: string, description: Post content snippet for display }
                 name: { type: string, description: Automation label }
                 keywords:
@@ -42532,6 +42586,7 @@ paths:
         '400': { description: Validation error }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '409': { description: "Active per-post automation already exists for this platformPostId. Does not apply to account-wide automations." }
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
 
   /v1/comment-automations/{automationId}:
     get:
@@ -51798,6 +51853,7 @@ paths:
             missing poster also carries `creativeIndex` and `videoUrl` to
             identify the entry. An upstream 4xx status is forwarded instead
             of 502.
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
 
   /v1/ads/leads:
     get:
@@ -51821,7 +51877,7 @@ paths:
         - { name: accountId, in: query, schema: { type: string }, description: Filter to a single connected account. LinkedIn ads accounts switch to the live fetch. }
         - { name: adAccountId, in: query, schema: { type: string }, description: "LinkedIn only: the LinkedIn ad account id whose responses to read (owner-scoped finder)." }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
-        - { name: since, in: query, schema: { type: integer }, description: Unix seconds; only leads created at/after this timestamp. }
+        - { name: since, in: query, schema: { type: integer, minimum: 1, maximum: 253402300799, example: 1757404800 }, description: "Unix seconds; only leads created at/after this timestamp. Millisecond timestamps return 400 with instructions to divide by 1000." }
         - { name: cursor, in: query, schema: { type: string }, description: "Keyset cursor from a previous response's pagination.cursor (Meta: AdLead id; LinkedIn: numeric start offset)." }
       responses:
         '200':
@@ -51857,6 +51913,8 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: Ads add-on required. }
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
+        '502': { $ref: '#/components/responses/UpstreamFailure' }
 
   /v1/ads/lead-forms:
     get:
@@ -57626,3 +57684,67 @@ paths:
         "409": *a5
         "422":
           description: 'The advertiser Instagram Business Account could not be resolved.'
+  /v1/tools/tiktok/download:
+    get:
+      operationId: downloadTikTokVideo
+      tags: [Tools]
+      x-platforms: ["tiktok"]
+      summary: Download a TikTok video
+      description: 'Get a download URL or list available formats for a TikTok video. Requires Tools API access and uses the Tools API rate limit. Provider gateway failures and provider-side access blocks return 503; an unavailable video returns 404.'
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema: { type: string }
+          description: 'TikTok video URL or numeric video ID.'
+          example: 'https://www.tiktok.com/@example/video/7412345678901234567'
+        - name: action
+          in: query
+          schema: { type: string, enum: [download, formats], default: download }
+          description: 'Return a download URL or the available formats.'
+        - name: formatId
+          in: query
+          schema: { type: string }
+          description: 'Format ID from the formats response. Omit to select the first available format.'
+      responses:
+        '200':
+          description: 'Download URL or available formats.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, title]
+                properties:
+                  success: { type: boolean }
+                  title: { type: string }
+                  format: { type: string, description: 'Selected format label for action=download.' }
+                  downloadUrl: { type: string, description: 'Media download URL for action=download.' }
+                  duration: { type: number, description: 'Duration in seconds for action=formats.' }
+                  cover: { type: string, description: 'Thumbnail URL for action=formats.' }
+                  formats:
+                    type: array
+                    description: 'Available formats for action=formats.'
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        label: { type: string }
+                        ext: { type: string }
+                        type: { type: string }
+                        height: { type: number }
+                        width: { type: number }
+                        fps: { type: number }
+                        hasAudio: { type: boolean }
+                        hasVideo: { type: boolean }
+              example:
+                success: true
+                title: 'TikTok by @example'
+                format: 'MP4 • No watermark'
+                downloadUrl: 'https://example.com/video.mp4'
+        '400': { description: 'Missing or invalid url, action, or formatId.' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: 'Tools API access is required.' }
+        '404': { description: 'The video or a downloadable format was not found.' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '502': { $ref: '#/components/responses/UpstreamFailure' }
+        '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
