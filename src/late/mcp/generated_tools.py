@@ -10293,7 +10293,7 @@ def register_generated_tools(mcp, _get_client):
             subreddit: (Reddit only) Subreddit name
             limit: Maximum number of comments to return
             cursor: Pagination cursor, returned by a previous call as `pagination.cursor`. This is the platform's own opaque paging value passed through verbatim: never construct, decode or validate it client-side.
-            comment_id: (Reddit only) Get replies to a specific comment"""
+            comment_id: (Reddit and TikTok only) Get replies to a specific comment"""
         client = _get_client()
         try:
             response = client.comments.get_inbox_post_comments(
@@ -10496,6 +10496,58 @@ def register_generated_tools(mcp, _get_client):
         client = _get_client()
         try:
             response = client.comments.unhide_inbox_comment(
+                post_id=post_id, comment_id=comment_id, account_id=account_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Pin comment",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def comments_pin_inbox_comment(
+        post_id: str, comment_id: str, account_id: str
+    ) -> str:
+        """Pin comment
+
+        Args:
+            post_id: (required)
+            comment_id: (required)
+            account_id: The social account ID (required)"""
+        client = _get_client()
+        try:
+            response = client.comments.pin_inbox_comment(
+                post_id=post_id, comment_id=comment_id, account_id=account_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Unpin comment",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def comments_unpin_inbox_comment(
+        post_id: str, comment_id: str, account_id: str
+    ) -> str:
+        """Unpin comment
+
+        Args:
+            post_id: (required)
+            comment_id: (required)
+            account_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.comments.unpin_inbox_comment(
                 post_id=post_id, comment_id=comment_id, account_id=account_id
             )
             return _format_response(response)

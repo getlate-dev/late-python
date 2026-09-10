@@ -3144,7 +3144,7 @@ components:
           description: 'UTC time at which Zernio generated this event (set once when the event payload is built, before delivery is queued).'
     WebhookPayloadComment:
       type: object
-      description: Webhook payload for comment received events (Instagram, Facebook, X, YouTube, LinkedIn, Bluesky, Reddit)
+      description: 'Webhook payload for comment received events (Instagram, Facebook, X, YouTube, LinkedIn, Bluesky, Reddit, TikTok). TikTok events carry only the author id: the comment.update webhook has no username, picture or owner flag.'
       required: [id, event, comment, post, account, timestamp]
       properties:
         id:
@@ -3168,7 +3168,7 @@ components:
               description: Platform's post ID
             platform:
               type: string
-              enum: [instagram, facebook, twitter, youtube, linkedin, bluesky, reddit]
+              enum: [instagram, facebook, twitter, youtube, linkedin, bluesky, reddit, tiktok]
             text:
               type: string
               description: Comment text content
@@ -6764,7 +6764,7 @@ components:
             Note: publish_type is not a supported field. Use this field instead.
         privacyLevel:
           type: string
-          description: One of the values returned by the TikTok creator info API for the account
+          description: 'One of the values returned by the TikTok creator info API for the account. Accounts connected through the TikTok for Business app publish videos as public only: a non-public value on a video post is rejected at creation unless draft is true (photo posts keep every level).'
         allowComment:
           type: boolean
           description: Allow comments on the post
@@ -16789,6 +16789,7 @@ paths:
       x-resource-group: "publishing"
       operationId: syncExternalPosts
       tags: [Analytics]
+      x-platforms: [instagram, facebook, tiktok, youtube, twitter, threads, pinterest, reddit, bluesky, googlebusiness, linkedin]
       summary: Sync an external post
       description: |
         Fetch an account's latest external posts (published directly on the platform, not through Zernio) on demand, so a newly published post is retrievable within seconds instead of waiting for the background sync (which refreshes each account at most every ~90 minutes).
@@ -16796,8 +16797,9 @@ paths:
         Primary use case: verifying a submitted post. When a user publishes on the platform and immediately pastes the post URL into your app, call this with `accountId` plus `url` (or `postId`) to confirm the post exists and return its metadata.
 
         Behavior:
-        - We check our stored copy first and return immediately if the post is already known (no platform call).
-        - Otherwise we fetch the account's latest posts live from the platform, then match and return the submitted post.
+        - Account access and connection state are checked before any platform call, including requests inside the debounce window.
+        - Inactive accounts or accounts marked `needsReconnection` return `409` with code `ads_connection_required`. Stop scheduled retries for that account until it is reconnected, then read `GET /v1/accounts` for its current account ID.
+        - For connected accounts, we fetch the latest posts live from the platform, then match and return the submitted post.
         - Requests are debounced per account (~15s): if the account was synced inside that window, the live fetch is skipped.
 
         `accountId` is required, because a post URL or id alone cannot be resolved to an account, and the account must be connected to Zernio (we use its token to read the platform). Supported for every platform with a listing API (Instagram, Facebook, TikTok, YouTube, X, Threads, Pinterest, Reddit, Bluesky, Google Business Profile, and LinkedIn organization accounts).
@@ -16838,7 +16840,7 @@ paths:
                     properties:
                       postsFound: { type: integer, description: Posts returned by the platform listing during the on-demand sync }
                       postsSynced: { type: integer, description: Posts inserted or updated in Zernio }
-                      skipped: { type: boolean, description: "True when no live fetch ran: the post was already stored, or the account was synced within the debounce window" }
+                      skipped: { type: boolean, description: "True when the account was synced within the debounce window and no live fetch ran." }
                   found:
                     type: boolean
                     description: "Present only when a locator (`url`/`postId`) was provided: whether the post was found."
@@ -16867,7 +16869,18 @@ paths:
         '503': { $ref: '#/components/responses/TemporarilyUnavailable' }
         '502': { $ref: '#/components/responses/UpstreamFailure' }
         '401': { description: 'The platform authorization has expired. Reconnect the account.' }
-        '403': { description: 'The account is inactive or the platform denied access.' }
+        '403': { description: 'The API key lacks access to this account or the platform denied access.' }
+        '409':
+          description: 'The account is inactive or needs reconnection. Stop scheduled retries until it is reconnected.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: 'This account needs reconnection. Reconnect the account, then read GET /v1/accounts for its current account ID before retrying.'
+                type: invalid_request_error
+                code: ads_connection_required
+                param: accountId
 
   /v1/posts/{postId}:
     get:
@@ -31015,6 +31028,11 @@ paths:
         window. Do not poll this endpoint for real-time updates: subscribe to the
         `comment.received` webhook, which delivers new comments as they arrive. Your own
         writes (creating, replying to, or deleting a comment) refresh the cache immediately.
+
+        TikTok is served for accounts connected through the TikTok for Business app: `postId`
+        is the TikTok video id, each top-level comment carries up to three inline replies, and
+        `commentId` pages the full reply list of one comment. Developer-app TikTok accounts
+        return 400 with code `PLATFORM_LIMITATION`.
       tags: [Comments]
       security: [{ bearerAuth: [] }]
       parameters:
@@ -31042,7 +31060,7 @@ paths:
         - name: commentId
           in: query
           schema: { type: string }
-          description: (Reddit only) Get replies to a specific comment
+          description: (Reddit and TikTok only) Get replies to a specific comment
       responses:
         '200':
           description: Comments for the post
@@ -31411,7 +31429,8 @@ paths:
       operationId: hideInboxComment
       summary: Hide comment
       description: |
-        Hide a comment on a post. Supported by Facebook, Instagram, Threads, and X.
+        Hide a comment on a post. Supported by Facebook, Instagram, Threads, X, and TikTok
+        (accounts connected through the TikTok for Business app).
         Hidden comments are only visible to the commenter and page admin.
         For X, the reply must belong to a conversation started by the authenticated user.
       tags: [Comments]
@@ -31456,7 +31475,8 @@ paths:
       operationId: unhideInboxComment
       summary: Unhide comment
       description: |
-        Unhide a previously hidden comment. Supported by Facebook, Instagram, Threads, and X.
+        Unhide a previously hidden comment. Supported by Facebook, Instagram, Threads, X, and
+        TikTok (accounts connected through the TikTok for Business app).
       tags: [Comments]
       security: [{ bearerAuth: [] }]
       parameters:
@@ -31486,6 +31506,89 @@ paths:
                   platform: { type: string }
         '400':
           description: Platform does not support unhiding comments
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Inbox addon required
+
+  /v1/inbox/comments/{postId}/{commentId}/pin:
+    post:
+      x-resource-group: "engagement"
+      operationId: pinInboxComment
+      summary: Pin comment
+      description: |
+        Pin a top-level comment to the top of a post's comment section. TikTok accounts
+        connected through the TikTok for Business app only; every other platform returns 400.
+      tags: [Comments]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: commentId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountId]
+              properties:
+                accountId: { type: string, description: The social account ID }
+      responses:
+        '200':
+          description: Comment pinned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  commentId: { type: string }
+                  pinned: { type: boolean }
+                  platform: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Inbox addon required
+    delete:
+      x-resource-group: "engagement"
+      operationId: unpinInboxComment
+      summary: Unpin comment
+      description: |
+        Unpin a previously pinned comment. TikTok accounts connected through the TikTok for
+        Business app only.
+      tags: [Comments]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: commentId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: accountId
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Comment unpinned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  commentId: { type: string }
+                  pinned: { type: boolean }
+                  platform: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Inbox addon required
