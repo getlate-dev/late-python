@@ -148,13 +148,13 @@ x-documentation:
     Receive real-time notifications for post status changes, account events, and incoming messages:
 
     - `post.scheduled` - Post entered the scheduled state: created with a schedule, added to a queue, a draft promoted to scheduled or queued, a failed post retried, or a recycled clone created
-    - `post.published` - Post successfully published
-    - `post.failed` - Post failed on all platforms
-    - `post.partial` - Post published to some platforms, failed on others
+    - `post.published` - Post successfully published. If a platform target later fails background reconciliation, the post is re-rolled up and a `post.failed` or `post.partial` follows for the same post.
+    - `post.failed` - Post failed on all platforms. Can follow an earlier `post.published` for the same post when background reconciliation discovers the publish never actually completed.
+    - `post.partial` - Post published to some platforms, failed on others. Can follow an earlier `post.published` for the same post when background reconciliation discovers one target's publish never actually completed.
     - `post.cancelled` - Post publishing was cancelled
     - `post.recycled` - Post recycled (cloned and re-scheduled)
-    - `post.platform.published` - A single platform target inside a post finished publishing successfully. Fires once per platform-account as it terminates, without waiting for other platforms on the same post. Use this for incremental UIs; use `post.published` for the post-level rollup.
-    - `post.platform.failed` - A single platform target inside a post failed permanently. Temporary/retryable failures do NOT fire this event, only permanent ones, so retry loops stay quiet.
+    - `post.platform.published` - A single platform target inside a post finished publishing successfully. Fires once per platform-account as it terminates, without waiting for other platforms on the same post. Use this for incremental UIs; use `post.published` for the post-level rollup. A target that later fails background reconciliation (e.g. a Facebook video Meta accepted but never actually published) emits `post.platform.failed` afterward for the same target.
+    - `post.platform.failed` - A single platform target inside a post failed permanently. Temporary/retryable failures do NOT fire this event, only permanent ones, so retry loops stay quiet. Can fire after this same target already emitted `post.platform.published`, when background reconciliation later discovers the publish never actually completed on the platform's side.
     - `post.platform.deleted` - A single platform target inside a post was detected as deleted on the platform after publishing (e.g. the user deleted the Instagram post natively). Detection is poll-driven via Zernio background sync (~hourly), not real-time. `platform.deletedAt` carries the detection time. Coverage is bounded to the posts the platform listing returns.
     - `post.tiktok.url_resolved` - A published TikTok post's public URL became available. TikTok exposes the numeric video id asynchronously, so `post.published` / `post.platform.published` can carry an empty `publishedUrl` for TikTok; this event delivers the URL once resolved (at most once per platform target). Never fires for drafts or private posts, which have no public URL.
     - `post.external.created` - A native post authored outside Zernio (e.g. a Google Business Profile localPost created in the Google UI) was detected by our sync for the first time. Poll-driven (~hourly), not real-time. Payload carries `post.source: "external"`.
@@ -2724,8 +2724,11 @@ components:
         and for `post.tiktok.url_resolved` (same shape, fired when a
         published TikTok post's public URL is backfilled). Terminal events
         fire once per platform target inside a post as that platform
-        reaches a terminal state (published or permanent failure). The
-        `post` envelope mirrors the shape of `WebhookPayloadPost` so
+        reaches a terminal state (published or permanent failure), except
+        that a target which later fails background reconciliation emits
+        `post.platform.failed` a second time, after its own
+        `post.platform.published`. The `post` envelope mirrors the shape
+        of `WebhookPayloadPost` so
         consumers can reuse rendering logic; the `platform` block
         identifies which specific platform transitioned; the `account`
         block identifies the connected account behind that
@@ -10515,7 +10518,10 @@ webhooks:
         consumers building incremental UIs get notified immediately, even
         when other platforms on the same post are still processing.
         The envelope event (`post.published` / `post.partial`) fires
-        separately AFTER all platforms have terminated.
+        separately AFTER all platforms have terminated. A target that later
+        fails background reconciliation (e.g. a Facebook video Meta accepted
+        but never actually published) emits `post.platform.failed` for the
+        same target afterward.
       tags: [Webhook Events]
       requestBody:
         required: true
@@ -10535,7 +10541,9 @@ webhooks:
         permanently. Temporary/retryable failures do NOT fire this event,
         only permanent ones do, so retry loops stay quiet. The envelope event
         (`post.failed` / `post.partial`) fires separately AFTER all
-        platforms have terminated.
+        platforms have terminated. Can also fire a second time for a target
+        that already emitted `post.platform.published`, if background
+        reconciliation later discovers the publish never actually completed.
       tags: [Webhook Events]
       requestBody:
         required: true
