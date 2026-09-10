@@ -36337,7 +36337,7 @@ paths:
                               callsAvailable: { type: boolean }
                               inStock: { type: boolean }
                               fulfilment: { type: string, enum: [instant, request], description: "`request`: the carrier stocks this type nowhere and only sources it to order, so it is always a pre-order." }
-                              preOrderable: { type: boolean, description: "Out of stock but orderable anyway. Submit KYC as usual (POST /v1/phone-numbers/kyc) and the carrier sources the number after review, usually about 3 weeks and never guaranteed. Only document tiers (3/4) qualify, and nothing is billed until the number is active." }
+                              preOrderable: { type: boolean, description: "Out of stock but orderable anyway. Submit KYC as usual (POST /v1/phone-numbers/kyc): we buy regular stock the moment it returns, otherwise the carrier sources the number. Usually 2 to 4 weeks, never guaranteed. Only document tiers (3/4) qualify, and nothing is billed until the number is active." }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /v1/phone-numbers/available:
@@ -36416,7 +36416,7 @@ paths:
                   country: { type: string }
                   numberType: { type: string }
                   available: { type: boolean, description: Whether deliverable voice inventory exists right now. }
-                  preOrderable: { type: boolean, description: "Nothing deliverable now, but this pair can be pre-ordered: submit KYC as usual and the carrier sources the number after review (usually about 3 weeks, never guaranteed). Only document tiers (3/4) qualify." }
+                  preOrderable: { type: boolean, description: "Nothing deliverable now, but this pair can be pre-ordered: submit KYC as usual and we buy regular stock the moment it returns, otherwise the carrier sources the number (usually 2 to 4 weeks, never guaranteed). Only document tiers (3/4) qualify." }
                   addressConstraint: { type: string, enum: [geo, country, none] }
                   areas:
                     type: array
@@ -36802,7 +36802,7 @@ paths:
                   country: { type: string }
                   numberType: { type: string }
                   available: { type: boolean, description: Whether deliverable voice inventory exists right now. }
-                  preOrderable: { type: boolean, description: "Nothing deliverable now, but this pair can be pre-ordered: submit KYC as usual and the carrier sources the number after review (usually about 3 weeks, never guaranteed). Only document tiers (3/4) qualify." }
+                  preOrderable: { type: boolean, description: "Nothing deliverable now, but this pair can be pre-ordered: submit KYC as usual and we buy regular stock the moment it returns, otherwise the carrier sources the number (usually 2 to 4 weeks, never guaranteed). Only document tiers (3/4) qualify." }
                   addressConstraint: { type: string, enum: [geo, country, none] }
                   areas:
                     type: array
@@ -36987,7 +36987,7 @@ paths:
                 type: object
                 properties:
                   status: { type: string, enum: [kyc_submitted, kyc_reused, kyc_already_submitted] }
-                  preOrder: { type: boolean, description: "True when nothing was in stock and this submission placed a pre-order. The number stays `pending_regulatory` until the carrier sources it (usually about 3 weeks) and is not billed until active. A pre-order is one number: `quantity` above 1 is rejected with 400." }
+                  preOrder: { type: boolean, description: "True when nothing was in stock and this submission placed a pre-order. The number stays `pending_regulatory` until we get it, from regular stock the moment it returns or sourced by the carrier (usually 2 to 4 weeks), and is not billed until active. Releasing it (DELETE /v1/phone-numbers/{id}) cancels the pre-order. A pre-order is one number: `quantity` above 1 is rejected with 400." }
                   phoneNumber:
                     type: object
                     description: The first/primary number, kept at the top level for backward compatibility. See `numbers` for the full set when `quantity` > 1.
@@ -37981,7 +37981,7 @@ paths:
                 type: object
                 properties:
                   status: { type: string, enum: [kyc_submitted, kyc_reused, kyc_already_submitted] }
-                  preOrder: { type: boolean, description: "True when nothing was in stock and this submission placed a pre-order. The number stays `pending_regulatory` until the carrier sources it (usually about 3 weeks) and is not billed until active. A pre-order is one number: `quantity` above 1 is rejected with 400." }
+                  preOrder: { type: boolean, description: "True when nothing was in stock and this submission placed a pre-order. The number stays `pending_regulatory` until we get it, from regular stock the moment it returns or sourced by the carrier (usually 2 to 4 weeks), and is not billed until active. Releasing it (DELETE /v1/phone-numbers/{id}) cancels the pre-order. A pre-order is one number: `quantity` above 1 is rejected with 400." }
                   phoneNumber:
                     type: object
                     description: The first/primary number, kept at the top level for backward compatibility. See `numbers` for the full set when `quantity` > 1.
@@ -46675,12 +46675,22 @@ paths:
         each page to this ad. A page can be empty while `pagination.hasMore` is true.
         Reuse `pagination.cursor` with the same `limit`; the cursor retains the date window.
         `placement` is Meta-only and returns a 400 for TikTok.
+        Listing needs no identity or video item ID. When the ad group is stored, each
+        page makes one comment-list call and no ad-detail lookup, including for external
+        ads that TikTok no longer returns from ad details. `meta.tiktokItemId: null`
+        does not prevent listing. If the ad group is missing, Zernio fetches ad details;
+        unavailable details return 404 ad_not_found, and no ad group returns 400 ad_not_commentable.
 
         TikTok returns replies as separate comments with `parentId`; nested reply fetching
-        is not supported. `canReply` requires a first-level comment and an identity with
-        comment-management permission. `canDelete` reflects TikTok's own-comment deletion
-        capability. `canHide` is supported and `canLike` is false. Use the ad comment
-        reply, hide and delete operations below to moderate TikTok comments.
+        is not supported. `canReply` requires a first-level comment, comment-management
+        permission, a video item ID and a supported TT_USER or CUSTOMIZED_USER identity.
+        `canDelete` requires TikTok's own-comment deletion capability, a video item ID
+        and a supported identity. Both flags are false when identity or item is unknown.
+        Listing uses stored and comment-specific fields without fetching identity.
+        A direct reply or delete request can lazily resolve missing fields and succeed
+        even after a false flag. `canHide` is true because visibility changes need only
+        advertiser and comment IDs. `canLike` is false. Use the ad comment reply, hide
+        and delete operations below to moderate TikTok comments.
         Other platforms return feature_not_available.
 
         Requires the Ads add-on. Response shape matches GET /v1/inbox/comments/{postId}.
@@ -46732,7 +46742,7 @@ paths:
                         description: "Underlying post ID the comments belong to. effective_object_story_id for the Facebook side, effective_instagram_media_id for the Instagram side."
                       tiktokItemId:
                         type: [string, "null"]
-                        description: "TikTok-only video item ID. Null when the ad and comments do not expose it."
+                        description: "TikTok-only video item ID from stored ad fields or returned comments. Null does not prevent listing; ad details are not fetched to populate it."
                       since: { type: string, format: date, description: "TikTok-only resolved start date." }
                       until: { type: string, format: date, description: "TikTok-only resolved end date." }
                       facebookAccountId:
@@ -46762,7 +46772,7 @@ paths:
                     url: null
                     replies: []
                     isHidden: false
-                    canReply: true
+                    canReply: false
                     canDelete: false
                     canHide: true
                     canLike: false
@@ -46773,7 +46783,7 @@ paths:
                   adId: "507f1f77bcf86cd799439011"
                   platformAdId: "1790166588666881"
                   accountId: "507f1f77bcf86cd799439012"
-                  tiktokItemId: "7512345678901234500"
+                  tiktokItemId: null
                   since: "2026-08-10"
                   until: "2026-09-09"
                   lastUpdated: "2026-09-09T12:00:00.000Z"
@@ -46799,6 +46809,14 @@ paths:
       x-platforms: ["tiktok"]
       description: |
         Reply to a first-level TikTok ad comment. Requires a TT_USER or CUSTOMIZED_USER identity with comment-management permission. Replies to replies are rejected. The response commentId identifies the new reply. This operation is not idempotent; do not blindly retry an uncertain response.
+
+        Unknown identity and video item fields are resolved only when needed for this
+        action, then persisted for reuse. Comment-specific fields take precedence.
+        If TikTok no longer returns the ad needed to resolve identity, 404 ad_not_found
+        directs you to check deletion or archival in TikTok Ads Manager. Listing can
+        still succeed. Unsupported or unavailable identity returns 403 feature_not_available.
+        Denied access to ad details returns 403 insufficient_permissions with reconnect
+        guidance and the upstream platformError.
 
         Requires Ads access. The ad is resolved within the caller's accessible profiles.
         Before moderation, Zernio verifies that the comment belongs to this ad using
@@ -46839,9 +46857,9 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
-          description: "Ads access or the required TikTok comment capability is unavailable."
+          description: "Ads access or supported identity is unavailable (feature_not_available), or TikTok denies ad-detail access or comment-management permission (insufficient_permissions). Grant permission and reconnect the TikTok Ads account before retrying."
         '404':
-          description: "Ad is inaccessible or the comment was not found on this ad in the selected date window."
+          description: "Ad is inaccessible or unavailable on TikTok for identity resolution (ad_not_found), or the comment was not found on this ad in the selected date window (resource_not_found)."
         '422':
           description: "TikTok Ads connection is unavailable."
         '501':
@@ -46857,7 +46875,7 @@ paths:
       x-resource-group: "engagement"
       x-platforms: ["tiktok"]
       description: |
-        Hide or restore a TikTok ad comment. Send hidden=true to hide it or hidden=false to make it public again.
+        Hide or restore a TikTok ad comment. Send hidden=true to hide it or hidden=false to make it public again. Identity and video item ID are not required; no identity lookup is performed.
 
         Requires Ads access. The ad is resolved within the caller's accessible profiles.
         Before moderation, Zernio verifies that the comment belongs to this ad using
@@ -46919,6 +46937,14 @@ paths:
       description: |
         Delete your own TikTok ad comment or reply. TikTok must return can_delete=true for the comment. Other users' comments can be hidden instead.
 
+        Unknown identity and video item fields are resolved only when needed for this
+        action, then persisted for reuse. Comment-specific fields take precedence.
+        If TikTok no longer returns the ad needed to resolve identity, 404 ad_not_found
+        directs you to check deletion or archival in TikTok Ads Manager. Listing can
+        still succeed. Unsupported or unavailable identity returns 403 feature_not_available.
+        Denied access to ad details returns 403 insufficient_permissions with reconnect
+        guidance and the upstream platformError.
+
         Requires Ads access. The ad is resolved within the caller's accessible profiles.
         Before moderation, Zernio verifies that the comment belongs to this ad using
         TikTok's ad-group comment listing. The default search window is the last 30 days.
@@ -46948,9 +46974,9 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
-          description: "Ads access or the required TikTok comment capability is unavailable."
+          description: "Ads access, own-comment deletion or supported identity is unavailable (feature_not_available), or TikTok denies ad-detail access (insufficient_permissions)."
         '404':
-          description: "Ad is inaccessible or the comment was not found on this ad in the selected date window."
+          description: "Ad is inaccessible or unavailable on TikTok for identity resolution (ad_not_found), or the comment was not found on this ad in the selected date window (resource_not_found)."
         '422':
           description: "TikTok Ads connection is unavailable."
         '501':
