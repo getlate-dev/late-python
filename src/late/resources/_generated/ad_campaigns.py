@@ -124,7 +124,7 @@ class AdCampaignsResource:
         from_date: str | None = None,
         to_date: str | None = None,
     ) -> dict[str, Any]:
-        """List Google Ads portfolio bid strategies"""
+        """List portfolio bid strategies"""
         params = self._build_params(
             account_id=account_id,
             customer_id=customer_id,
@@ -143,7 +143,7 @@ class AdCampaignsResource:
         target_cpa: float | None = None,
         target_roas: float | None = None,
     ) -> dict[str, Any]:
-        """Create a Google Ads portfolio bid strategy"""
+        """Create portfolio bid strategy"""
         payload = self._build_payload(
             account_id=account_id,
             customer_id=customer_id,
@@ -165,7 +165,7 @@ class AdCampaignsResource:
         target_cpa: float | None = None,
         target_roas: float | None = None,
     ) -> dict[str, Any]:
-        """Update a Google Ads portfolio bid strategy"""
+        """Update portfolio bid strategy"""
         payload = self._build_payload(
             account_id=account_id,
             customer_id=customer_id,
@@ -217,7 +217,7 @@ class AdCampaignsResource:
         *,
         negative: bool | None = False,
     ) -> dict[str, Any]:
-        """Add Search keywords to an ad group"""
+        """Add Search ad-group keywords"""
         payload = self._build_payload(
             account_id=account_id,
             ad_set_id=ad_set_id,
@@ -582,7 +582,7 @@ class AdCampaignsResource:
     def get_ad_set_details(
         self, ad_set_id: str, account_id: str, *, fields: str | None = None
     ) -> dict[str, Any]:
-        """Live ad-set details incl. learning phase"""
+        """Get live ad-set details"""
         params = self._build_params(
             account_id=account_id,
             fields=fields,
@@ -1231,7 +1231,7 @@ class AdCampaignsResource:
         from_date: str | None = None,
         to_date: str | None = None,
     ) -> dict[str, Any]:
-        """List Google Ads portfolio bid strategies (async)"""
+        """List portfolio bid strategies (async)"""
         params = self._build_params(
             account_id=account_id,
             customer_id=customer_id,
@@ -1250,7 +1250,7 @@ class AdCampaignsResource:
         target_cpa: float | None = None,
         target_roas: float | None = None,
     ) -> dict[str, Any]:
-        """Create a Google Ads portfolio bid strategy (async)"""
+        """Create portfolio bid strategy (async)"""
         payload = self._build_payload(
             account_id=account_id,
             customer_id=customer_id,
@@ -1272,7 +1272,7 @@ class AdCampaignsResource:
         target_cpa: float | None = None,
         target_roas: float | None = None,
     ) -> dict[str, Any]:
-        """Update a Google Ads portfolio bid strategy (async)"""
+        """Update portfolio bid strategy (async)"""
         payload = self._build_payload(
             account_id=account_id,
             customer_id=customer_id,
@@ -1324,7 +1324,7 @@ class AdCampaignsResource:
         *,
         negative: bool | None = False,
     ) -> dict[str, Any]:
-        """Add Search keywords to an ad group (async)"""
+        """Add Search ad-group keywords (async)"""
         payload = self._build_payload(
             account_id=account_id,
             ad_set_id=ad_set_id,
@@ -1697,7 +1697,7 @@ class AdCampaignsResource:
     async def aget_ad_set_details(
         self, ad_set_id: str, account_id: str, *, fields: str | None = None
     ) -> dict[str, Any]:
-        """Live ad-set details incl. learning phase (async)"""
+        """Get live ad-set details (async)"""
         params = self._build_params(
             account_id=account_id,
             fields=fields,

@@ -129,7 +129,7 @@ class AdInsightsResource:
         customer_id: str | None = None,
         page_token: str | None = None,
     ) -> dict[str, Any]:
-        """Conversations of a Local Services lead"""
+        """List lead conversations"""
         params = self._build_params(
             account_id=account_id,
             customer_id=customer_id,
@@ -173,7 +173,7 @@ class AdInsightsResource:
         page_size: int | None = None,
         page_token: str | None = None,
     ) -> dict[str, Any]:
-        """Generate keyword ideas (Google Keyword Planner)"""
+        """Generate keyword ideas"""
         payload = self._build_payload(
             account_id=account_id,
             customer_id=customer_id,
@@ -200,7 +200,7 @@ class AdInsightsResource:
         include_adult_keywords: bool | None = None,
         include_average_cpc: bool | None = None,
     ) -> dict[str, Any]:
-        """Historical keyword metrics (Google Keyword Planner)"""
+        """Get historical keyword metrics"""
         payload = self._build_payload(
             account_id=account_id,
             customer_id=customer_id,
@@ -278,7 +278,7 @@ class AdInsightsResource:
         to_date: str | None = None,
         time_increment: Any | None = None,
     ) -> dict[str, Any]:
-        """Submit an async insights report run"""
+        """Submit async insights report"""
         payload = self._build_payload(
             account_id=account_id,
             object_id=object_id,
@@ -387,7 +387,7 @@ class AdInsightsResource:
         customer_id: str | None = None,
         page_token: str | None = None,
     ) -> dict[str, Any]:
-        """Conversations of a Local Services lead (async)"""
+        """List lead conversations (async)"""
         params = self._build_params(
             account_id=account_id,
             customer_id=customer_id,
@@ -431,7 +431,7 @@ class AdInsightsResource:
         page_size: int | None = None,
         page_token: str | None = None,
     ) -> dict[str, Any]:
-        """Generate keyword ideas (Google Keyword Planner) (async)"""
+        """Generate keyword ideas (async)"""
         payload = self._build_payload(
             account_id=account_id,
             customer_id=customer_id,
@@ -458,7 +458,7 @@ class AdInsightsResource:
         include_adult_keywords: bool | None = None,
         include_average_cpc: bool | None = None,
     ) -> dict[str, Any]:
-        """Historical keyword metrics (Google Keyword Planner) (async)"""
+        """Get historical keyword metrics (async)"""
         payload = self._build_payload(
             account_id=account_id,
             customer_id=customer_id,
@@ -538,7 +538,7 @@ class AdInsightsResource:
         to_date: str | None = None,
         time_increment: Any | None = None,
     ) -> dict[str, Any]:
-        """Submit an async insights report run (async)"""
+        """Submit async insights report (async)"""
         payload = self._build_payload(
             account_id=account_id,
             object_id=object_id,

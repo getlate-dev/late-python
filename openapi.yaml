@@ -587,6 +587,26 @@ components:
       description: Recommended delay before retrying, in seconds.
       schema: { type: integer, example: 60 }
   responses:
+    AccountUnavailable:
+      description: 'The account or requested resource was not found or is not accessible. An account ID may have been disconnected and removed. Read GET /v1/accounts for current account IDs.'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            error: 'Account ID not found. It may have been disconnected and removed. Read GET /v1/accounts for current account IDs.'
+            type: not_found
+            code: account_not_found
+            param: accountId
+    AccountConnectionRequired:
+      description: 'The account exists but is inactive or needs reconnection. Reconnect it, then read GET /v1/accounts for its current account ID before retrying. Code: ads_connection_required.'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            error: 'This account needs reconnection. Reconnect the account, then read GET /v1/accounts for its current account ID before retrying.'
+            type: invalid_request_error
+            code: ads_connection_required
+            param: accountId
     IdempotencyKeyInFlight:
       description: Same Idempotency-Key still processing; retry after a short backoff
     IdempotencyKeyReused:
@@ -24831,6 +24851,7 @@ paths:
           description: The Instagram account ID
           schema: { type: string }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Active stories
           content:
@@ -24854,8 +24875,7 @@ paths:
                         timestamp: { type: [string, "null"], format: date-time, description: When the story was posted. }
         '400': { description: Invalid request. }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { description: Instagram account not found. }
-
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
   /v1/accounts/{accountId}/instagram/publishing-limit:
     get:
       x-resource-group: "accounts"
@@ -24877,6 +24897,7 @@ paths:
           description: The ID of the Instagram account
           schema: { type: string }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Remaining publishing quota for the rolling window
           content:
@@ -24893,7 +24914,8 @@ paths:
                 quotaDurationSeconds: 86400
         '400': { description: Not an Instagram account }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { description: Account not found }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '502': { description: Instagram rejected the request }
 
   /v1/accounts/{accountId}/instagram/audio:
@@ -24933,6 +24955,7 @@ paths:
           description: 'Search keywords. Omit to get the current trending list.'
           schema: { type: string, minLength: 1, maxLength: 200 }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Matching audio assets (may be empty)
           content:
@@ -24945,7 +24968,8 @@ paths:
                     items: { $ref: '#/components/schemas/InstagramAudioAsset' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { description: Account not found }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '502': { description: Instagram rejected the request }
 
   /v1/accounts/{accountId}/instagram/audio/{audioId}:
@@ -24973,6 +24997,7 @@ paths:
           description: Instagram audio asset ID
           schema: { type: string, pattern: '^\d{1,30}$' }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: The audio asset
           content:
@@ -24983,7 +25008,8 @@ paths:
                   audio: { $ref: '#/components/schemas/InstagramAudioAsset' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { description: Account not found }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '502': { description: Instagram rejected the request }
 
   /v1/accounts/{accountId}/instagram/stories/{storyId}/insights:
@@ -25021,6 +25047,7 @@ paths:
           description: The Instagram media ID of the story.
           schema: { type: string }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Story insights
           content:
@@ -25058,7 +25085,8 @@ paths:
                           totalInteractions: { type: integer }
         '400': { description: Invalid request. }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { description: Instagram account not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '502': { description: 'Instagram rejected the request.' }
 
   /v1/accounts/{accountId}/pinterest-boards:
@@ -42847,6 +42875,8 @@ paths:
         - { name: adGroupId, in: query, schema: { type: string }, description: "Numeric Google ad group id filter." }
         - { name: pageToken, in: query, schema: { type: string }, description: "Cursor from paging.nextPageToken of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Search terms
           content:
@@ -42889,7 +42919,7 @@ paths:
       operationId: listBidStrategies
       tags: ["Ad Campaigns"]
       x-platforms: ["google"]
-      summary: List Google Ads portfolio bid strategies
+      summary: 'List portfolio bid strategies'
       description: >-
         Bidding strategy report: type, status, campaign count, clicks, cost, cost per
         conversion, impressions, average CPC and conversions over the date range (default
@@ -42905,6 +42935,7 @@ paths:
         - { name: fromDate, in: query, schema: { type: string, format: date }, description: "Defaults to 30 days ago." }
         - { name: toDate, in: query, schema: { type: string, format: date }, description: "Defaults to today." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Portfolio bid strategies
           content:
@@ -42921,7 +42952,8 @@ paths:
                   stale: { type: boolean, description: "True when Google's daily API quota was exhausted and this is the last successful fetch, not a live read." }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429': { description: "Google Ads operations budget exhausted; retry later." }
         '501': { description: Only available on Google Ads accounts }
     post:
@@ -42929,7 +42961,7 @@ paths:
       operationId: createBidStrategy
       tags: ["Ad Campaigns"]
       x-platforms: ["google"]
-      summary: Create a Google Ads portfolio bid strategy
+      summary: 'Create portfolio bid strategy'
       description: >-
         Creates a standalone bid strategy shared across campaigns. Attach it to a campaign
         with `portfolioBidStrategyId` on POST /v1/ads/create, PUT /v1/ads/campaigns/{campaignId},
@@ -42952,6 +42984,7 @@ paths:
                 targetCpa: { type: number, exclusiveMinimum: 0, description: "Required when type is TARGET_CPA, in the account's currency units." }
                 targetRoas: { type: number, exclusiveMinimum: 0, description: "Required when type is TARGET_ROAS; a multiplier (2.0 = 2.0x)." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: Bid strategy created
           content:
@@ -42967,7 +43000,8 @@ paths:
                       resourceName: { type: string }
         '400': { description: "Invalid input, or Google rejected the strategy (e.g. shared-budget alignment). The message carries Google's error." }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '422': { description: "No Google Ads customer accounts on this connection. Reconnect Google Ads." }
         '429': { description: "Google Ads operations budget exhausted; retry later." }
         '501': { description: Only available on Google Ads accounts }
@@ -42978,7 +43012,7 @@ paths:
       operationId: updateBidStrategy
       tags: ["Ad Campaigns"]
       x-platforms: ["google"]
-      summary: Update a Google Ads portfolio bid strategy
+      summary: 'Update portfolio bid strategy'
       description: >-
         Renames or retargets a portfolio bid strategy. The strategy's status is output only
         on Google's side, so it cannot be changed here; remove a strategy in Google Ads.
@@ -43005,6 +43039,7 @@ paths:
                 targetCpa: { type: number, exclusiveMinimum: 0 }
                 targetRoas: { type: number, exclusiveMinimum: 0 }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Bid strategy updated
           content:
@@ -43018,7 +43053,8 @@ paths:
                       customerId: { type: string }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429': { description: "Google Ads operations budget exhausted; retry later." }
         '501': { description: Only available on Google Ads accounts }
 
@@ -43048,6 +43084,8 @@ paths:
         - { name: chargedOnly, in: query, schema: { type: boolean }, description: "true = only leads Google charged for." }
         - { name: pageToken, in: query, schema: { type: string }, description: "Cursor from paging.nextPageToken of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Local Services leads
           content:
@@ -43093,7 +43131,7 @@ paths:
       operationId: listLocalServicesLeadConversations
       tags: ["Ad Insights"]
       x-platforms: ["google"]
-      summary: Conversations of a Local Services lead
+      summary: 'List lead conversations'
       description: |-
         Conversation entries of one Local Services lead: phone calls (duration,
         recording URL) and messages (text, attachment URLs), oldest first. Read
@@ -43108,6 +43146,8 @@ paths:
         - { name: customerId, in: query, schema: { type: string }, description: "Numeric Google Ads customer id (no dashes). Defaults to the account's connected customer." }
         - { name: pageToken, in: query, schema: { type: string }, description: "Cursor from paging.nextPageToken of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Lead conversations
           content:
@@ -43199,7 +43239,7 @@ paths:
       operationId: addAdKeywords
       tags: ["Ad Campaigns"]
       x-platforms: ["google"]
-      summary: Add Search keywords to an ad group
+      summary: 'Add Search ad-group keywords'
       description: |
         Adds one or more keyword criteria to an existing Google Search ad group,
         without touching the keywords already there (unlike the whole-set diff on
@@ -43233,6 +43273,7 @@ paths:
                           matchType: { type: string, enum: [exact, phrase, broad] }
                 negative: { type: boolean, default: false, description: 'Add as ad-group-level negatives instead of positive keywords' }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: Keywords added
           content:
@@ -43245,7 +43286,8 @@ paths:
                     items: { $ref: '#/components/schemas/AdKeyword' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { description: 'The ad group ("adSetId") was not found for this account.' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '501': { description: Only available on Google Ads accounts }
 
   /v1/ads/keywords/{keywordId}:
@@ -43272,6 +43314,7 @@ paths:
               properties:
                 status: { type: string, enum: [active, paused] }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Keyword updated
           content:
@@ -43282,7 +43325,8 @@ paths:
                   keyword: { $ref: '#/components/schemas/AdKeyword' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { description: Keyword not found }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '422': { description: 'Negative keywords have no status on Google; they cannot be paused or enabled.' }
     delete:
       x-resource-group: "ads"
@@ -43296,6 +43340,7 @@ paths:
       parameters:
         - { name: keywordId, in: path, required: true, schema: { type: string }, description: Zernio keyword ID (not the Google criterion ID) }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Keyword removed
           content:
@@ -43307,8 +43352,7 @@ paths:
                   keywordId: { type: string }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { description: Keyword not found }
-
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
   /v1/ads/campaigns:
     get:
       x-resource-group: "ads"
@@ -43351,6 +43395,8 @@ paths:
         - { name: hasDelivery, in: query, schema: { type: boolean }, description: "Return only campaigns that delivered between `fromDate` and `toDate`: spend above zero, or impressions served at zero spend. Unlike `status`, which reads a campaign's CURRENT state, this filters on what happened inside the window. Filters the campaign set itself, so `pagination.total` counts only matching campaigns. Mirrors the same filter on /v1/ads/tree." }
         - { name: minSpend, in: query, schema: { type: number, minimum: 0 }, description: "Return only campaigns whose spend between `fromDate` and `toDate` reaches this amount, in each campaign's OWN currency (the `currency` field on the campaign). Implies `hasDelivery`; `minSpend=0` applies no filter. Mirrors the same filter on /v1/ads/tree." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Paginated campaigns
           content:
@@ -43465,6 +43511,8 @@ paths:
               status: PAUSED
               validateOnly: true
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: 'Campaign validation passed without creating a campaign.'
           content:
@@ -43578,6 +43626,7 @@ paths:
         - { name: platform, in: query, required: true, schema: { type: string, enum: [google] }, description: "Required: campaign IDs are not globally unique. Only \"google\" is supported today." }
         - { name: customerId, in: query, required: false, schema: { type: string }, description: "Numeric Google Ads customer id (no dashes). Required when the connection has multiple Google Ads accounts; optional (and inferred) when it has only one." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Campaign bidding
           content:
@@ -43593,8 +43642,8 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: "Ads access required. Legacy plans need the Ads add-on; included by default on usage-based plans."
-        '404':
-          description: Campaign not found on Google Ads
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '501':
           description: "Not a Google Ads account: the connection behind accountId resolves to another platform."
 
@@ -43693,8 +43742,9 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: 'Returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
-        '404': { description: Campaign not found }
-        '409': { description: "Meta campaign is ABO, or the Google budget is shared without allowSharedBudgetUpdate=true, or sharing state cannot be verified." }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
+        '409': { description: 'Meta campaign is ABO, or the Google budget is shared without allowSharedBudgetUpdate=true, or sharing state cannot be verified. The account may also be inactive or need reconnection (code ads_connection_required). Reconnect it and read GET /v1/accounts for its current ID before retrying.' }
         '501': { description: Operation not supported on this platform }
 
     delete:
@@ -43730,6 +43780,8 @@ paths:
                 platform: { type: string, enum: [facebook, instagram, google] }
                 accountId: { type: string, description: "Zernio SocialAccount id owning the ad account. Required only to delete an EMPTY campaign (zero ads), which has no local Ad documents to resolve a token from." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '200':
           description: Campaign deleted
           content:
@@ -43740,7 +43792,8 @@ paths:
                   deleted: { type: boolean }
                   adCount: { type: integer, description: Number of local Ad docs marked cancelled }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { description: Campaign not found }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '501': { description: Operation not supported on this platform }
 
   /v1/ads/campaigns/{campaignId}/negative-keywords:
@@ -44285,6 +44338,7 @@ paths:
                 status: { type: string, enum: [ACTIVE, PAUSED], default: PAUSED }
                 customerId: { type: string, description: "Numeric Google Ads customer id. Only required when the connection has more than one." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: Ad group created
           content:
@@ -44298,7 +44352,8 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: 'Returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
-        '404': { description: accountId does not belong to a Google Ads connection }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '501': { description: Only supported on Google Ads }
 
   /v1/ads/ad-sets/{adSetId}/duplicate:
@@ -44429,7 +44484,7 @@ paths:
       operationId: getAdSetDetails
       tags: ["Ad Campaigns"]
       x-platforms: ["meta"]
-      summary: Live ad-set details incl. learning phase
+      summary: 'Get live ad-set details'
       description: |-
         Reads the ad set live from Meta, returned verbatim. The default projection includes
         `learning_stage_info` (learning-phase status: LEARNING / SUCCESS / FAIL / WAIVING; Meta
@@ -44443,6 +44498,8 @@ paths:
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token." }
         - { name: fields, in: query, schema: { type: string }, description: "Comma-separated Graph field override (supports nested {} projections)." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: The ad set as returned by Meta
           content:
@@ -45263,6 +45320,7 @@ paths:
           pattern: ^\d+$
           description: "Google customer id without dashes. Required when the connection has multiple customers."
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -45331,8 +45389,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -45412,6 +45470,7 @@ paths:
                 - Analytics
                 - Messaging
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: "Assets created and attached."
           content:
@@ -45439,8 +45498,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -45498,6 +45557,7 @@ paths:
                 calloutAsset:
                   calloutText: Simple integration
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -45513,8 +45573,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -45575,6 +45635,7 @@ paths:
               campaignAssetResourceNames:
               - customers/1234567890/campaignAssets/456~123~CALLOUT
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -45590,8 +45651,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -45632,6 +45693,7 @@ paths:
           pattern: ^\d+$
           description: "Google customer id without dashes. Required when the connection has multiple customers."
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -45700,8 +45762,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -45781,6 +45843,7 @@ paths:
                 - Analytics
                 - Messaging
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: "Assets created and attached."
           content:
@@ -45808,8 +45871,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -45867,6 +45930,7 @@ paths:
                 calloutAsset:
                   calloutText: Simple integration
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -45882,8 +45946,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -45944,6 +46008,7 @@ paths:
               adGroupAssetResourceNames:
               - customers/1234567890/adGroupAssets/456~123~CALLOUT
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -45959,8 +46024,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -46084,6 +46149,8 @@ paths:
                   additionalProperties: true
                   description: "Raw Meta creative spec forwarded verbatim to /generatepreviews. Mutually exclusive with existingCreativeId."
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Rendered previews
           content:
@@ -46195,7 +46262,7 @@ paths:
       operationId: generateKeywordIdeas
       tags: ["Ad Insights"]
       x-platforms: ["google"]
-      summary: Generate keyword ideas (Google Keyword Planner)
+      summary: 'Generate keyword ideas'
       description: |
         Google Ads only. Runs Keyword Planner's generateKeywordIdeas from seed keywords, a seed URL,
         or both, returning idea rows verbatim (avgMonthlySearches, competition, competitionIndex,
@@ -46222,6 +46289,8 @@ paths:
                 pageSize: { type: integer, minimum: 1, maximum: 10000 }
                 pageToken: { type: string, description: "Cursor from paging.nextPageToken of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Keyword idea rows (raw Keyword Planner shape)
           content:
@@ -46249,7 +46318,7 @@ paths:
       operationId: generateKeywordHistoricalMetrics
       tags: ["Ad Insights"]
       x-platforms: ["google"]
-      summary: Historical keyword metrics (Google Keyword Planner)
+      summary: 'Get historical keyword metrics'
       description: |
         Google Ads only. Runs Keyword Planner's generateKeywordHistoricalMetrics for up to 1,000
         exact keywords: historical search volume, competition and top-of-page bid ranges, plus
@@ -46274,6 +46343,8 @@ paths:
                 includeAdultKeywords: { type: boolean }
                 includeAverageCpc: { type: boolean, description: "Adds averageCpcMicros to each row's keywordMetrics." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Historical metric rows (raw Keyword Planner shape)
           content:
@@ -46337,6 +46408,8 @@ paths:
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 500, default: 25 }, description: Rows per page }
         - { name: after, in: query, schema: { type: string }, description: "Cursor from paging.after of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Insight rows (raw platform shape)
           content:
@@ -46366,7 +46439,7 @@ paths:
       operationId: createAdInsightsReport
       tags: ["Ad Insights"]
       x-platforms: ["meta"]
-      summary: Submit an async insights report run
+      summary: 'Submit async insights report'
       description: |
         Submits an asynchronous Meta insights report. Same query surface as GET /v1/ads/insights, but
         in the JSON body; Meta processes the report server-side, which is the right choice for long
@@ -46410,6 +46483,8 @@ paths:
                 timeIncrement:
                   oneOf: [{ type: integer, minimum: 1, maximum: 90 }, { type: string, enum: [monthly, all_days] }]
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '202':
           description: Report run submitted
           content:
@@ -46443,6 +46518,8 @@ paths:
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 500, default: 25 } }
         - { name: after, in: query, schema: { type: string } }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Report run status (plus results when completed)
           content:
@@ -47002,6 +47079,7 @@ paths:
       parameters:
         - { name: accountId, in: query, required: true, schema: { type: string }, description: ID of the `tiktokads` (or parent `tiktok` posting) SocialAccount }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Business centers
           content:
@@ -47014,7 +47092,8 @@ paths:
                     items: { $ref: '#/components/schemas/BusinessCenter' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { description: TikTok account not found }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '422': { description: TikTok Ads not connected }
 
   /v1/ads/activity:
@@ -47041,6 +47120,8 @@ paths:
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 }, description: Rows per page }
         - { name: after, in: query, schema: { type: string }, description: "Cursor from paging.after of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Activity rows (raw Meta shape)
           content:
@@ -47066,7 +47147,7 @@ paths:
       operationId: createRfPrediction
       tags: ["Reach and Frequency"]
       x-platforms: ["meta"]
-      summary: Create a Reach & Frequency prediction
+      summary: 'Create reach-frequency prediction'
       description: |-
         Creates an R&F prediction. This is a QUOTE, nothing is bought and no ad entities are created.
         Provide a date range plus exactly one of `budgetAmount` (Meta predicts reach) or `reach`
@@ -47099,6 +47180,8 @@ paths:
                 targeting: { type: object, description: "Canonical camelCase TargetingSpec (same shape as /v1/ads/create's `targeting`). Defaults to countries: [US]." }
                 placements: { type: object, description: "Meta placements object (same shape as /v1/ads/create's `placements`)." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '201':
           description: Prediction created (usually ready within seconds)
           content:
@@ -47120,7 +47203,7 @@ paths:
       operationId: getRfPrediction
       tags: ["Reach and Frequency"]
       x-platforms: ["meta"]
-      summary: Read a Reach & Frequency prediction
+      summary: 'Get reach-frequency prediction'
       security:
         - bearerAuth: []
       parameters:
@@ -47128,6 +47211,8 @@ paths:
         - { name: accountId, in: query, required: true, schema: { type: string } }
         - { name: adAccountId, in: query, required: true, schema: { type: string } }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Prediction status and estimates
           content:
@@ -47146,7 +47231,7 @@ paths:
       operationId: cancelRfReservation
       tags: ["Reach and Frequency"]
       x-platforms: ["meta"]
-      summary: Cancel a Reach & Frequency reservation
+      summary: 'Cancel reach-frequency booking'
       description: Releases a RESERVATION's locked price and inventory. Unreserved predictions expire on their own.
       security:
         - bearerAuth: []
@@ -47155,6 +47240,8 @@ paths:
         - { name: accountId, in: query, required: true, schema: { type: string } }
         - { name: adAccountId, in: query, required: true, schema: { type: string } }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Reservation cancelled
         '400': { description: "Invalid input, or Meta rejected the cancel" }
@@ -47167,7 +47254,7 @@ paths:
       operationId: reserveRfPrediction
       tags: ["Reach and Frequency"]
       x-platforms: ["meta"]
-      summary: Reserve a Reach & Frequency prediction
+      summary: 'Reserve reach-frequency inventory'
       description: |-
         Locks the quoted price + inventory until the returned `expiresAt` and mints a NEW
         prediction id. Pass that RESERVED id (not the original) as `rfPredictionId` on
@@ -47187,6 +47274,8 @@ paths:
                 accountId: { type: string }
                 adAccountId: { type: string }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '201':
           description: Reserved; `prediction.predictionId` is the new RESERVED id
           content:
@@ -47220,6 +47309,8 @@ paths:
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 }, description: Rows per page }
         - { name: after, in: query, schema: { type: string }, description: "Cursor from paging.after of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Ad studies (raw Meta shape)
           content:
@@ -47253,6 +47344,7 @@ paths:
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Zernio Meta Ads or Facebook SocialAccount ID." }
         - { name: adAccountId, in: query, required: true, schema: { type: string, pattern: '^act_[0-9]+$' }, description: "Meta ad account ID including the act_ prefix." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Instagram identities and Page linkage."
           content:
@@ -47299,7 +47391,8 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: "The account or Meta asset is not accessible." }
-        '404': { $ref: '#/components/responses/NotFound' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '501': { description: "Only supported on Meta Ads and Facebook accounts." }
 
   /v1/ads/advertisable-applications:
@@ -47316,6 +47409,7 @@ paths:
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Zernio Meta Ads or Facebook SocialAccount ID." }
         - { name: adAccountId, in: query, required: true, schema: { type: string, pattern: '^act_[0-9]+$' }, description: "Meta ad account ID including the act_ prefix." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Applications available for promotion."
           content:
@@ -47349,7 +47443,8 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: "The account or Meta asset is not accessible." }
-        '404': { $ref: '#/components/responses/NotFound' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '501': { description: "Only supported on Meta Ads and Facebook accounts." }
 
   /v1/ads/ios-fourteen-campaign-limits:
@@ -47367,6 +47462,7 @@ paths:
         - { name: adAccountId, in: query, required: true, schema: { type: string, pattern: '^act_[0-9]+$' }, description: "Meta ad account ID including the act_ prefix." }
         - { name: applicationId, in: query, required: true, schema: { type: string, pattern: '^[0-9]+$' }, description: "Meta application ID from advertisable-applications." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Application campaign limits."
           content:
@@ -47389,7 +47485,8 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: "The account or Meta asset is not accessible." }
-        '404': { $ref: '#/components/responses/NotFound' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '501': { description: "Only supported on Meta Ads and Facebook accounts." }
 
   /v1/ads/businesses:
@@ -47411,6 +47508,8 @@ paths:
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 }, description: Rows per page }
         - { name: after, in: query, schema: { type: string }, description: "Cursor from paging.after of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Businesses (raw Meta shape)
           content:
@@ -47447,6 +47546,8 @@ paths:
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 }, description: Rows per page }
         - { name: after, in: query, schema: { type: string }, description: "Cursor from paging.after of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Ad labels (raw Meta shape)
           content:
@@ -47472,7 +47573,7 @@ paths:
       operationId: listHighDemandPeriods
       tags: ["Ad Accounts"]
       x-platforms: ["meta"]
-      summary: High demand periods / budget schedules
+      summary: 'List high-demand periods'
       description: |-
         Scheduled budget increases (Meta's budget-scheduling API). The Graph edge lives on the
         campaign and ad-set nodes only, so exactly one of `campaignId` / `adSetId` (platform
@@ -47487,6 +47588,8 @@ paths:
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 }, description: Rows per page }
         - { name: after, in: query, schema: { type: string }, description: "Cursor from paging.after of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Budget schedules (raw Meta shape)
           content:
@@ -47541,6 +47644,8 @@ paths:
                 recurrenceType: { type: string, enum: [ONE_TIME, WEEKLY, MONTHLY] }
                 currency: { type: string, description: "Ad account currency, for the ABSOLUTE minor-unit conversion. Ignored for MULTIPLIER." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '201':
           description: Budget schedule created
           content:
@@ -47576,6 +47681,8 @@ paths:
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 }, description: Rows per page }
         - { name: after, in: query, schema: { type: string }, description: "Cursor from paging.after of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Creatives (raw Meta shape)
           content:
@@ -47661,6 +47768,8 @@ paths:
               promotion: { type: PERCENTAGE_OFF, value: 20, code: SAVE20 }
               creativeFeatures: { auto_promotion_tag: OPT_OUT }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '201':
           description: Creative created
           content:
@@ -47700,6 +47809,8 @@ paths:
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token." }
         - { name: fields, in: query, schema: { type: string }, description: "Comma-separated Graph field override (supports nested {} projections)." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Creative details
           content:
@@ -47736,6 +47847,8 @@ paths:
                 accountId: { type: string, description: "Zernio SocialAccount id (posting or ads variant); its platform decides where the campaign is created." }
                 name: { type: string, maxLength: 255 }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Creative renamed
           content:
@@ -47764,6 +47877,8 @@ paths:
         - { name: creativeId, in: path, required: true, schema: { type: string }, description: Platform creative id }
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Creative deleted
           content:
@@ -47810,6 +47925,8 @@ paths:
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 }, description: Rows per page }
         - { name: after, in: query, schema: { type: string }, description: "Cursor from paging.after of the previous page. Meta does not document paging on this edge; `after` comes back null when it omits cursors." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Value rule sets
           content:
@@ -47886,6 +48003,8 @@ paths:
                   description: "Evaluated in order; the first matching rule wins."
                   items: { $ref: '#/components/schemas/ValueRule' }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '201':
           description: Value rule set created
           content:
@@ -47920,6 +48039,8 @@ paths:
         - { name: valueRuleSetId, in: path, required: true, schema: { type: string }, description: "Platform value rule set id." }
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Value rule set
           content:
@@ -47976,6 +48097,8 @@ paths:
                   description: "The COMPLETE rule list. Omitting a rule deletes it on Meta."
                   items: { $ref: '#/components/schemas/ValueRule' }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Value rule set replaced
           content:
@@ -48010,6 +48133,8 @@ paths:
         - { name: valueRuleSetId, in: path, required: true, schema: { type: string }, description: "Platform value rule set id." }
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Value rule set deleted
           content:
@@ -48106,10 +48231,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           description: "Ads access and permission to the selected account are required."
-        "404":
-          $ref: "#/components/responses/NotFound"
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         "409":
-          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+          description: 'Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google. The account may also be inactive or need reconnection (code ads_connection_required). Reconnect it and read GET /v1/accounts for its current ID before retrying.'
         "422":
           description: "Google Ads connection is missing or unavailable."
         "429":
@@ -48210,10 +48335,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           description: "Ads access and permission to the selected account are required."
-        "404":
-          $ref: "#/components/responses/NotFound"
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         "409":
-          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+          description: 'Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google. The account may also be inactive or need reconnection (code ads_connection_required). Reconnect it and read GET /v1/accounts for its current ID before retrying.'
         "422":
           description: "Google Ads connection is missing or unavailable."
         "429":
@@ -48322,10 +48447,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           description: "Ads access and permission to the selected account are required."
-        "404":
-          $ref: "#/components/responses/NotFound"
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         "409":
-          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+          description: 'Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google. The account may also be inactive or need reconnection (code ads_connection_required). Reconnect it and read GET /v1/accounts for its current ID before retrying.'
         "422":
           description: "Google Ads connection is missing or unavailable."
         "429":
@@ -48414,10 +48539,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           description: "Ads access and permission to the selected account are required."
-        "404":
-          $ref: "#/components/responses/NotFound"
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         "409":
-          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+          description: 'Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google. The account may also be inactive or need reconnection (code ads_connection_required). Reconnect it and read GET /v1/accounts for its current ID before retrying.'
         "422":
           description: "Google Ads connection is missing or unavailable."
         "429":
@@ -48495,10 +48620,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           description: "Ads access and permission to the selected account are required."
-        "404":
-          $ref: "#/components/responses/NotFound"
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         "409":
-          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+          description: 'Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google. The account may also be inactive or need reconnection (code ads_connection_required). Reconnect it and read GET /v1/accounts for its current ID before retrying.'
         "422":
           description: "Google Ads connection is missing or unavailable."
         "429":
@@ -48597,10 +48722,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           description: "Ads access and permission to the selected account are required."
-        "404":
-          $ref: "#/components/responses/NotFound"
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         "409":
-          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+          description: 'Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google. The account may also be inactive or need reconnection (code ads_connection_required). Reconnect it and read GET /v1/accounts for its current ID before retrying.'
         "422":
           description: "Google Ads connection is missing or unavailable."
         "429":
@@ -48682,10 +48807,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           description: "Ads access and permission to the selected account are required."
-        "404":
-          $ref: "#/components/responses/NotFound"
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         "409":
-          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+          description: 'Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google. The account may also be inactive or need reconnection (code ads_connection_required). Reconnect it and read GET /v1/accounts for its current ID before retrying.'
         "422":
           description: "Google Ads connection is missing or unavailable."
         "429":
@@ -48772,10 +48897,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           description: "Ads access and permission to the selected account are required."
-        "404":
-          $ref: "#/components/responses/NotFound"
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         "409":
-          description: "Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google."
+          description: 'Ambiguous campaign or account selection. Use a profile-scoped key. A list still attached to a campaign may also be rejected by Google. The account may also be inactive or need reconnection (code ads_connection_required). Reconnect it and read GET /v1/accounts for its current ID before retrying.'
         "422":
           description: "Google Ads connection is missing or unavailable."
         "429":
@@ -48812,6 +48937,7 @@ paths:
           pattern: ^\d+$
           description: "Google customer id without dashes. Required when the connection has multiple customers."
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -48847,8 +48973,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -48896,6 +49022,7 @@ paths:
               callouts:
               - Fast setup
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: "Assets created and attached."
           content:
@@ -48920,8 +49047,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -48989,6 +49116,7 @@ paths:
                 calloutAsset:
                   calloutText: Simple integration
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -49006,8 +49134,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -49050,6 +49178,7 @@ paths:
               customerId: '1234567890'
               assetId: '123'
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -49067,8 +49196,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -49102,6 +49231,7 @@ paths:
           pattern: ^\d+$
           description: "Google customer id without dashes. Required when the connection has multiple customers."
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -49148,8 +49278,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -49196,6 +49326,7 @@ paths:
               - text: Pricing
                 linkUrl: https://zernio.com/pricing
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: "Assets created and attached."
           content:
@@ -49233,8 +49364,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -49319,6 +49450,7 @@ paths:
                 finalUrls:
                 - https://zernio.com/pricing
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -49336,8 +49468,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -49380,6 +49512,7 @@ paths:
               customerId: '1234567890'
               assetId: '123'
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -49397,8 +49530,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -49432,6 +49565,7 @@ paths:
           pattern: ^\d+$
           description: "Google customer id without dashes. Required when the connection has multiple customers."
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -49475,8 +49609,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -49526,6 +49660,7 @@ paths:
                 - Analytics
                 - Messaging
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: "Assets created and attached."
           content:
@@ -49572,8 +49707,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -49638,6 +49773,7 @@ paths:
                   - Reporting
                   - Messaging
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -49655,8 +49791,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -49699,6 +49835,7 @@ paths:
               customerId: '1234567890'
               assetId: '123'
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: "Assets returned."
           content:
@@ -49716,8 +49853,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: "Ads access is required."
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: "Google Ads operations budget or platform quota exhausted."
         '501':
@@ -49740,6 +49877,8 @@ paths:
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token." }
         - { name: adAccountId, in: query, required: true, schema: { type: string }, description: "Meta ad account id (act_<n>)." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Account finances
           content:
@@ -49830,6 +49969,7 @@ paths:
               currency: "EUR"
               timezoneId: 1
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: "Ad account created. Check connectionUpdated and payment instructions."
           content:
@@ -49871,7 +50011,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-        '404': { $ref: '#/components/responses/NotFound' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '502':
           description: "Creation outcome unknown. Check Ads Manager before repeating this non-idempotent request."
           content:
@@ -49911,6 +50052,9 @@ paths:
         - { name: adAccountId, in: query, required: false, schema: { type: string }, description: "Filter response to a single platform ad account ID (e.g. `act_123` for Meta, advertiser_id for TikTok). Returns at most one item." }
         - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 1000 }, description: "Clamp the returned `accounts[]` length. Useful for typeahead pickers on agency tokens with hundreds of advertisers." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '200':
           description: Ad accounts
           content:
@@ -50003,6 +50147,7 @@ paths:
                 defaultDsaBeneficiary: { type: string, maxLength: 100, description: "Legal entity benefiting from ads on this ad account" }
                 defaultDsaPayor: { type: string, maxLength: 100, description: "Legal entity paying for ads on this ad account. Defaults to defaultDsaBeneficiary when omitted." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: DSA defaults updated (re-read from Meta after the write)
           content:
@@ -50019,9 +50164,7 @@ paths:
         '400':
           description: Unsupported platform (non-Meta account) or invalid adAccountId
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404':
-          description: Account not found
-
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
   /v1/ads/dsa-defaults:
     get:
       x-resource-group: "ads"
@@ -50039,6 +50182,7 @@ paths:
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Account ID (metaads, or a facebook/instagram posting account)" }
         - { name: adAccountId, in: query, required: true, schema: { type: string }, description: "Meta ad account ID (act_...)" }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Current DSA defaults (empty object when none are set)
           content:
@@ -50055,16 +50199,14 @@ paths:
         '400':
           description: Non-Meta adAccountId
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404':
-          description: Account not found
-
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
   /v1/ads/dsa-recommendations:
     get:
       x-resource-group: "ads"
       operationId: getDsaRecommendations
       tags: ["Ad Accounts"]
       x-platforms: ["meta"]
-      summary: List DSA beneficiary/payor suggestions
+      summary: 'Get DSA recommendations'
       description: |
         Returns Meta's suggested beneficiary/payor names for an ad account, derived by Meta
         from the account's recent activity. Useful for prefilling `dsaBeneficiary`/`dsaPayor`
@@ -50080,6 +50222,7 @@ paths:
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Account ID (metaads, or a facebook/instagram posting account)" }
         - { name: adAccountId, in: query, required: true, schema: { type: string }, description: "Meta ad account ID (act_...)" }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Suggested DSA strings (may be empty when Meta has no recommendations)
           content:
@@ -50094,9 +50237,7 @@ paths:
         '400':
           description: Non-Meta adAccountId
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404':
-          description: Account not found
-
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
   /v1/ads/boost:
     post:
       x-resource-group: "ads"
@@ -50429,6 +50570,7 @@ paths:
               budget: { amount: 2.61, type: daily }
               status: PAUSED
       responses:
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '201':
           description: Ad created
           content:
@@ -50445,6 +50587,7 @@ paths:
           description: 'Ads access required. Legacy plans need the Ads add-on; included by default on usage-based plans. Also returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
         '409':
           description: |
+            The account may also be inactive or need reconnection (code ads_connection_required). Reconnect it and read GET /v1/accounts for its current ID before retrying.
             An identical boost request is already in progress (with or without
             an Idempotency-Key). Wait for it to finish instead of retrying.
         '422':
@@ -51595,6 +51738,8 @@ paths:
                   promotion: { type: PERCENTAGE_OFF, value: 20, code: SAVE20 }
                   creativeFeatures: { auto_promotion_tag: OPT_OUT }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: 'validateOnly dry-run passed, nothing was created'
           content:
@@ -51957,6 +52102,8 @@ paths:
         - { name: cursor, in: query, schema: { type: string } }
         - { name: since, in: query, schema: { type: integer }, description: Unix seconds. }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Leads for the form.
           content:
@@ -52047,6 +52194,8 @@ paths:
                 imageBase64: { type: string, description: "Raw base64 image bytes, or a full data URL (the data:image/...;base64, prefix is stripped)." }
                 filename: { type: string, description: "Optional filename shown in Meta's image library. Defaults to ad_image.jpg." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '201':
           description: Image uploaded
           content:
@@ -52085,6 +52234,8 @@ paths:
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 }, description: Rows per page }
         - { name: after, in: query, schema: { type: string }, description: "Cursor from paging.after of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Ad images (raw Meta shape)
           content:
@@ -52140,6 +52291,8 @@ paths:
                 videoBase64: { type: string, description: "Raw base64 video bytes, or a full data URL (the data:video/...;base64, prefix is stripped). Capped by Vercel's body limit (~4.5 MB payload). Provide exactly one of videoUrl or videoBase64." }
                 filename: { type: string, description: "Optional filename shown alongside the upload session. Applied only when uploading via videoBase64." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '201':
           description: Video uploaded and ready
           content:
@@ -52189,6 +52342,8 @@ paths:
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 }, description: Rows per page }
         - { name: after, in: query, schema: { type: string }, description: "Cursor from paging.after of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Ad videos (raw Meta shape)
           content:
@@ -52229,6 +52384,8 @@ paths:
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token." }
         - { name: adAccountId, in: query, required: true, schema: { type: string }, description: "Meta ad account id (act_<n>) that owns the video." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Video deleted
           content:
@@ -52262,6 +52419,9 @@ paths:
         - { name: q, in: query, required: true, schema: { type: string }, description: Search query }
         - { name: accountId, in: query, required: true, schema: { type: string }, description: Account ID }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '200':
           description: Matching interests
           content:
@@ -52369,6 +52529,7 @@ paths:
         - { name: countryCode, in: query, required: false, schema: { type: string, minLength: 2, maxLength: 2 }, description: "ISO 3166-1 alpha-2 country code (e.g. NL) to scope a geo search." }
         - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 25 }, description: "Maximum results to return." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Matching targeting options (normalized)
           content:
@@ -52392,9 +52553,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Ads access required. Legacy plans need the Ads add-on; included by default on usage-based plans.
-        '404':
-          description: Account not found, or the platform does not support the requested dimension
-
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
   /v1/ads/library:
     get:
       x-resource-group: "ads"
@@ -52445,6 +52604,7 @@ paths:
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 }, description: "Rows per page. LinkedIn accepts at most 25." }
         - { name: after, in: query, schema: { type: string }, description: "paging.after of the previous page." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Archived ads (raw platform shape)
           content:
@@ -52503,7 +52663,8 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: "Ads access required (legacy plans need the Ads add-on; included on usage-based plans), or `payment_required`: the billing owner has no payment method on file and no legacy paid plan. Searches are free; the card keeps the shared archive quota for real accounts."
-        '404': { description: Account not found }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '501': { description: Only supported on Meta and LinkedIn accounts }
         '503': { description: "Meta's Ad Library is unavailable on Zernio's side (`PLATFORM_DISABLED`); LinkedIn searches are unaffected." }
 
@@ -52545,6 +52706,7 @@ paths:
                     own vocabulary, e.g. Meta `REACH`, `LINK_CLICKS`, `OFFSITE_CONVERSIONS`).
                     Some platforms vary the estimate by goal; omit to use the platform default.
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Normalized reach estimate
           content:
@@ -52564,8 +52726,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Ads access required. Legacy plans need the Ads add-on; included by default on usage-based plans.
-        '404': { $ref: '#/components/responses/NotFound' }
-
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
   /v1/ads/targeting/bid-pricing:
     post:
       x-resource-group: "ads"
@@ -52603,6 +52764,7 @@ paths:
                 optimizationTargetType: { type: string, description: "LinkedIn optimizationTargetType, e.g. MAX_CLICK, MAX_IMPRESSION." }
                 dailyBudget: { type: number, description: "Optional daily budget in whole account-currency units. LinkedIn refines the suggested bid to this budget." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Pricing insights
           content:
@@ -52636,15 +52798,14 @@ paths:
         '400': { description: "Invalid targeting or unsupported objective/optimization/bid combination." }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: "Ads access required." }
-        '404': { $ref: '#/components/responses/NotFound' }
-
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
   /v1/ads/targeting/supply-forecast:
     post:
       x-resource-group: "ads"
       operationId: getLinkedInSupplyForecast
       tags: ["Ad Targeting"]
       x-platforms: ["linkedin"]
-      summary: Impressions, clicks and spend forecast
+      summary: 'Forecast ad delivery'
       description: |
         LinkedIn-only. Forecasted impressions, clicks, spend and ~20 other
         metrics for a targeting spec over a time range. Wraps LinkedIn's
@@ -52689,6 +52850,7 @@ paths:
                 enableAudienceExpansion: { type: boolean, description: "Defaults to false." }
                 connectedTelevisionOnly: { type: boolean, description: "Defaults to false." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Forecast series
           content:
@@ -52720,8 +52882,7 @@ paths:
         '400': { description: "Invalid targeting, missing budget, or LinkedIn forecast validation error (e.g. END_DATE_MAX_HORIZON_FOR_FORECAST)." }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: "Ads access required." }
-        '404': { $ref: '#/components/responses/NotFound' }
-
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
   /v1/ads/catalogs:
     get:
       x-resource-group: "ads"
@@ -52736,6 +52897,8 @@ paths:
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "A facebook, instagram, or metaads account ID" }
         - { name: adAccountId, in: query, required: true, schema: { type: string }, description: "Meta ad account ID (act_...)" }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Catalogs
           content:
@@ -52770,6 +52933,8 @@ paths:
         - { name: catalogId, in: path, required: true, schema: { type: string }, description: "Meta product catalog ID (from GET /v1/ads/catalogs)" }
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "A facebook, instagram, or metaads account ID" }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Product sets
           content:
@@ -52805,6 +52970,9 @@ paths:
         - { name: platform, in: query, schema: { type: string, enum: [facebook, instagram, googleads, tiktok, tiktokads, pinterest, linkedin, linkedinads, twitter, xads] } }
         - { name: type, in: query, required: false, schema: { type: string, enum: [customer_list, company_list, engagement, meta_engagement, website, website_retargeting, lookalike, saved_targeting] }, description: "Filter to one audience type. `saved_targeting` returns stored TargetingSpec audiences; the other types return uploaded/derived audiences." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '200':
           description: Audiences
           content:
@@ -53009,6 +53177,8 @@ paths:
                       allOf: [{ $ref: '#/components/schemas/TargetingSpec' }]
                       description: "The targeting spec to store."
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '201':
           description: Audience created
           content:
@@ -53270,6 +53440,8 @@ paths:
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "SocialAccount _id (must be a metaads account)." }
         - { name: destinationId, in: query, required: true, schema: { type: string }, description: "Meta pixel/dataset ID." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Match-quality rows, one per event name.
           content:
@@ -53398,6 +53570,7 @@ paths:
                     adUserData: { type: string, enum: [GRANTED, DENIED] }
                     adPersonalization: { type: string, enum: [GRANTED, DENIED] }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: |
             Events processed. Inspect `eventsFailed` and `failures[]` to detect
@@ -53437,8 +53610,8 @@ paths:
           description: |
             Ads access required (Ads add-on on legacy plans, included on usage-based plans),
             OR (for LinkedIn) the connected account lacks the `rw_conversions` scope and must be reconnected.
-        '404':
-          description: Account not found or not accessible.
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '422':
           description: 'OpenAI Ads only: no tracking tag (pixel) exists yet for this account. Code `TRACKING_TAG_REQUIRED`; create one via `POST /v1/accounts/{accountId}/tracking-tags` first.'
         '429':
@@ -53538,6 +53711,7 @@ paths:
                         type: string
                         description: ENHANCEMENT only. The original conversion's user agent (improves match quality).
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: |
             Adjustments processed. Inspect `adjustmentsFailed` and `failures[]` for
@@ -53564,8 +53738,8 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Ads access required (Ads add-on on legacy plans, included on usage-based plans).
-        '404':
-          description: Account not found or not accessible.
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405':
           description: Conversion adjustments are only available for Google Ads (the account's platform is not `googleads`).
 
@@ -53575,7 +53749,7 @@ paths:
       operationId: listConversionActions
       tags: [Conversions]
       x-platforms: ["google"]
-      summary: List conversion actions and their tag snippets
+      summary: 'List conversion actions'
       description: |
         Lists Google Ads conversion actions on the resolved customer, all types by
         default. Each action's `tagSnippets` (global site tag + event snippet) is
@@ -53597,6 +53771,7 @@ paths:
         - { name: customerId, in: query, required: false, schema: { type: string }, description: "Google Ads customer id (digits only). Resolved automatically when the connection has exactly one accessible customer." }
         - { name: type, in: query, required: false, schema: { type: string }, description: "Filter by Google's ConversionActionType enum (e.g. WEBPAGE, UPLOAD_CLICKS)." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: The resolved customer and its conversion actions.
           content:
@@ -53614,7 +53789,8 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Ads access required (Ads add-on on legacy plans, included on usage-based plans).
-        '404': { $ref: '#/components/responses/NotFound' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '501':
           description: Conversion actions are only available for Google Ads (the account's platform is not `googleads`).
     post:
@@ -53622,7 +53798,7 @@ paths:
       operationId: createConversionAction
       tags: [Conversions]
       x-platforms: ["google"]
-      summary: Create a website conversion action
+      summary: 'Create website conversion action'
       description: |
         Creates a `WEBPAGE` conversion action (category `DEFAULT`) and returns it with
         its tag snippets, read back after creation since Google never returns them on
@@ -53661,6 +53837,7 @@ paths:
                   type: boolean
                   description: "When true, always use defaultValue and ignore any value sent with the event. Defaults to true when defaultValue is set."
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: The created conversion action, with its tag snippets.
           content:
@@ -53673,7 +53850,8 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Ads access required (Ads add-on on legacy plans, included on usage-based plans).
-        '404': { $ref: '#/components/responses/NotFound' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '501':
           description: Conversion actions are only available for Google Ads (the account's platform is not `googleads`).
 
@@ -53708,6 +53886,7 @@ paths:
           schema: { type: string }
           description: SocialAccount ID (metaads, googleads, linkedinads, tiktokads, or openaiads).
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Destinations listed
           content:
@@ -53749,8 +53928,8 @@ paths:
           description: |
             Ads access required (Ads add-on on legacy plans, included on usage-based plans),
             OR (for LinkedIn) the connected account lacks the `rw_conversions` scope and must be reconnected.
-        '404':
-          description: Account not found or not accessible.
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '429':
           description: LinkedIn rate limit hit. Retry with backoff.
 
@@ -53912,12 +54091,13 @@ paths:
           description: |
             Ads access required (Ads add-on on legacy plans, included on usage-based plans),
             or the connected LinkedIn account lacks the `rw_conversions` scope (reconnect required).
-        '404':
-          description: Account not found or not accessible.
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405':
           description: Platform does not support destination creation.
         '409':
           description: |
+            The account may also be inactive or need reconnection (code ads_connection_required). Reconnect it and read GET /v1/accounts for its current ID before retrying.
             Google Ads only. A conversion action with the given name already
             exists but has a different category. Use a different name or use
             the existing destination. Error code: `IDEMPOTENCY_CONFLICT`.
@@ -53946,6 +54126,7 @@ paths:
           schema: { type: string }
           description: Numeric ID or full `urn:li:sponsoredAccount:{id}` URN.
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Destination fetched
           content:
@@ -53958,7 +54139,8 @@ paths:
         '400': { description: Validation error. }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: Ads add-on or LinkedIn reconnect required. }
-        '404': { description: Account or destination not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support fetching a single destination. }
         '429': { description: LinkedIn rate limit hit. Retry with backoff. }
 
@@ -54022,6 +54204,7 @@ paths:
                     currencyCode: { type: string, description: ISO 4217. }
                     amount: { type: string, description: 'Decimal string (e.g. "49.99").' }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Destination updated (re-fetched canonical state)
           content:
@@ -54034,7 +54217,8 @@ paths:
         '400': { description: Invalid body or LinkedIn validation failure. }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: Ads add-on or LinkedIn reconnect required. }
-        '404': { description: Account or destination not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support updating destinations. }
         '429': { description: LinkedIn rate limit hit. Retry with backoff. }
 
@@ -54063,11 +54247,13 @@ paths:
           schema: { type: string }
           description: Required as query OR in JSON body.
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '204': { description: Soft-deleted. }
         '400': { description: 'adAccountId missing, or accountId is not a valid id.' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: Ads add-on or LinkedIn reconnect required. }
-        '404': { description: Account or destination not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support deleting destinations. }
         '429': { description: LinkedIn rate limit hit. Retry with backoff. }
 
@@ -54093,6 +54279,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Associations listed
           content:
@@ -54112,7 +54299,8 @@ paths:
         '400': { description: Validation error. }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: Ads add-on or LinkedIn reconnect required. }
-        '404': { description: Account or destination not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support associations. }
         '429': { description: LinkedIn rate limit hit. Retry with backoff. }
 
@@ -54148,6 +54336,7 @@ paths:
                     type: string
                     description: Numeric campaign ID or full `urn:li:sponsoredCampaign:{id}` URN.
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: |
             Per-campaign batch result. Status is 200 even when some rows
@@ -54174,7 +54363,8 @@ paths:
         '400': { description: Invalid body. }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: Ads add-on or LinkedIn reconnect required. }
-        '404': { description: Account or destination not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support associations. }
         '429': { description: LinkedIn rate limit hit. Retry with backoff. }
 
@@ -54200,6 +54390,7 @@ paths:
         - { name: adAccountId, in: query, required: true, schema: { type: string } }
         - { name: campaignIds, in: query, required: true, schema: { type: string }, description: 'Comma-separated list of campaign IDs.' }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: |
             Per-campaign batch result. Status is 200 even when some rows
@@ -54228,7 +54419,8 @@ paths:
             a valid id.
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: Ads add-on or LinkedIn reconnect required. }
-        '404': { description: Account or destination not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support associations. }
         '429': { description: LinkedIn rate limit hit. Retry with backoff. }
 
@@ -54268,6 +54460,7 @@ paths:
             enum: [ALL, DAILY, MONTHLY, YEARLY]
             default: DAILY
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Metrics rows
           content:
@@ -54290,7 +54483,8 @@ paths:
         '400': { description: Validation error or invalid date range. }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: Ads add-on or LinkedIn reconnect required. }
-        '404': { description: Account or destination not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support metrics readback. }
         '429': { description: LinkedIn analytics rate limit hit. }
 
@@ -54581,6 +54775,7 @@ paths:
               budgetType: daily
               status: PAUSED
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: |
             Ad(s) created and submitted for review. The route shares its handler with
@@ -54602,7 +54797,8 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: 'Returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
-        '404': { description: Account not found }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '422': { description: "No Facebook Page resolved for the account" }
         '502': { description: "Meta accepted the request then failed to produce the media (upload session, chunk transfer, processing timeout, or a response with no image hash). Inspect `platformError.reason`." }
 
@@ -54638,6 +54834,7 @@ paths:
                       format: uri
                       description: "Website shown as the creative's link. Required: Meta rejects tel: as link_data.link; the phone number rides only the CTA."
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: |
             Ad(s) created and submitted for review. The route shares its handler with
@@ -54659,7 +54856,8 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: 'Returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
-        '404': { description: Account not found }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '422': { description: "No Facebook Page resolved for the account" }
         '502': { description: "Meta accepted the request then failed to produce the media (upload session, chunk transfer, processing timeout, or a response with no image hash). Inspect `platformError.reason`." }
 
@@ -54707,6 +54905,7 @@ paths:
               budgetType: daily
               status: PAUSED
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: |
             CTWA ad(s) created and submitted to Meta for review. Response is a
@@ -54736,7 +54935,8 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: 'Forbidden. Also returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
-        '404': { description: SocialAccount not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '422':
           description: Page is not connected to a verified WhatsApp number.
         '502':
@@ -54758,6 +54958,8 @@ paths:
         - { name: accountId, in: path, required: true, schema: { type: string }, description: "Meta ads SocialAccount id." }
         - { name: adAccountId, in: query, required: true, schema: { type: string }, description: "Meta ad account id (act_<n>)." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: Custom conversions
           content:
@@ -54777,7 +54979,7 @@ paths:
       operationId: createCustomConversion
       tags: ["Ad Accounts"]
       x-platforms: ["meta"]
-      summary: Create or reuse a custom conversion
+      summary: 'Create custom conversion'
       description: |-
         Provision the Meta custom conversion an ads flow optimises toward, and hand back the
         `customConversionId` for `promotedObject.customConversionId` on POST /v1/ads/create.
@@ -54809,6 +55011,8 @@ paths:
                 customEventType: { type: string, description: "Meta custom_event_type, e.g. LEAD, PURCHASE, OTHER." }
                 rule: { type: object, description: "Meta conversion rule, forwarded verbatim." }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
         '200':
           description: An existing custom conversion was reused
           content:
@@ -56227,6 +56431,7 @@ paths:
         - { name: accountId, in: path, required: true, schema: { type: string }, description: 'Ads SocialAccount id (platform `metaads` or `openaiads`).' }
         - { name: adAccountId, in: query, required: false, schema: { type: string }, description: 'Optional, Meta only. Scope to one ad account, e.g. `act_123456789`. Ignored for OpenAI Ads.' }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Tracking tags listed
           content:
@@ -56241,7 +56446,8 @@ paths:
         '400': { description: 'Account platform not supported, or invalid `adAccountId`.' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: 'Ads access required (Ads add-on on legacy plans, included on usage-based plans), or the Meta token lacks ads permissions (reconnect required).' }
-        '404': { description: Account not found or not accessible. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support listing tracking tags. }
         '502': { description: 'Meta was unreachable or returned an unclassified error (type: platform_error; the raw Meta payload is in platformError). Retryable.' }
 
@@ -56299,6 +56505,7 @@ paths:
                   enum: [order_created, lead_created, items_added, contents_viewed, checkout_started, registration_completed, subscription_created, trial_started, appointment_scheduled, page_viewed, app_installed, app_opened]
                   description: 'OpenAI Ads only (ignored by Meta). When set, also provisions a standard conversion event setting wired to the new pixel, so `goal: conversions` ad creates on `POST /v1/ads/create` have an event to reference immediately.'
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: Tracking tag created
           content:
@@ -56311,7 +56518,8 @@ paths:
         '400': { description: 'Invalid body, invalid `adAccountId`, over the per-business pixel cap, or ad account not in a Business Manager.' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: 'Ads access required (Ads add-on on legacy plans, included on usage-based plans), or the Meta token lacks ads permissions (reconnect required).' }
-        '404': { description: Account not found or not accessible. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support creating tracking tags. }
         '422': { description: 'OpenAI Ads only: the ad account is not enabled for pixel management. Contact your OpenAI partner representative.' }
         '502': { description: 'Meta was unreachable or returned an unclassified error (type: platform_error; the raw Meta payload is in platformError). Creating a pixel is NOT idempotent, so before retrying confirm with GET /v1/accounts/{accountId}/tracking-tags that no pixel was created.' }
@@ -56335,6 +56543,8 @@ paths:
         - { name: accountId, in: path, required: true, schema: { type: string } }
         - { name: tagId, in: path, required: true, schema: { type: string }, description: 'Pixel id.' }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '200':
           description: Tracking tag fetched
           content:
@@ -56346,7 +56556,8 @@ paths:
                   tag: { $ref: '#/components/schemas/TrackingTag' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: 'Ads access required (Ads add-on on legacy plans, included on usage-based plans), or the Meta token lacks ads permissions (reconnect required).' }
-        '404': { description: Account or tracking tag not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support fetching a tracking tag. }
         '502': { description: 'Meta was unreachable or returned an unclassified error (type: platform_error; the raw Meta payload is in platformError). Retryable.' }
 
@@ -56401,6 +56612,7 @@ paths:
                   type: string
                   enum: [advertising_and_analytics, analytics_only, empty]
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Tracking tag updated (re-fetched canonical state)
           content:
@@ -56413,7 +56625,8 @@ paths:
         '400': { description: Invalid body (e.g. no fields supplied) or Meta validation failure. }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: 'Ads access required (Ads add-on on legacy plans, included on usage-based plans), or the Meta token lacks ads permissions (reconnect required).' }
-        '404': { description: Account or tracking tag not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support updating tracking tags. }
         '502': { description: 'Meta was unreachable or returned an unclassified error (type: platform_error; the raw Meta payload is in platformError). Retryable.' }
 
@@ -56431,6 +56644,8 @@ paths:
         - { name: accountId, in: path, required: true, schema: { type: string } }
         - { name: tagId, in: path, required: true, schema: { type: string }, description: 'Pixel id.' }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '200':
           description: Shared ad accounts listed
           content:
@@ -56444,7 +56659,8 @@ paths:
                     items: { $ref: '#/components/schemas/SharedAdAccount' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: 'Ads access required (Ads add-on on legacy plans, included on usage-based plans), or the Meta token lacks ads permissions (reconnect required).' }
-        '404': { description: Account or tracking tag not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support shared accounts. }
         '502': { description: 'Meta was unreachable or returned an unclassified error (type: platform_error; the raw Meta payload is in platformError). Retryable.' }
 
@@ -56475,6 +56691,7 @@ paths:
               properties:
                 adAccountId: { type: string, description: 'Ad account to share with, e.g. `act_123456789`.' }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '201':
           description: Tracking tag shared with the ad account
           content:
@@ -56487,7 +56704,8 @@ paths:
         '400': { description: 'Invalid body / `adAccountId`, or Meta rejected the share (e.g. personal ad account).' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: 'Ads access required (Ads add-on on legacy plans, included on usage-based plans), or the Meta token lacks ads permissions (reconnect required).' }
-        '404': { description: Account or tracking tag not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support shared accounts. }
         '502': { description: 'Meta was unreachable or returned an unclassified error (type: platform_error; the raw Meta payload is in platformError). Retryable.' }
 
@@ -56508,11 +56726,13 @@ paths:
         - { name: tagId, in: path, required: true, schema: { type: string }, description: 'Pixel id.' }
         - { name: adAccountId, in: query, required: false, schema: { type: string }, description: 'Ad account to unshare, e.g. `act_123456789`. May also be sent in the JSON body.' }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '204': { description: Ad account unshared (no content). }
         '400': { description: '`adAccountId` missing (neither query nor body), or Meta rejected the unshare.' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: 'Ads access required (Ads add-on on legacy plans, included on usage-based plans), or the Meta token lacks ads permissions (reconnect required).' }
-        '404': { description: Account or tracking tag not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support shared accounts. }
         '502': { description: 'Meta was unreachable or returned an unclassified error (type: platform_error; the raw Meta payload is in platformError). Retryable.' }
 
@@ -56560,6 +56780,7 @@ paths:
         - { name: startTime, in: query, required: false, schema: { type: integer }, description: 'Unix seconds lower bound.' }
         - { name: endTime, in: query, required: false, schema: { type: integer }, description: 'Unix seconds upper bound.' }
       responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
         '200':
           description: Stats fetched
           content:
@@ -56580,7 +56801,8 @@ paths:
         '400': { description: Invalid query parameter. }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: 'Ads access required (Ads add-on on legacy plans, included on usage-based plans), or the Meta token lacks ads permissions (reconnect required).' }
-        '404': { description: Account or tracking tag not found. }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+
         '405': { description: Platform does not support tracking-tag stats. }
         '502': { description: 'Meta was unreachable or returned an unclassified error (type: platform_error; the raw Meta payload is in platformError). Retryable.' }
 
@@ -57148,3 +57370,259 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { description: Verification not found (or already reaped). }
+
+  /v1/ads/pixels:
+    get:
+      operationId: 'listTikTokAdPixels'
+      summary: 'List TikTok ad pixels'
+      description: 'Lists pixels and their supported optimization events for a connected TikTok Ads account. The advertiser defaults to the first advertiser on the connection. Reconnect if Pixel Management permission has not been granted.'
+      tags:
+        - 'Ad Accounts'
+      x-resource-group: 'ads'
+      x-platforms:
+        - 'tiktok'
+      security:
+        - bearerAuth: []
+      parameters:
+        - &a1
+          name: 'accountId'
+          in: 'query'
+          required: true
+          schema: &a7
+            type: 'string'
+            pattern: '^[a-fA-F0-9]{24}$'
+          description: 'Zernio SocialAccount ID.'
+        - name: 'advertiserId'
+          in: 'query'
+          schema:
+            type: 'string'
+          description: 'Advertiser belonging to this connection.'
+        - name: 'code'
+          in: 'query'
+          schema:
+            type: 'string'
+          description: 'Filter by a Pixel Code.'
+      responses:
+        "200":
+          description: 'TikTok pixels.'
+          content:
+            application/json:
+              schema:
+                type: 'object'
+                properties:
+                  advertiserId:
+                    type: 'string'
+                  pixels:
+                    type: 'array'
+                    items:
+                      type: 'object'
+                      properties:
+                        pixelId:
+                          type: 'string'
+                        pixelCode:
+                          type: 'string'
+                        name:
+                          type: 'string'
+                        events:
+                          type: 'array'
+                          items:
+                            type: 'string'
+                        eventDetails:
+                          type: 'array'
+                          items:
+                            type: 'object'
+                            properties:
+                              name:
+                                type: 'string'
+                              optimizationEvent:
+                                type:
+                                  - 'string'
+                                  - 'null'
+                              custom:
+                                type: 'boolean'
+              example:
+                advertiserId: '7330955083452284929'
+                pixels: []
+        "400": &a2
+          $ref: '#/components/responses/BadRequest'
+        "401": &a3
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          description: 'Ads access required.'
+        "404": &a4
+          $ref: '#/components/responses/AccountUnavailable'
+        "409": &a5
+          $ref: '#/components/responses/AccountConnectionRequired'
+        "422":
+          description: 'Pixel Management permission is missing (code reconnect_required). Reconnect TikTok Ads to grant it.'
+  /v1/ads/partnership-content:
+    get:
+      operationId: 'listPartnershipAdContent'
+      summary: 'List partnership ad content'
+      description: 'Private beta. Lists creator Instagram posts available to the advertiser for Partnership Ads. Supply creatorUsername or postUrl. Requires instagram_branded_content_ads_brand permission and an advertiser Instagram Business Account.'
+      tags:
+        - 'Ad Creatives'
+      x-resource-group: 'ads'
+      x-platforms:
+        - 'meta'
+      security:
+        - bearerAuth: []
+      parameters:
+        - *a1
+        - name: 'creatorUsername'
+          in: 'query'
+          schema:
+            type: 'string'
+          description: 'Creator username. Required unless postUrl is supplied.'
+        - name: 'postUrl'
+          in: 'query'
+          schema:
+            type: 'string'
+            format: 'uri'
+          description: 'Instagram post permalink. Required unless creatorUsername is supplied.'
+        - name: 'onlyAllowlisted'
+          in: 'query'
+          schema:
+            type: 'boolean'
+          description: 'Return only creators with account-level permission.'
+      responses:
+        "200":
+          description: 'Advertisable Instagram media.'
+          content:
+            application/json:
+              schema:
+                type: 'object'
+                properties:
+                  media:
+                    type: 'array'
+                    items:
+                      type: 'object'
+                      properties:
+                        id:
+                          type: 'string'
+                        permalink:
+                          type: 'string'
+                        ownerId:
+                          type: 'string'
+                        hasPermissionForPartnershipAd:
+                          type: 'boolean'
+                        isCreatorAllowlisted:
+                          type: 'boolean'
+                        eligibilityErrors:
+                          type: 'array'
+                          items:
+                            type: 'string'
+                        recommendedCampaignObjectives:
+                          type: 'array'
+                          items:
+                            type: 'string'
+              example:
+                media: []
+        "400": *a2
+        "401": *a3
+        "403": &a6
+          description: 'Ads access required. Partnership operations also require private beta access.'
+        "404": *a4
+        "409": *a5
+        "422":
+          description: 'The advertiser Instagram Business Account could not be resolved.'
+  /v1/ads/partnership-permissions:
+    get:
+      operationId: 'listPartnershipAdPermissions'
+      summary: 'List partnership permissions'
+      description: 'Private beta. Lists granted or pending creator permissions for the advertiser Instagram Business Account. Requires instagram_branded_content_ads_brand permission.'
+      tags:
+        - 'Ad Creatives'
+      x-resource-group: 'ads'
+      x-platforms:
+        - 'meta'
+      security:
+        - bearerAuth: []
+      parameters:
+        - *a1
+        - name: 'creatorUsername'
+          in: 'query'
+          schema:
+            type: 'string'
+          description: 'Filter by creator username.'
+      responses:
+        "200":
+          description: 'Partnership permissions.'
+          content:
+            application/json:
+              schema:
+                type: 'object'
+                properties:
+                  permissions:
+                    type: 'array'
+                    items: &a8
+                      type: 'object'
+                      properties:
+                        id:
+                          type: 'string'
+                        permissionType:
+                          type: 'string'
+                        status:
+                          type: 'string'
+              example:
+                permissions: []
+        "400": *a2
+        "401": *a3
+        "403": *a6
+        "404": *a4
+        "409": *a5
+        "422":
+          description: 'The advertiser Instagram Business Account could not be resolved.'
+    post:
+      operationId: 'setPartnershipAdPermission'
+      summary: 'Set partnership permission'
+      description: 'Private beta. Requests permission from a creator or revokes it when revoke is true. Requests require the creator to approve in Instagram. Requires instagram_branded_content_ads_brand permission.'
+      tags:
+        - 'Ad Creatives'
+      x-resource-group: 'ads'
+      x-platforms:
+        - 'meta'
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: 'object'
+              required:
+                - 'accountId'
+                - 'creatorUsername'
+              properties:
+                accountId: *a7
+                creatorUsername:
+                  type: 'string'
+                  minLength: 1
+                revoke:
+                  type: 'boolean'
+            example:
+              accountId: '507f1f77bcf86cd799439011'
+              creatorUsername: 'example_creator'
+              revoke: false
+      responses:
+        "200": &a9
+          description: 'Partnership permission state.'
+          content:
+            application/json:
+              schema:
+                type: 'object'
+                properties:
+                  permission: *a8
+              example:
+                permission:
+                  id: '123456789'
+                  permissionType: 'AD'
+                  status: 'PENDING'
+        "201": *a9
+        "400": *a2
+        "401": *a3
+        "403": *a6
+        "404": *a4
+        "409": *a5
+        "422":
+          description: 'The advertiser Instagram Business Account could not be resolved.'

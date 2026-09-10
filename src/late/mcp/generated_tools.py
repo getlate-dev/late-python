@@ -1777,7 +1777,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="High demand periods / budget schedules",
+            title="List high-demand periods",
             readOnlyHint=True,
             destructiveHint=False,
             openWorldHint=False,
@@ -1790,7 +1790,7 @@ def register_generated_tools(mcp, _get_client):
         limit: int = 25,
         after: str | None = None,
     ) -> str:
-        """High demand periods / budget schedules
+        """List high-demand periods
 
         Args:
             account_id: Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token. (required)
@@ -2697,14 +2697,14 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="List DSA beneficiary/payor suggestions",
+            title="Get DSA recommendations",
             readOnlyHint=True,
             destructiveHint=False,
             openWorldHint=False,
         )
     )
     def ad_accounts_get_dsa_recommendations(account_id: str, ad_account_id: str) -> str:
-        """List DSA beneficiary/payor suggestions
+        """Get DSA recommendations
 
         Args:
             account_id: Account ID (metaads, or a facebook/instagram posting account) (required)
@@ -2743,7 +2743,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Create or reuse a custom conversion",
+            title="Create custom conversion",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -2757,7 +2757,7 @@ def register_generated_tools(mcp, _get_client):
         custom_event_type: str,
         rule: dict[str, Any] | None,
     ) -> str:
-        """Create or reuse a custom conversion
+        """Create custom conversion
 
         Args:
             account_id: Meta ads SocialAccount id. (required)
@@ -2775,6 +2775,32 @@ def register_generated_tools(mcp, _get_client):
                 pixel_id=pixel_id,
                 custom_event_type=custom_event_type,
                 rule=rule,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List TikTok ad pixels",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_accounts_list_tik_tok_ad_pixels(
+        account_id: str, advertiser_id: str | None = None, code: str | None = None
+    ) -> str:
+        """List TikTok ad pixels
+
+        Args:
+            account_id: Zernio SocialAccount ID. (required)
+            advertiser_id: Advertiser belonging to this connection.
+            code: Filter by a Pixel Code."""
+        client = _get_client()
+        try:
+            response = client.ad_accounts.list_tik_tok_ad_pixels(
+                account_id=account_id, advertiser_id=advertiser_id, code=code
             )
             return _format_response(response)
         except Exception as e:
@@ -3028,7 +3054,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="List Google Ads portfolio bid strategies",
+            title="List portfolio bid strategies",
             readOnlyHint=True,
             destructiveHint=False,
             openWorldHint=False,
@@ -3040,7 +3066,7 @@ def register_generated_tools(mcp, _get_client):
         from_date: str | None = None,
         to_date: str | None = None,
     ) -> str:
-        """List Google Ads portfolio bid strategies
+        """List portfolio bid strategies
 
         Args:
             account_id: Google ads SocialAccount id. (required)
@@ -3061,7 +3087,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Create a Google Ads portfolio bid strategy",
+            title="Create portfolio bid strategy",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -3075,7 +3101,7 @@ def register_generated_tools(mcp, _get_client):
         target_cpa: float | None = None,
         target_roas: float | None = None,
     ) -> str:
-        """Create a Google Ads portfolio bid strategy
+        """Create portfolio bid strategy
 
         Args:
             account_id: Google ads SocialAccount id. (required)
@@ -3100,7 +3126,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Update a Google Ads portfolio bid strategy",
+            title="Update portfolio bid strategy",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -3115,7 +3141,7 @@ def register_generated_tools(mcp, _get_client):
         target_cpa: float | None = None,
         target_roas: float | None = None,
     ) -> str:
-        """Update a Google Ads portfolio bid strategy
+        """Update portfolio bid strategy
 
         Args:
             strategy_id: Numeric Google Ads bid strategy id. (required)
@@ -3196,7 +3222,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Add Search keywords to an ad group",
+            title="Add Search ad-group keywords",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -3208,7 +3234,7 @@ def register_generated_tools(mcp, _get_client):
         keywords: list[Any] | None,
         negative: bool = False,
     ) -> str:
-        """Add Search keywords to an ad group
+        """Add Search ad-group keywords
 
         Args:
             account_id: Account ID (Google Ads) (required)
@@ -3881,7 +3907,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Live ad-set details incl. learning phase",
+            title="Get live ad-set details",
             readOnlyHint=True,
             destructiveHint=False,
             openWorldHint=False,
@@ -3890,7 +3916,7 @@ def register_generated_tools(mcp, _get_client):
     def ad_campaigns_get_ad_set_details(
         ad_set_id: str, account_id: str, fields: str | None = None
     ) -> str:
-        """Live ad-set details incl. learning phase
+        """Get live ad-set details
 
         Args:
             ad_set_id: Meta ad set id (platformAdSetId). (required)
@@ -5956,6 +5982,90 @@ def register_generated_tools(mcp, _get_client):
         except Exception as e:
             return f"Error: {e}"
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List partnership ad content",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_creatives_list_partnership_ad_content(
+        account_id: str,
+        creator_username: str | None = None,
+        post_url: str | None = None,
+        only_allowlisted: bool | None = None,
+    ) -> str:
+        """List partnership ad content
+
+        Args:
+            account_id: Zernio SocialAccount ID. (required)
+            creator_username: Creator username. Required unless postUrl is supplied.
+            post_url: Instagram post permalink. Required unless creatorUsername is supplied.
+            only_allowlisted: Return only creators with account-level permission."""
+        client = _get_client()
+        try:
+            response = client.ad_creatives.list_partnership_ad_content(
+                account_id=account_id,
+                creator_username=creator_username,
+                post_url=post_url,
+                only_allowlisted=only_allowlisted,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List partnership permissions",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_creatives_list_partnership_ad_permissions(
+        account_id: str, creator_username: str | None = None
+    ) -> str:
+        """List partnership permissions
+
+        Args:
+            account_id: Zernio SocialAccount ID. (required)
+            creator_username: Filter by creator username."""
+        client = _get_client()
+        try:
+            response = client.ad_creatives.list_partnership_ad_permissions(
+                account_id=account_id, creator_username=creator_username
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Set partnership permission",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def ad_creatives_set_partnership_ad_permission(
+        account_id: str, creator_username: str, revoke: bool | None = None
+    ) -> str:
+        """Set partnership permission
+
+        Args:
+            account_id: (required)
+            creator_username: (required)
+            revoke"""
+        client = _get_client()
+        try:
+            response = client.ad_creatives.set_partnership_ad_permission(
+                account_id=account_id, creator_username=creator_username, revoke=revoke
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
     # AD_INSIGHTS
 
     @mcp.tool(
@@ -6047,7 +6157,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Conversations of a Local Services lead",
+            title="List lead conversations",
             readOnlyHint=True,
             destructiveHint=False,
             openWorldHint=False,
@@ -6059,7 +6169,7 @@ def register_generated_tools(mcp, _get_client):
         customer_id: str | None = None,
         page_token: str | None = None,
     ) -> str:
-        """Conversations of a Local Services lead
+        """List lead conversations
 
         Args:
             lead_id: Numeric lead id from /v1/ads/local-services/leads. (required)
@@ -6124,7 +6234,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Generate keyword ideas (Google Keyword Planner)",
+            title="Generate keyword ideas",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -6142,7 +6252,7 @@ def register_generated_tools(mcp, _get_client):
         page_size: int | None = None,
         page_token: str | None = None,
     ) -> str:
-        """Generate keyword ideas (Google Keyword Planner)
+        """Generate keyword ideas
 
         Args:
             account_id: Zernio googleads SocialAccount id. (required)
@@ -6175,7 +6285,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Historical keyword metrics (Google Keyword Planner)",
+            title="Get historical keyword metrics",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -6191,7 +6301,7 @@ def register_generated_tools(mcp, _get_client):
         include_adult_keywords: bool | None = None,
         include_average_cpc: bool | None = None,
     ) -> str:
-        """Historical keyword metrics (Google Keyword Planner)
+        """Get historical keyword metrics
 
         Args:
             account_id: Zernio googleads SocialAccount id. (required)
@@ -6298,7 +6408,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Submit an async insights report run",
+            title="Submit async insights report",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -6320,7 +6430,7 @@ def register_generated_tools(mcp, _get_client):
         to_date: str | None = None,
         time_increment: str | None = None,
     ) -> str:
-        """Submit an async insights report run
+        """Submit async insights report
 
         Args:
             account_id: Zernio SocialAccount id (posting or ads variant). (required)
@@ -6654,7 +6764,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Impressions, clicks and spend forecast",
+            title="Forecast ad delivery",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -6677,7 +6787,7 @@ def register_generated_tools(mcp, _get_client):
         enable_audience_expansion: bool | None = None,
         connected_television_only: bool | None = None,
     ) -> str:
-        """Impressions, clicks and spend forecast
+        """Forecast ad delivery
 
         Args:
             account_id: (required)
@@ -12605,7 +12715,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="List conversion actions and their tag snippets",
+            title="List conversion actions",
             readOnlyHint=True,
             destructiveHint=False,
             openWorldHint=False,
@@ -12614,7 +12724,7 @@ def register_generated_tools(mcp, _get_client):
     def conversions_list_conversion_actions(
         account_id: str, customer_id: str | None = None, type: str | None = None
     ) -> str:
-        """List conversion actions and their tag snippets
+        """List conversion actions
 
         Args:
             account_id: SocialAccount _id (must be a googleads account). (required)
@@ -12631,7 +12741,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Create a website conversion action",
+            title="Create website conversion action",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -12645,7 +12755,7 @@ def register_generated_tools(mcp, _get_client):
         default_value: float | None = None,
         always_use_default_value: bool | None = None,
     ) -> str:
-        """Create a website conversion action
+        """Create website conversion action
 
         Args:
             account_id: SocialAccount ID. Must be a `googleads` account. (required)
@@ -17824,7 +17934,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Create a Reach & Frequency prediction",
+            title="Create reach-frequency prediction",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -17841,7 +17951,7 @@ def register_generated_tools(mcp, _get_client):
         targeting: dict[str, Any] | None = None,
         placements: dict[str, Any] | None = None,
     ) -> str:
-        """Create a Reach & Frequency prediction
+        """Create reach-frequency prediction
 
         Args:
             account_id: Zernio SocialAccount id (posting or ads variant). (required)
@@ -17872,7 +17982,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Read a Reach & Frequency prediction",
+            title="Get reach-frequency prediction",
             readOnlyHint=True,
             destructiveHint=False,
             openWorldHint=False,
@@ -17881,7 +17991,7 @@ def register_generated_tools(mcp, _get_client):
     def reach_and_frequency_get_rf_prediction(
         prediction_id: str, account_id: str, ad_account_id: str
     ) -> str:
-        """Read a Reach & Frequency prediction
+        """Get reach-frequency prediction
 
         Args:
             prediction_id: (required)
@@ -17900,7 +18010,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Cancel a Reach & Frequency reservation",
+            title="Cancel reach-frequency booking",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -17909,7 +18019,7 @@ def register_generated_tools(mcp, _get_client):
     def reach_and_frequency_cancel_rf_reservation(
         prediction_id: str, account_id: str, ad_account_id: str
     ) -> str:
-        """Cancel a Reach & Frequency reservation
+        """Cancel reach-frequency booking
 
         Args:
             prediction_id: (required)
@@ -17928,7 +18038,7 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Reserve a Reach & Frequency prediction",
+            title="Reserve reach-frequency inventory",
             readOnlyHint=False,
             destructiveHint=True,
             openWorldHint=True,
@@ -17937,7 +18047,7 @@ def register_generated_tools(mcp, _get_client):
     def reach_and_frequency_reserve_rf_prediction(
         prediction_id: str, account_id: str, ad_account_id: str
     ) -> str:
-        """Reserve a Reach & Frequency prediction
+        """Reserve reach-frequency inventory
 
         Args:
             prediction_id: (required)

@@ -291,6 +291,44 @@ class AdCreativesResource:
             f"/v1/ads/catalogs/{catalog_id}/product-sets", params=params
         )
 
+    def list_partnership_ad_content(
+        self,
+        account_id: str,
+        *,
+        creator_username: str | None = None,
+        post_url: str | None = None,
+        only_allowlisted: bool | None = None,
+    ) -> dict[str, Any]:
+        """List partnership ad content"""
+        params = self._build_params(
+            account_id=account_id,
+            creator_username=creator_username,
+            post_url=post_url,
+            only_allowlisted=only_allowlisted,
+        )
+        return self._client._get("/v1/ads/partnership-content", params=params)
+
+    def list_partnership_ad_permissions(
+        self, account_id: str, *, creator_username: str | None = None
+    ) -> dict[str, Any]:
+        """List partnership permissions"""
+        params = self._build_params(
+            account_id=account_id,
+            creator_username=creator_username,
+        )
+        return self._client._get("/v1/ads/partnership-permissions", params=params)
+
+    def set_partnership_ad_permission(
+        self, account_id: str, creator_username: str, *, revoke: bool | None = None
+    ) -> dict[str, Any]:
+        """Set partnership permission"""
+        payload = self._build_payload(
+            account_id=account_id,
+            creator_username=creator_username,
+            revoke=revoke,
+        )
+        return self._client._post("/v1/ads/partnership-permissions", data=payload)
+
     async def agenerate_ad_previews(
         self,
         account_id: str,
@@ -517,4 +555,46 @@ class AdCreativesResource:
         )
         return await self._client._aget(
             f"/v1/ads/catalogs/{catalog_id}/product-sets", params=params
+        )
+
+    async def alist_partnership_ad_content(
+        self,
+        account_id: str,
+        *,
+        creator_username: str | None = None,
+        post_url: str | None = None,
+        only_allowlisted: bool | None = None,
+    ) -> dict[str, Any]:
+        """List partnership ad content (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            creator_username=creator_username,
+            post_url=post_url,
+            only_allowlisted=only_allowlisted,
+        )
+        return await self._client._aget("/v1/ads/partnership-content", params=params)
+
+    async def alist_partnership_ad_permissions(
+        self, account_id: str, *, creator_username: str | None = None
+    ) -> dict[str, Any]:
+        """List partnership permissions (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            creator_username=creator_username,
+        )
+        return await self._client._aget(
+            "/v1/ads/partnership-permissions", params=params
+        )
+
+    async def aset_partnership_ad_permission(
+        self, account_id: str, creator_username: str, *, revoke: bool | None = None
+    ) -> dict[str, Any]:
+        """Set partnership permission (async)"""
+        payload = self._build_payload(
+            account_id=account_id,
+            creator_username=creator_username,
+            revoke=revoke,
+        )
+        return await self._client._apost(
+            "/v1/ads/partnership-permissions", data=payload
         )

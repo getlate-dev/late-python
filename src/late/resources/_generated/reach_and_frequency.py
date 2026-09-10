@@ -88,7 +88,7 @@ class ReachAndFrequencyResource:
         targeting: dict[str, Any] | None = None,
         placements: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Create a Reach & Frequency prediction"""
+        """Create reach-frequency prediction"""
         payload = self._build_payload(
             account_id=account_id,
             ad_account_id=ad_account_id,
@@ -105,7 +105,7 @@ class ReachAndFrequencyResource:
     def get_rf_prediction(
         self, prediction_id: str, account_id: str, ad_account_id: str
     ) -> dict[str, Any]:
-        """Read a Reach & Frequency prediction"""
+        """Get reach-frequency prediction"""
         params = self._build_params(
             account_id=account_id,
             ad_account_id=ad_account_id,
@@ -117,7 +117,7 @@ class ReachAndFrequencyResource:
     def cancel_rf_reservation(
         self, prediction_id: str, account_id: str, ad_account_id: str
     ) -> dict[str, Any]:
-        """Cancel a Reach & Frequency reservation"""
+        """Cancel reach-frequency booking"""
         params = self._build_params(
             account_id=account_id,
             ad_account_id=ad_account_id,
@@ -129,7 +129,7 @@ class ReachAndFrequencyResource:
     def reserve_rf_prediction(
         self, prediction_id: str, account_id: str, ad_account_id: str
     ) -> dict[str, Any]:
-        """Reserve a Reach & Frequency prediction"""
+        """Reserve reach-frequency inventory"""
         payload = self._build_payload(
             account_id=account_id,
             ad_account_id=ad_account_id,
@@ -151,7 +151,7 @@ class ReachAndFrequencyResource:
         targeting: dict[str, Any] | None = None,
         placements: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Create a Reach & Frequency prediction (async)"""
+        """Create reach-frequency prediction (async)"""
         payload = self._build_payload(
             account_id=account_id,
             ad_account_id=ad_account_id,
@@ -168,7 +168,7 @@ class ReachAndFrequencyResource:
     async def aget_rf_prediction(
         self, prediction_id: str, account_id: str, ad_account_id: str
     ) -> dict[str, Any]:
-        """Read a Reach & Frequency prediction (async)"""
+        """Get reach-frequency prediction (async)"""
         params = self._build_params(
             account_id=account_id,
             ad_account_id=ad_account_id,
@@ -180,7 +180,7 @@ class ReachAndFrequencyResource:
     async def acancel_rf_reservation(
         self, prediction_id: str, account_id: str, ad_account_id: str
     ) -> dict[str, Any]:
-        """Cancel a Reach & Frequency reservation (async)"""
+        """Cancel reach-frequency booking (async)"""
         params = self._build_params(
             account_id=account_id,
             ad_account_id=ad_account_id,
@@ -192,7 +192,7 @@ class ReachAndFrequencyResource:
     async def areserve_rf_prediction(
         self, prediction_id: str, account_id: str, ad_account_id: str
     ) -> dict[str, Any]:
-        """Reserve a Reach & Frequency prediction (async)"""
+        """Reserve reach-frequency inventory (async)"""
         payload = self._build_payload(
             account_id=account_id,
             ad_account_id=ad_account_id,

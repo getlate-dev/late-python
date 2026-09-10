@@ -120,7 +120,7 @@ class ConversionsResource:
         customer_id: str | None = None,
         type: str | None = None,
     ) -> dict[str, Any]:
-        """List conversion actions and their tag snippets"""
+        """List conversion actions"""
         params = self._build_params(
             account_id=account_id,
             customer_id=customer_id,
@@ -138,7 +138,7 @@ class ConversionsResource:
         default_value: float | None = None,
         always_use_default_value: bool | None = None,
     ) -> dict[str, Any]:
-        """Create a website conversion action"""
+        """Create website conversion action"""
         payload = self._build_payload(
             account_id=account_id,
             customer_id=customer_id,
@@ -358,7 +358,7 @@ class ConversionsResource:
         customer_id: str | None = None,
         type: str | None = None,
     ) -> dict[str, Any]:
-        """List conversion actions and their tag snippets (async)"""
+        """List conversion actions (async)"""
         params = self._build_params(
             account_id=account_id,
             customer_id=customer_id,
@@ -376,7 +376,7 @@ class ConversionsResource:
         default_value: float | None = None,
         always_use_default_value: bool | None = None,
     ) -> dict[str, Any]:
-        """Create a website conversion action (async)"""
+        """Create website conversion action (async)"""
         payload = self._build_payload(
             account_id=account_id,
             customer_id=customer_id,

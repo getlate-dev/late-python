@@ -412,12 +412,13 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_accounts.list_ads_instagram_accounts()` | List Instagram ad identities |
 | `ad_accounts.list_advertisable_applications()` | List advertisable apps |
 | `ad_accounts.list_custom_conversions()` | List custom conversions |
-| `ad_accounts.list_high_demand_periods()` | High demand periods / budget schedules |
+| `ad_accounts.list_high_demand_periods()` | List high-demand periods |
 | `ad_accounts.list_meta_businesses()` | Businesses list |
+| `ad_accounts.list_tik_tok_ad_pixels()` | List TikTok ad pixels |
 | `ad_accounts.list_value_rule_sets()` | List value rule sets |
 | `ad_accounts.create_ad_account()` | Create Meta ad account |
 | `ad_accounts.create_ad_negative_keyword_list()` | Create a negative keyword list |
-| `ad_accounts.create_custom_conversion()` | Create or reuse a custom conversion |
+| `ad_accounts.create_custom_conversion()` | Create custom conversion |
 | `ad_accounts.create_high_demand_period()` | Schedule a budget increase |
 | `ad_accounts.create_value_rule_set()` | Create a value rule set |
 | `ad_accounts.get_ad_account_finance()` | Ad account finances |
@@ -425,7 +426,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_accounts.get_ad_negative_keyword_list()` | Get a negative keyword list |
 | `ad_accounts.get_ads_activity_log()` | Ad account change / audit log |
 | `ad_accounts.get_dsa_defaults()` | Get ad account DSA defaults |
-| `ad_accounts.get_dsa_recommendations()` | List DSA beneficiary/payor suggestions |
+| `ad_accounts.get_dsa_recommendations()` | Get DSA recommendations |
 | `ad_accounts.get_ios_fourteen_campaign_limits()` | Get iOS 14 campaign limits |
 | `ad_accounts.get_value_rule_set()` | Read a value rule set |
 | `ad_accounts.update_account_callouts()` | Update account callouts |
@@ -466,7 +467,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_campaigns.list_ad_keywords()` | List Search keywords |
 | `ad_campaigns.list_ad_sets()` | List ad sets |
 | `ad_campaigns.list_ads()` | List ads |
-| `ad_campaigns.list_bid_strategies()` | List Google Ads portfolio bid strategies |
+| `ad_campaigns.list_bid_strategies()` | List portfolio bid strategies |
 | `ad_campaigns.list_campaign_assets()` | List campaign assets |
 | `ad_campaigns.list_campaign_negative_keyword_lists()` | List campaign negative lists |
 | `ad_campaigns.list_campaign_negative_keywords()` | List campaign-level negative keywords |
@@ -474,10 +475,10 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_campaigns.bulk_update_ad_campaign_status()` | Pause or resume many campaigns |
 | `ad_campaigns.create_ad_campaign()` | Create a standalone campaign |
 | `ad_campaigns.create_ad_set()` | Create a standalone ad group |
-| `ad_campaigns.create_bid_strategy()` | Create a Google Ads portfolio bid strategy |
+| `ad_campaigns.create_bid_strategy()` | Create portfolio bid strategy |
 | `ad_campaigns.create_standalone_ad()` | Create standalone ad |
 | `ad_campaigns.get_ad()` | Get ad details |
-| `ad_campaigns.get_ad_set_details()` | Live ad-set details incl. learning phase |
+| `ad_campaigns.get_ad_set_details()` | Get live ad-set details |
 | `ad_campaigns.get_ad_tree()` | Get campaign tree |
 | `ad_campaigns.get_ads_timeline()` | Get daily account metrics |
 | `ad_campaigns.get_campaign_bidding()` | Read a campaign's current bidding |
@@ -490,13 +491,13 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_campaigns.update_ad_set()` | Update an ad set |
 | `ad_campaigns.update_ad_set_status()` | Pause or resume a single ad set |
 | `ad_campaigns.update_ad_status()` | Pause or resume a single ad |
-| `ad_campaigns.update_bid_strategy()` | Update a Google Ads portfolio bid strategy |
+| `ad_campaigns.update_bid_strategy()` | Update portfolio bid strategy |
 | `ad_campaigns.update_campaign_assets()` | Update campaign assets |
 | `ad_campaigns.update_campaign_targeting()` | Edit a Google campaign's device, location, or language targeting |
 | `ad_campaigns.delete_ad()` | Cancel an ad |
 | `ad_campaigns.delete_ad_campaign()` | Delete a campaign |
 | `ad_campaigns.delete_ad_set()` | Delete an ad set |
-| `ad_campaigns.add_ad_keywords()` | Add Search keywords to an ad group |
+| `ad_campaigns.add_ad_keywords()` | Add Search ad-group keywords |
 | `ad_campaigns.attach_ad_group_assets()` | Attach ad-group assets |
 | `ad_campaigns.attach_campaign_assets()` | Attach campaign assets |
 | `ad_campaigns.boost_post()` | Boost post as ad |
@@ -517,6 +518,8 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_creatives.list_ad_creatives()` | Creative library |
 | `ad_creatives.list_ad_images()` | Ad image library |
 | `ad_creatives.list_ad_videos()` | Ad video library |
+| `ad_creatives.list_partnership_ad_content()` | List partnership ad content |
+| `ad_creatives.list_partnership_ad_permissions()` | List partnership permissions |
 | `ad_creatives.create_ad_creative()` | Create a standalone creative |
 | `ad_creatives.get_ad_creative()` | Creative details |
 | `ad_creatives.get_ad_media()` | Direct video and image URLs for an ad |
@@ -525,21 +528,22 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_creatives.delete_ad_creative()` | Delete a creative |
 | `ad_creatives.delete_ad_video()` | Delete an ad video |
 | `ad_creatives.generate_ad_previews()` | Render pre-create ad previews |
+| `ad_creatives.set_partnership_ad_permission()` | Set partnership permission |
 | `ad_creatives.upload_ad_image()` | Upload an ad image from base64 |
 | `ad_creatives.upload_ad_video()` | Upload an ad video |
 
 ### Ad Insights
 | Method | Description |
 |--------|-------------|
-| `ad_insights.list_local_services_lead_conversations()` | Conversations of a Local Services lead |
+| `ad_insights.list_local_services_lead_conversations()` | List lead conversations |
 | `ad_insights.list_local_services_leads()` | Google Local Services Ads leads |
-| `ad_insights.create_ad_insights_report()` | Submit an async insights report run |
+| `ad_insights.create_ad_insights_report()` | Submit async insights report |
 | `ad_insights.get_ad_analytics()` | Get ad analytics |
 | `ad_insights.get_ad_insights_report()` | Poll an async insights report run |
 | `ad_insights.get_ads_search_terms()` | Google Ads search terms report |
 | `ad_insights.get_campaign_analytics()` | Get campaign analytics |
-| `ad_insights.generate_keyword_historical_metrics()` | Historical keyword metrics (Google Keyword Planner) |
-| `ad_insights.generate_keyword_ideas()` | Generate keyword ideas (Google Keyword Planner) |
+| `ad_insights.generate_keyword_historical_metrics()` | Get historical keyword metrics |
+| `ad_insights.generate_keyword_ideas()` | Generate keyword ideas |
 | `ad_insights.query_ad_insights()` | Flexible live insights query |
 
 ### Ad Library
@@ -551,7 +555,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | Method | Description |
 |--------|-------------|
 | `ad_targeting.get_linked_in_bid_pricing()` | Suggested bid and budget bounds |
-| `ad_targeting.get_linked_in_supply_forecast()` | Impressions, clicks and spend forecast |
+| `ad_targeting.get_linked_in_supply_forecast()` | Forecast ad delivery |
 | `ad_targeting.estimate_ad_reach()` | Estimate audience reach |
 | `ad_targeting.search_ad_interests()` | Search targeting interests |
 | `ad_targeting.search_ad_targeting()` | Search targeting options |
@@ -697,10 +701,10 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 ### Conversions
 | Method | Description |
 |--------|-------------|
-| `conversions.list_conversion_actions()` | List conversion actions and their tag snippets |
+| `conversions.list_conversion_actions()` | List conversion actions |
 | `conversions.list_conversion_associations()` | List associated campaigns |
 | `conversions.list_conversion_destinations()` | List conversion destinations |
-| `conversions.create_conversion_action()` | Create a website conversion action |
+| `conversions.create_conversion_action()` | Create website conversion action |
 | `conversions.create_conversion_destination()` | Create a conversion destination |
 | `conversions.get_conversion_destination()` | Get a conversion destination |
 | `conversions.get_conversion_metrics()` | Get attribution metrics |
@@ -897,10 +901,10 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 ### Reach and Frequency
 | Method | Description |
 |--------|-------------|
-| `reach_and_frequency.create_rf_prediction()` | Create a Reach & Frequency prediction |
-| `reach_and_frequency.get_rf_prediction()` | Read a Reach & Frequency prediction |
-| `reach_and_frequency.cancel_rf_reservation()` | Cancel a Reach & Frequency reservation |
-| `reach_and_frequency.reserve_rf_prediction()` | Reserve a Reach & Frequency prediction |
+| `reach_and_frequency.create_rf_prediction()` | Create reach-frequency prediction |
+| `reach_and_frequency.get_rf_prediction()` | Get reach-frequency prediction |
+| `reach_and_frequency.cancel_rf_reservation()` | Cancel reach-frequency booking |
+| `reach_and_frequency.reserve_rf_prediction()` | Reserve reach-frequency inventory |
 
 ### Reviews (Inbox)
 | Method | Description |

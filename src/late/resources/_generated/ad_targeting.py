@@ -167,7 +167,7 @@ class AdTargetingResource:
         enable_audience_expansion: bool | None = None,
         connected_television_only: bool | None = None,
     ) -> dict[str, Any]:
-        """Impressions, clicks and spend forecast"""
+        """Forecast ad delivery"""
         payload = self._build_payload(
             account_id=account_id,
             ad_account_id=ad_account_id,
@@ -283,7 +283,7 @@ class AdTargetingResource:
         enable_audience_expansion: bool | None = None,
         connected_television_only: bool | None = None,
     ) -> dict[str, Any]:
-        """Impressions, clicks and spend forecast (async)"""
+        """Forecast ad delivery (async)"""
         payload = self._build_payload(
             account_id=account_id,
             ad_account_id=ad_account_id,
