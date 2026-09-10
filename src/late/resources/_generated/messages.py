@@ -110,6 +110,7 @@ class MessagesResource:
         template_language: str | None = None,
         template_params: list[str] | None = None,
         template_button_params: list[dict[str, Any]] | None = None,
+        template_cards: list[dict[str, Any]] | None = None,
         header_media: dict[str, Any] | None = None,
         header_location: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
@@ -126,6 +127,7 @@ class MessagesResource:
             template_language=template_language,
             template_params=template_params,
             template_button_params=template_button_params,
+            template_cards=template_cards,
             header_media=header_media,
             header_location=header_location,
         )
@@ -404,6 +406,7 @@ class MessagesResource:
         template_language: str | None = None,
         template_params: list[str] | None = None,
         template_button_params: list[dict[str, Any]] | None = None,
+        template_cards: list[dict[str, Any]] | None = None,
         header_media: dict[str, Any] | None = None,
         header_location: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
@@ -420,6 +423,7 @@ class MessagesResource:
             template_language=template_language,
             template_params=template_params,
             template_button_params=template_button_params,
+            template_cards=template_cards,
             header_media=header_media,
             header_location=header_location,
         )

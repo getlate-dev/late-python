@@ -28621,6 +28621,7 @@ paths:
         - Templates with media headers (image, video, document) are handled automatically: Zernio reads the approved template definition and fills the header at send time with the template's approved sample asset. To send a DIFFERENT asset per message (e.g. a distinct invoice PDF for each recipient), pass the headerMedia field with a public link (or a Meta media id); it overrides the sample for that send.
         - A template whose approved header format is LOCATION has no header asset to reconstruct at all: Meta only accepts the location at send time, so pass headerLocation (latitude and longitude required) whenever such a template is sent; headerMedia and headerLocation cannot both be supplied.
         - A button that carries its own value at send time (a copy-code button holding a Pix payment code or a coupon, a flow token) is sent with templateButtonParams, addressed by the button's index; templateParams covers text variables and dynamic URL buttons only.
+        - CAROUSEL templates take per-card overrides via templateCards, each addressed by the card's card_index, because card body variables restart at {{1}} per card and cannot be expressed in the flat templateParams order.
         - Template fields are accepted on the JSON body only, not on multipart requests.
 
         For a number you already have a thread with, this sends the template into that thread, which also makes it the way to re-engage a contact after the 24-hour customer-service window has closed. Once the recipient replies (opening the 24h window), send freeform messages with the send-message endpoint (POST /v1/inbox/conversations/{conversationId}/messages).
@@ -28742,6 +28743,65 @@ paths:
                         type: string
                         minLength: 1
                         description: 'The value to send (e.g. the Pix copy-and-paste code for a copy_code button).'
+                templateCards:
+                  type: array
+                  maxItems: 10
+                  description: >-
+                    WhatsApp only. Per-card overrides for a CAROUSEL template, each addressed by
+                    the card's card_index. Carousel card body variables restart at {{1}} per card,
+                    so they cannot be expressed in the flat templateParams slot order; use this
+                    instead. A cardIndex naming a card the approved template does not have, a
+                    duplicate cardIndex, or a params count that does not match the card body's
+                    token count is rejected with 400 (INVALID_TEMPLATE_CARD_PARAM).
+                  items:
+                    type: object
+                    required: [cardIndex]
+                    properties:
+                      cardIndex:
+                        type: integer
+                        minimum: 0
+                        maximum: 9
+                        description: 'The card''s card_index in the approved template.'
+                      params:
+                        type: array
+                        items: { type: string }
+                        description: 'Values for this card''s own body variables, in the card''s own {{1}}, {{2}}, ... order (or named-slot order of appearance).'
+                      headerMedia:
+                        type: object
+                        description: 'Overrides this card''s header asset for THIS send. Without it, the card''s approved sample asset is sent.'
+                        required: [type]
+                        properties:
+                          type:
+                            type: string
+                            enum: [image, video, document]
+                            description: Must match the card header's media type.
+                          link:
+                            type: string
+                            description: Public URL of the asset to send. Must be reachable without auth.
+                          id:
+                            type: string
+                            description: A Meta media id (from the media upload endpoint), as an alternative to link.
+                      buttons:
+                        type: array
+                        maxItems: 2
+                        description: "Values for this card's own buttons, each addressed by the button's index within the card."
+                        items:
+                          type: object
+                          required: [index, subType, value]
+                          properties:
+                            index:
+                              type: integer
+                              minimum: 0
+                              maximum: 1
+                              description: 'Zero-based position of the button within the card''s buttons.'
+                            subType:
+                              type: string
+                              enum: [quick_reply, url]
+                              description: The button kind, which decides how the value is sent.
+                            value:
+                              type: string
+                              minLength: 1
+                              description: 'The value to send (quick_reply payload, or the URL dynamic suffix).'
                 headerMedia:
                   type: object
                   description: >-
@@ -28839,14 +28899,14 @@ paths:
                         type: [string, "null"]
                         description: X username of the recipient
         '400':
-          description: 'Validation error, platform not supported, an attachment the platform does not accept (PLATFORM_LIMITATION), template required to start a WhatsApp conversation (TEMPLATE_REQUIRED), template variables that do not match the approved definition (INVALID_TEMPLATE_PARAMS, INVALID_TEMPLATE_BUTTON_PARAM), category combined with templateName or used on a non-WhatsApp account, or the WhatsApp Business Account is not eligible for Direct Send: DIRECT_SEND_NOT_ELIGIBLE and DIRECT_SEND_BLOCKED require Meta to grant or restore Direct Send access, while DIRECT_SEND_LIMITED is temporary and lifts on its own'
+          description: 'Validation error, platform not supported, an attachment the platform does not accept (PLATFORM_LIMITATION), template required to start a WhatsApp conversation (TEMPLATE_REQUIRED), template variables that do not match the approved definition (INVALID_TEMPLATE_PARAMS, INVALID_TEMPLATE_BUTTON_PARAM), templateCards that do not match the approved carousel definition (INVALID_TEMPLATE_CARD_PARAM), category combined with templateName or used on a non-WhatsApp account, or the WhatsApp Business Account is not eligible for Direct Send: DIRECT_SEND_NOT_ELIGIBLE and DIRECT_SEND_BLOCKED require Meta to grant or restore Direct Send access, while DIRECT_SEND_LIMITED is temporary and lifts on its own'
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   error: { type: string }
-                  code: { type: string, enum: [PLATFORM_NOT_SUPPORTED, PLATFORM_LIMITATION, TEMPLATE_REQUIRED, INVALID_TEMPLATE_PARAMS, INVALID_TEMPLATE_BUTTON_PARAM, DIRECT_SEND_NOT_ELIGIBLE, DIRECT_SEND_LIMITED, DIRECT_SEND_BLOCKED] }
+                  code: { type: string, enum: [PLATFORM_NOT_SUPPORTED, PLATFORM_LIMITATION, TEMPLATE_REQUIRED, INVALID_TEMPLATE_PARAMS, INVALID_TEMPLATE_BUTTON_PARAM, INVALID_TEMPLATE_CARD_PARAM, DIRECT_SEND_NOT_ELIGIBLE, DIRECT_SEND_LIMITED, DIRECT_SEND_BLOCKED] }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Inbox addon required or profile limit reached
