@@ -16555,6 +16555,7 @@ def register_generated_tools(mcp, _get_client):
         country: str = "US",
         number_type: str | None = None,
         area_code: str | None = None,
+        phone_number: str | None = None,
         connect_whatsapp: bool = True,
         wants_sms: bool = False,
         wants_whatsapp: bool = False,
@@ -16569,6 +16570,7 @@ def register_generated_tools(mcp, _get_client):
                country: ISO 3166-1 alpha-2 country for the number (default US). International numbers require usage-based billing. Tier 3/4 countries return 202 { status: "kyc_required", kycUrl }. The customer must complete KYC at that URL before the number is ordered. See GET /v1/phone-numbers/countries.
                number_type: Which of the country's offered number types to order (see `types[]` on GET /v1/phone-numbers/countries). Omitted = the country's default type, which is always the WhatsApp-safe choice. Capabilities, price, and KYC requirements are per (country, type): toll_free can never connect WhatsApp (400 when combined with connectWhatsapp:true), and wantsSms:true requires an SMS-capable type.
                area_code: Area code (national destination code, e.g. 11 for Sao Paulo) the number must be in. Hard constraint: when the area has no deliverable inventory the purchase fails with 409 code AREA_CODE_UNAVAILABLE instead of assigning a number from another area, and later replacements stay in this area too. Omit for any area. Get live options from GET /v1/phone-numbers/availability (areaOptions).
+               phone_number: One exact number to buy, in E.164, taken from GET /v1/phone-numbers/available. Hard constraint: when it is no longer available (bought by someone else, or WhatsApp's buy-time check rejects it) the purchase fails with 409 code PHONE_NUMBER_UNAVAILABLE instead of assigning another number; search again and pick another. Only for countries and types that activate instantly: a regulated one (202 kyc_required) returns 400 when phoneNumber is set.
                connect_whatsapp: A phone number is the unit; WhatsApp is one optional feature. Pass false to buy a STANDALONE number (Calls/SMS only): provisioning skips the Meta pre-verify/OTP steps and the number activates immediately. Omitted defaults to the WhatsApp provisioning path. WhatsApp can be connected to a standalone number later from the connect flow.
                wants_sms: SMS capability is per-number, not per-country. Pass true to provision from the SMS-capable inventory pool so the number can actually text (see also GET /v1/phone-numbers/available with sms=true, and smsAvailable on GET /v1/phone-numbers/countries).
                wants_whatsapp: Declare WhatsApp intent on a STANDALONE purchase (connectWhatsapp:false). The number still activates and bills immediately, but if WhatsApp's buy-time check rejects the assigned number, it is automatically swapped for a WhatsApp-eligible one during the purchase instead of being delivered with WhatsApp unavailable. Ignored on the WhatsApp provisioning path (connectWhatsapp omitted or true), which always delivers a WhatsApp-verified number.
@@ -16581,6 +16583,7 @@ def register_generated_tools(mcp, _get_client):
                 country=country,
                 number_type=number_type,
                 area_code=area_code,
+                phone_number=phone_number,
                 connect_whatsapp=connect_whatsapp,
                 wants_sms=wants_sms,
                 wants_whatsapp=wants_whatsapp,
@@ -22903,6 +22906,7 @@ def register_generated_tools(mcp, _get_client):
     def whatsapp_phone_numbers_purchase_whats_app_phone_number(
         profile_id: str,
         country: str = "US",
+        phone_number: str | None = None,
         purchase_intent_id: str | None = None,
         allow_multiple: bool = False,
     ) -> str:
@@ -22911,6 +22915,7 @@ def register_generated_tools(mcp, _get_client):
         Args:
             profile_id: Profile to associate the number with (required)
             country: ISO 3166-1 alpha-2 country for the number (default US). International numbers require usage-based billing. Tier 3/4 countries return 202 { status: "kyc_required", kycUrl }. The customer must complete KYC at that URL before the number is ordered. See GET /v1/whatsapp/phone-numbers/countries.
+            phone_number: One exact number to buy, in E.164, taken from GET /v1/phone-numbers/available. Fails with 409 code PHONE_NUMBER_UNAVAILABLE when it is no longer available.
             purchase_intent_id: Optional idempotency key. Send the same value when retrying a purchase: if a number was already bought under this key, the API returns { status: "already_purchased", numberId, phoneNumber } instead of provisioning a second number. Generate a fresh key for each genuinely new purchase.
             allow_multiple: Any second purchase within 10 minutes of a previous one is rejected with 409 code PURCHASE_VELOCITY as duplicate protection. Pass true to confirm the additional purchase is intentional (e.g. bulk provisioning)."""
         client = _get_client()
@@ -22918,6 +22923,7 @@ def register_generated_tools(mcp, _get_client):
             response = client.whatsapp_phone_numbers.purchase_whats_app_phone_number(
                 profile_id=profile_id,
                 country=country,
+                phone_number=phone_number,
                 purchase_intent_id=purchase_intent_id,
                 allow_multiple=allow_multiple,
             )

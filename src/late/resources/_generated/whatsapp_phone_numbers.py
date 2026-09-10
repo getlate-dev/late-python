@@ -95,6 +95,7 @@ class WhatsappPhoneNumbersResource:
         profile_id: str,
         *,
         country: str | None = "US",
+        phone_number: str | None = None,
         purchase_intent_id: str | None = None,
         allow_multiple: bool | None = False,
     ) -> dict[str, Any]:
@@ -102,6 +103,7 @@ class WhatsappPhoneNumbersResource:
         payload = self._build_payload(
             profile_id=profile_id,
             country=country,
+            phone_number=phone_number,
             purchase_intent_id=purchase_intent_id,
             allow_multiple=allow_multiple,
         )
@@ -302,6 +304,7 @@ class WhatsappPhoneNumbersResource:
         profile_id: str,
         *,
         country: str | None = "US",
+        phone_number: str | None = None,
         purchase_intent_id: str | None = None,
         allow_multiple: bool | None = False,
     ) -> dict[str, Any]:
@@ -309,6 +312,7 @@ class WhatsappPhoneNumbersResource:
         payload = self._build_payload(
             profile_id=profile_id,
             country=country,
+            phone_number=phone_number,
             purchase_intent_id=purchase_intent_id,
             allow_multiple=allow_multiple,
         )
