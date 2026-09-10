@@ -961,6 +961,10 @@ class AdCampaignsResource:
         )
         return self._client._post("/v1/ads/boost", data=payload)
 
+    def list_google_asset_groups(self, campaign_id: str) -> dict[str, Any]:
+        """List Performance Max asset groups"""
+        return self._client._get(f"/v1/ads/campaigns/{campaign_id}/asset-groups")
+
     def create_standalone_ad(
         self,
         account_id: str,
@@ -1039,6 +1043,7 @@ class AdCampaignsResource:
         placement_assets: dict[str, Any] | None = None,
         audience_id: str | None = None,
         campaign_type: str | None = "display",
+        asset_group: Any | None = None,
         keywords: list[Any] | None = None,
         negative_keywords: list[Any] | None = None,
         campaign_negative_keywords: list[Any] | None = None,
@@ -1145,6 +1150,7 @@ class AdCampaignsResource:
             placement_assets=placement_assets,
             audience_id=audience_id,
             campaign_type=campaign_type,
+            asset_group=asset_group,
             keywords=keywords,
             negative_keywords=negative_keywords,
             campaign_negative_keywords=campaign_negative_keywords,
@@ -2078,6 +2084,10 @@ class AdCampaignsResource:
         )
         return await self._client._apost("/v1/ads/boost", data=payload)
 
+    async def alist_google_asset_groups(self, campaign_id: str) -> dict[str, Any]:
+        """List Performance Max asset groups (async)"""
+        return await self._client._aget(f"/v1/ads/campaigns/{campaign_id}/asset-groups")
+
     async def acreate_standalone_ad(
         self,
         account_id: str,
@@ -2156,6 +2166,7 @@ class AdCampaignsResource:
         placement_assets: dict[str, Any] | None = None,
         audience_id: str | None = None,
         campaign_type: str | None = "display",
+        asset_group: Any | None = None,
         keywords: list[Any] | None = None,
         negative_keywords: list[Any] | None = None,
         campaign_negative_keywords: list[Any] | None = None,
@@ -2262,6 +2273,7 @@ class AdCampaignsResource:
             placement_assets=placement_assets,
             audience_id=audience_id,
             campaign_type=campaign_type,
+            asset_group=asset_group,
             keywords=keywords,
             negative_keywords=negative_keywords,
             campaign_negative_keywords=campaign_negative_keywords,

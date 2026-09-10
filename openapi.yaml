@@ -9312,6 +9312,88 @@ components:
           $ref: '#/components/schemas/GoogleStructuredSnippet'
       description: "Supply fields for exactly one asset type per update. finalUrls may accompany sitelinkAsset. Shared asset edits affect every attachment using the asset."
 
+    GooglePmaxAssetGroupInput:
+      type: object
+      additionalProperties: false
+      required: [finalUrl, headlines, longHeadline, descriptions, businessName, images]
+      description: "Google Performance Max creative assets. At least one description must be 60 characters or fewer. Texts within each list must be distinct."
+      properties:
+        name: { type: string, minLength: 1, maxLength: 128, description: "Defaults to the request name." }
+        finalUrl: { type: string, format: uri, pattern: '^https?://', description: "Required destination URL." }
+        headlines:
+          type: array
+          minItems: 3
+          maxItems: 15
+          uniqueItems: true
+          items: { type: string, minLength: 1, maxLength: 30 }
+        longHeadline: { type: string, minLength: 1, maxLength: 90 }
+        descriptions:
+          type: array
+          minItems: 2
+          maxItems: 5
+          uniqueItems: true
+          description: "At least one description must be 60 characters or fewer."
+          items: { type: string, minLength: 1, maxLength: 90 }
+        businessName: { type: string, minLength: 1, maxLength: 25 }
+        images:
+          type: object
+          additionalProperties: false
+          required: [landscape, square, logo]
+          description: "Public HTTP(S) image URLs. GIF, JPEG or PNG, at most 5120 KB per image. Google validates dimensions and aspect ratios."
+          properties:
+            landscape:
+              type: array
+              minItems: 1
+              maxItems: 20
+              description: "Landscape marketing images. Aspect ratio 1.91:1, minimum 600 x 314 pixels."
+              items: { type: string, format: uri, pattern: '^https?://' }
+            square:
+              type: array
+              minItems: 1
+              maxItems: 20
+              description: "Square marketing images. Aspect ratio 1:1, minimum 300 x 300 pixels."
+              items: { type: string, format: uri, pattern: '^https?://' }
+            logo:
+              type: array
+              minItems: 1
+              maxItems: 5
+              description: "Required square logos. Aspect ratio 1:1, minimum 128 x 128 pixels."
+              items: { type: string, format: uri, pattern: '^https?://' }
+        youtubeVideoId:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{11}$'
+          description: "Optional existing YouTube video id. Google can generate video when omitted. Video uploads and arbitrary video URLs are not supported."
+      example:
+        finalUrl: 'https://zernio.com'
+        headlines: ['Schedule posts', 'One social API', 'Build with Zernio']
+        longHeadline: 'Schedule social content from your app with Zernio'
+        descriptions: ['Connect your social accounts.', 'Publish and manage social content through one API.']
+        businessName: Zernio
+        images:
+          landscape: ['https://example.com/landscape.png']
+          square: ['https://example.com/square.png']
+          logo: ['https://example.com/logo.png']
+    GooglePmaxAssetGroup:
+      type: object
+      required: [id, resourceName, name, status, finalUrls, assets]
+      properties:
+        id: { type: string }
+        resourceName: { type: string }
+        name: { type: string }
+        status: { type: string, description: "Asset-group status on Google. Campaign status independently controls delivery." }
+        finalUrls: { type: array, items: { type: string, format: uri } }
+        assets:
+          type: array
+          items:
+            type: object
+            required: [resourceName, fieldType, status]
+            properties:
+              resourceName: { type: string }
+              fieldType: { type: string, description: "Google asset role, such as HEADLINE or LOGO." }
+              status: { type: string }
+              text: { type: string }
+              imageUrl: { type: string, format: uri }
+              youtubeVideoId: { type: string }
     GoogleRsaHeadline:
       type: object
       required:
@@ -9500,6 +9582,13 @@ components:
           type: [object, "null"]
           description: Platform-specific creative data. Fields vary by platform.
           properties:
+            assetGroup:
+              $ref: '#/components/schemas/GooglePmaxAssetGroupInput'
+              description: "Initial Performance Max asset group input. Use the asset-groups endpoint for current Google assets."
+            assetGroupResourceName:
+              type: string
+              description: "Google resource name of the created Performance Max asset group."
+              example: "customers/9122445560/assetGroups/123456789"
             headlines:
               type: array
               minItems: 3
@@ -50258,6 +50347,55 @@ paths:
             Also returned as `idempotency_key_reused` when an Idempotency-Key
             is reused with a different request body.
 
+  /v1/ads/campaigns/{campaignId}/asset-groups:
+    get:
+      operationId: listGoogleAssetGroups
+      summary: List Performance Max asset groups
+      tags: ["Ad Campaigns"]
+      x-platforms: ["google"]
+      x-resource-group: "ads"
+      description: "Read Performance Max asset groups and their linked text, image and YouTube assets. campaignId is the platform campaign id returned by creation or the campaign list. The campaign must be visible to the caller. Uses a 10-minute cache, with the last successful response served as stale when Google quota is exhausted. Removed groups and asset links are excluded. Campaign-level brand assets on campaigns with brand guidelines enabled are not included."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema: { type: string, pattern: '^\d+$' }
+          description: "Google Ads campaign id."
+      responses:
+        '200':
+          description: "Asset groups and linked assets."
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [assetGroups, cachedAt, stale]
+                properties:
+                  assetGroups: { type: array, items: { $ref: '#/components/schemas/GooglePmaxAssetGroup' } }
+                  cachedAt: { type: [string, "null"], format: date-time }
+                  stale: { type: boolean }
+              example:
+                assetGroups:
+                  - id: '123456789'
+                    resourceName: 'customers/9122445560/assetGroups/123456789'
+                    name: 'Social publishing'
+                    status: ENABLED
+                    finalUrls: ['https://zernio.com']
+                    assets:
+                      - resourceName: 'customers/9122445560/assets/987654321'
+                        fieldType: HEADLINE
+                        status: ENABLED
+                        text: 'Schedule posts'
+                cachedAt: '2026-09-10T09:00:00Z'
+                stale: false
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429':
+          description: "Google quota or operation budget exhausted with no cached response."
+        '501':
+          description: "Campaign is not on Google Ads."
   /v1/ads/create:
     post:
       x-resource-group: "ads"
@@ -50268,7 +50406,20 @@ paths:
       description: |
         Create a paid ad with custom creative across Meta, Google Ads, Pinterest, TikTok, X, LinkedIn, and OpenAI Ads (ChatGPT Ads).
 
-        Three mutually-exclusive request shapes are selected by the body:
+        Google Performance Max: set `campaignType: "pmax"` and supply `assetGroup` with
+        text, images by role, business name and finalUrl. Creates a daily budget, PAUSED
+        campaign and asset group atomically. `validateOnly: true` validates the complete
+        request with Google without creating or persisting resources. Read assets with
+        `GET /v1/ads/campaigns/{campaignId}/asset-groups`. The logo is required; video is
+        optional via `assetGroup.youtubeVideoId`. Brand guidelines are disabled at creation.
+        PMax rejects ACTIVE creation, portfolio bidding, bid caps, legacy creative fields
+        and attach shapes. Geo and language targeting are supported; omitted geo targets
+        all locations. PMax does not require top-level goal, headline, body or linkUrl.
+        Supported bidding: omitted or LOWEST_COST_WITHOUT_CAP for Maximize Conversions,
+        COST_CAP plus bidAmount for target CPA, LOWEST_COST_WITH_MIN_ROAS plus
+        roasAverageFloor for Maximize Conversion Value with target ROAS.
+
+        Other mutually-exclusive request shapes are selected by the body:
 
         - Legacy single-creative shape (all platforms, the default).
         - Meta-only multi-creative shape via the creatives array: one ad set with N ads sharing budget and targeting.
@@ -50347,13 +50498,13 @@ paths:
                   description: "Meta only. Multi-advertiser ads: whether Meta may show this ad alongside other advertisers' in one unit. Meta auto-enrols since Aug 2024, so send OPT_OUT to leave. It is a top-level creative field, NOT a `creativeFeatures` key, and Meta rejects it there."
                 validateOnly:
                   type: boolean
-                  description: 'Meta only. Validates the complete inline campaign, ad set, creative and ad with execution_options validate_only. Nothing is uploaded or created, and validation bypasses Idempotency-Key storage. Supports a single image, existing video.id or existingCreativeId; media pools, new video uploads, creatives[], adSetId and RESERVED buying return 400. Existing campaign or creative nodes are marked skipped. Success returns 200 with per-node results; Meta rejection returns an error.'
-                budgetAmount: { type: number, description: "Budget in WHOLE currency units (USD: 50 = $50.00), NOT cents. Meta's own Marketing API takes this same number in minor units, so it is an easy and expensive mix-up. Required on legacy + multi-creative shapes. Inherited on attach. OpenAI Ads requires a $1 minimum (its budget is lifetime-only, see budgetType)." }
-                budgetType: { type: string, enum: [daily, lifetime], description: "Required on legacy + multi-creative shapes. Inherited on attach. OpenAI Ads accepts lifetime only (no daily-budget concept on the platform); sending daily returns 422. OpenAI Ads lifetime budgets require `endDate` to give the lifetime cap a spend window." }
+                  description: 'Google Performance Max validates the complete atomic campaign and asset group with no resource creation or local persistence. Google validation still downloads image URLs and consumes quota. On Meta, validates the complete inline campaign, ad set, creative and ad with execution_options validate_only. Nothing is uploaded or created, and validation bypasses Idempotency-Key storage. Supports a single image, existing video.id or existingCreativeId; media pools, new video uploads, creatives[], adSetId and RESERVED buying return 400. Existing campaign or creative nodes are marked skipped. Success returns 200 with per-node results; Meta rejection returns an error.'
+                budgetAmount: { type: number, description: "Budget in WHOLE currency units (USD: 50 = $50.00), NOT cents. Meta's own Marketing API takes this same number in minor units, so it is an easy and expensive mix-up. Required on legacy, multi-creative and Performance Max shapes. Inherited on attach. OpenAI Ads requires a $1 minimum (its budget is lifetime-only, see budgetType)." }
+                budgetType: { type: string, enum: [daily, lifetime], description: "Required on legacy, multi-creative and Performance Max shapes. Inherited on attach. OpenAI Ads accepts lifetime only (no daily-budget concept on the platform); sending daily returns 422. OpenAI Ads lifetime budgets require `endDate` to give the lifetime cap a spend window." }
                 status:
                   type: string
                   enum: [ACTIVE, PAUSED]
-                  description: "Meta, TikTok, and LinkedIn. Publish state of the created entities. Omitted or ACTIVE publishes live (default, back-compat); PAUSED creates them paused so you can review before they spend. On Meta the pause is held on the campaign this call creates, leaving the ad set and ad switched on, so a single PUT /v1/ads/campaigns/{campaignId}/status with `active` brings the whole thing live. It is held at every level instead when the pause cannot rely on the campaign: `existingCampaignId` (that campaign may be running and is never touched) or `campaignStatus: ACTIVE`. On TikTok the whole campaign > ad group > ad hierarchy stays paused. On LinkedIn the whole campaign group, campaign, and creative hierarchy stays PAUSED (intendedStatus PAUSED on each)."
+                  description: "Google Performance Max accepts PAUSED only and always creates a paused campaign. Meta, TikTok, and LinkedIn: publish state of the created entities. Omitted or ACTIVE publishes live (default, back-compat); PAUSED creates them paused so you can review before they spend. On Meta the pause is held on the campaign this call creates, leaving the ad set and ad switched on, so a single PUT /v1/ads/campaigns/{campaignId}/status with `active` brings the whole thing live. It is held at every level instead when the pause cannot rely on the campaign: `existingCampaignId` (that campaign may be running and is never touched) or `campaignStatus: ACTIVE`. On TikTok the whole campaign > ad group > ad hierarchy stays paused. On LinkedIn the whole campaign group, campaign, and creative hierarchy stays PAUSED (intendedStatus PAUSED on each)."
                 campaignStatus:
                   type: string
                   enum: [ACTIVE, PAUSED]
@@ -50984,7 +51135,9 @@ paths:
                                 type: array
                                 items: { type: string, enum: [mobile, desktop] }
                 audienceId: { type: string, description: Custom audience ID for targeting }
-                campaignType: { type: string, enum: [display, search], default: display, description: Google only }
+                campaignType: { type: string, enum: [display, search, pmax], default: display, description: "Google only. Performance Max requires assetGroup and is always created PAUSED." }
+                assetGroup:
+                  $ref: '#/components/schemas/GooglePmaxAssetGroupInput'
                 keywords: { type: array, maxItems: 1000, items: { $ref: '#/components/schemas/KeywordEntry' }, description: "Google Search only. Keywords on the new ad group; entries are strings (BROAD) or { text, matchType }. Editable later via PUT /v1/ads/{adId} targeting.keywords." }
                 negativeKeywords: { type: array, maxItems: 1000, items: { $ref: '#/components/schemas/KeywordEntry' }, description: "Google Search only; other platforms return 400. Ad-group-level negative keywords on the new ad group. Editable later via PUT /v1/ads/{adId} targeting.negativeKeywords." }
                 campaignNegativeKeywords: { type: array, maxItems: 1000, items: { $ref: '#/components/schemas/KeywordEntry' }, description: "Google Search only; other platforms return 400. Campaign-level negative keywords (campaign_criterion.negative), created alongside the ad group. Editable later via PUT /v1/ads/campaigns/{campaignId}/negative-keywords." }
@@ -51126,7 +51279,7 @@ paths:
                 portfolioBidStrategyId:
                   type: string
                   pattern: '^\d+$'
-                  description: "Google only. Attach an existing portfolio bid strategy (numeric id from GET /v1/ads/bid-strategies) to the new campaign instead of a standard one. Exclusive with bidStrategy."
+                  description: "Google Search and Display only. Performance Max rejects portfolio bidding. Attach an existing portfolio bid strategy (numeric id from GET /v1/ads/bid-strategies) to the new campaign instead of a standard one. Exclusive with bidStrategy."
                 valueRuleSetId:
                   type: string
                   pattern: '^\d+$'
@@ -51264,6 +51417,29 @@ paths:
                 promotedObject:
                   $ref: '#/components/schemas/AdPromotedObject'
             examples:
+              performanceMax:
+                summary: "Paused Performance Max campaign."
+                value:
+                  accountId: '69ce75d483e990e1c01ccfe4'
+                  adAccountId: '9122445560'
+                  name: 'Social publishing'
+                  campaignType: pmax
+                  budgetAmount: 1
+                  budgetType: daily
+                  status: PAUSED
+                  validateOnly: true
+                  countries: [US]
+                  languages: [en]
+                  assetGroup:
+                    finalUrl: 'https://zernio.com'
+                    headlines: ['Schedule posts', 'One social API', 'Build with Zernio']
+                    longHeadline: 'Schedule social content from your app with Zernio'
+                    descriptions: ['Connect your social accounts.', 'Publish and manage social content through one API.']
+                    businessName: Zernio
+                    images:
+                      landscape: ['https://example.com/landscape.png']
+                      square: ['https://example.com/square.png']
+                      logo: ['https://example.com/logo.png']
               appPromotion:
                 value:
                   accountId: '69fc524892b3d8e85f893e73'
@@ -51322,7 +51498,7 @@ paths:
                     items:
                       type: object
                       properties:
-                        node: { type: string, enum: [campaign, adSet, creative, ad] }
+                        node: { type: string, enum: [campaign, adSet, creative, ad, performanceMaxCampaign] }
                         status: { type: string, enum: [validated, skipped] }
                         reason: { type: string, description: "Why the node could not be validated (only on skipped)." }
                   message: { type: string }

@@ -469,6 +469,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `ad_campaigns.list_campaign_assets()` | List campaign assets |
 | `ad_campaigns.list_campaign_negative_keyword_lists()` | List campaign negative lists |
 | `ad_campaigns.list_campaign_negative_keywords()` | List campaign-level negative keywords |
+| `ad_campaigns.list_google_asset_groups()` | List Performance Max asset groups |
 | `ad_campaigns.bulk_update_ad_campaign_status()` | Pause or resume many campaigns |
 | `ad_campaigns.create_ad_campaign()` | Create a standalone campaign |
 | `ad_campaigns.create_ad_set()` | Create a standalone ad group |
