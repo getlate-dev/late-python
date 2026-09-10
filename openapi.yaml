@@ -7781,6 +7781,8 @@ components:
         igReelsAvgWatchTime: { type: integer, example: 0, description: 'Instagram Reels only: average watch time per play, in milliseconds. 0 for non-Reels media and other platforms.' }
         igReelsVideoViewTotalTime: { type: integer, example: 0, description: 'Instagram Reels only: total watch time including replays, in milliseconds. 0 for non-Reels media and other platforms.' }
         reelsSkipRate: { type: number, example: 48.8, description: 'Instagram Reels only: percentage (0-100) of initial views that skipped the reel within its first 3 seconds, as reported by Meta. Meta labels the metric estimated and in development, so it can move between syncs. 0 for non-Reels media and other platforms. When a post is published to several accounts, the aggregate is weighted by views.' }
+        completionRate: { type: number, example: 0, description: 'TikTok accounts connected through the TikTok for Business app only: share of viewers who watched the video to the end, 0 to 1, as TikTok reports it (T+24-48h, only for posts active in the last 7 days). 0 for other platforms. When a post is published to several accounts, the aggregate is weighted by views.' }
+        profileViews: { type: integer, example: 0, description: 'TikTok accounts connected through the TikTok for Business app only: profile views from users who reached the profile through this post (T+24-48h). 0 for other platforms.' }
         reposts: { type: integer, example: 0, description: 'Instagram accounts connected with Facebook Login only: reposts of the media by other users, minus deleted reposts, on feed posts, reels and stories. Meta does not expose this metric for accounts connected with Instagram Login, so those always report 0. 0 for other platforms, including Threads, where reposts are counted in shares instead.' }
         videoDurationSeconds: { type: [integer, "null"], example: 30, description: 'Video length in seconds. Currently Instagram Reels only; combine with igReelsAvgWatchTime (ms) to estimate retention. Null when unknown (other platforms, non-video media, or when Instagram does not expose the media URL, e.g. reels with copyrighted audio).' }
         engagementRate: { type: number, example: 6.59, description: 'Percentage, rounded to 2 decimals: (likes + comments + shares + saves) / (impressions or reach or views) * 100. Clicks and follows are never counted. The denominator is the FIRST of impressions, reach, views that is non-zero, so it is not the same basis on every post: a post with impressions divides by impressions, one without falls back to reach, then to views. If you need a single consistent basis (e.g. interactions / reach), compute it from the raw fields above. The engagementRate on the LinkedIn account endpoints is a different formula.' }
@@ -7976,7 +7978,7 @@ components:
         metrics:
           type: object
           description: 'Metrics a platform does not report are 0, not absent.'
-          required: [impressions, reach, likes, comments, shares, saves, sends, clicks, views, follows, igReelsAvgWatchTime, igReelsVideoViewTotalTime, reposts, reelsSkipRate]
+          required: [impressions, reach, likes, comments, shares, saves, sends, clicks, views, follows, igReelsAvgWatchTime, igReelsVideoViewTotalTime, reposts, reelsSkipRate, completionRate, profileViews]
           properties:
             impressions: { type: integer }
             reach: { type: integer }
@@ -7992,6 +7994,8 @@ components:
             igReelsVideoViewTotalTime: { type: integer, description: 'Instagram Reels total watch time, in milliseconds' }
             reposts: { type: integer }
             reelsSkipRate: { type: number, description: 'Instagram Reels skip rate, 0 to 1' }
+            completionRate: { type: number, description: 'TikTok business lane: share of viewers who watched to the end, 0 to 1' }
+            profileViews: { type: integer, description: 'TikTok business lane: profile views attributed to the post' }
     AnalyticsDeltaResponse:
       type: object
       required: [data, nextCursor, hasMore]
@@ -12187,8 +12191,8 @@ paths:
           description: Page number (default 1)
         - name: sortBy
           in: query
-          schema: { type: string, enum: [date, engagement, impressions, reach, likes, comments, shares, saves, clicks, views, follows, ig_reels_avg_watch_time, ig_reels_video_view_total_time, reposts, reels_skip_rate], default: date }
-          description: 'Sort by date, engagement, or a specific metric. Instagram-only metrics (follows, reposts, reels_skip_rate, ig_reels_*) sort a null value as 0.'
+          schema: { type: string, enum: [date, engagement, impressions, reach, likes, comments, shares, saves, clicks, views, follows, ig_reels_avg_watch_time, ig_reels_video_view_total_time, reposts, reels_skip_rate, completion_rate, profile_views], default: date }
+          description: 'Sort by date, engagement, or a specific metric. Platform-specific metrics (follows, reposts, reels_skip_rate, ig_reels_*, completion_rate, profile_views) sort a null value as 0.'
         - name: order
           in: query
           schema: { type: string, enum: [asc, desc], default: desc }
@@ -12498,6 +12502,8 @@ paths:
                           igReelsVideoViewTotalTime: 0
                           reposts: 0
                           reelsSkipRate: 0
+                          completionRate: 0
+                          profileViews: 0
                     nextCursor: "v1.WyIyMDI2LTA5LTAxIDE3OjEyOjA0IiwiNjVmMWMwYTllMmI1YWYwMDEyYWIzNGNkIl0"
                     hasMore: true
         '400': { $ref: '#/components/responses/BadRequest' }
