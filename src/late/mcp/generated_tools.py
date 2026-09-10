@@ -5007,6 +5007,10 @@ def register_generated_tools(mcp, _get_client):
           - `campaign`: CBO (Campaign Budget Optimization / Advantage Campaign Budget). The
             budget AND `bidStrategy` are set on the CAMPAIGN, and Meta distributes spend
             across ad sets automatically.
+        The returned ad stores the applied `budgetLevel` and budget in `campaignBudget`
+        for CBO or `adSetBudget` for ABO. Edit CBO budgets with
+        `PUT /v1/ads/campaigns/{campaignId}` and ABO budgets with
+        `PUT /v1/ads/ad-sets/{adSetId}`.
         Meta requires the budget at exactly one level, never both. Non-Meta platforms ignore
         this field. Ignored on the attach shape (`adSetId`), which inherits the existing budget.
                 currency: ISO 4217 currency code matching the ad account's currency (e.g. `USD`). Meta only. Optional: Zernio resolves it from the ad account when omitted. The value selects the minor-unit exponent Zernio converts budget/bid amounts by before calling Meta (most currencies are cents; zero-decimal currencies like JPY/KRW are sent as-is).
