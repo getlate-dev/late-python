@@ -31087,7 +31087,7 @@ paths:
                         canReply: { type: boolean }
                         canDelete: { type: boolean }
                         canHide: { type: boolean, description: "Whether this comment can be hidden (Facebook, Instagram, Threads)" }
-                        canLike: { type: boolean, description: "Whether this comment can be liked (Facebook, X, Bluesky, Reddit)" }
+                        canLike: { type: boolean, description: "Whether this comment can be liked (Facebook, X, Bluesky, Reddit, LinkedIn)" }
                         isHidden: { type: boolean, description: Whether the comment is currently hidden }
                         isLiked: { type: boolean, description: Whether the current user has liked this comment }
                         likeUri: { type: [string, "null"], description: Bluesky like URI for unliking }
@@ -31556,12 +31556,16 @@ paths:
                   commentId: { type: string }
                   liked: { type: boolean }
                   likeUri: { type: string, description: (Bluesky only) URI to use for unliking }
+                  alreadyReacted: { type: boolean, description: 'LinkedIn only: the account already had this exact reaction, so nothing was created' }
+                  reactionType: { type: string, description: 'LinkedIn only: the reaction type now in effect' }
                   platform: { type: string }
         '400':
           description: Platform does not support liking comments
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Inbox addon required, or the account is missing the platform permission
+        '409':
+          description: 'LinkedIn only: the account already holds a different reaction on this target (code invalid_resource_state); remove it before creating another.'
     delete:
       x-resource-group: "engagement"
       operationId: unlikeInboxComment
@@ -31682,12 +31686,16 @@ paths:
                   platform: { type: string }
                   liked: { type: boolean }
                   likeUri: { type: string, description: (Bluesky only) URI to use for unliking }
+                  alreadyReacted: { type: boolean, description: 'LinkedIn only: the account already had this exact reaction, so nothing was created' }
+                  reactionType: { type: string, description: 'LinkedIn only: the reaction type now in effect' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Inbox addon required, or the account is missing the platform scope
         '404':
           description: Account or post not found
+        '409':
+          description: 'LinkedIn only: the account already holds a different reaction on this target (code invalid_resource_state); remove it before creating another.'
     delete:
       operationId: unlikePost
       summary: Unlike post
