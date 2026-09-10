@@ -7189,7 +7189,7 @@ components:
           description: |
             Reference to the parent posting SocialAccount. Set for ads accounts that share
             or derive from a posting account's OAuth token. null for standalone ads (Google Ads)
-            and all posting accounts.
+            and all posting accounts. Meta ads business-login accounts also have no parent.
         enabled:
           type: boolean
           description: |
@@ -7208,6 +7208,17 @@ components:
             - displayPhoneNumber: Formatted phone number (e.g., "+1 555-123-4567")
             - wabaId: WhatsApp Business Account ID
             - phoneNumberId: Meta phone number ID
+
+            For Meta ads business-login accounts:
+            - tokenType: system-user
+            - businessId: The owning Business Manager ID when there is one owner; null for multiple owners.
+            - businessIds: Owning Business Manager IDs discovered from granted ad accounts.
+            - grantedAdAccountIds: Ad-account IDs granted to the token.
+            - adAccountBusinesses: Map from ad-account ID to its owning business ID or null.
+            - availablePages: Granted Page IDs and names. No Page tokens are exposed.
+            - selectedPageId: The Page selected for creatives and lead forms, or null.
+            - scopedAdAccountIds: Existing sync scope preserved on reconnect.
+            Non-expiring tokens have no tokenExpiresAt field. Parent posting reconnects do not replace this token.
 
             For LinkedIn accounts, profileData carries the profile details refreshed on each daily snapshot:
             - profileData.bio: The member's headline for personal accounts, or the organization description for organization accounts. null when the member has not set one.
@@ -19491,9 +19502,30 @@ paths:
       x-resource-group: "accounts"
       operationId: connectAds
       tags: [Connect]
+      x-platforms: [meta, linkedin, tiktok, twitter, pinterest, google]
       summary: Connect ads for a platform
       description: |
         Unified ads connection endpoint. Creates a dedicated ads SocialAccount for the specified platform.
+
+        **Meta business login (opt-in).** Set `loginMode=business` for `facebook` or
+        `instagram` to use Facebook Login for Business and a Business Integration System User
+        token. No posting account is created or required. This mode always returns an authUrl;
+        it returns 503 when the server has no META_ADS_CONFIG_ID. Complete the dialog in a
+        browser. The callback creates or reconnects only the metaads account, preserving its
+        ID, history and scopedAdAccountIds. Non-empty successful subscription results replace
+        subscribedAdAccountIds to remove stale grants; an empty result leaves routing unchanged. A reconnect must grant
+        every previously scoped ad account (or every previous grant for an unscoped connection).
+        Missing or unverifiable grants return 409 before changing the account.
+
+        Pass `pageId` to select a granted Page for creatives and lead forms. Otherwise the
+        previous Page or sole granted Page is selected. Multiple Pages without a selection
+        return 400 with available Page IDs; restart with pageId. With no Pages granted the
+        account can manage campaigns and sync insights but cannot create Page-based creatives
+        or list Page forms. Success redirects with connected=metaads, profileId and accountId.
+        Business login reports metadata.tokenType=system-user in GET /v1/accounts. An absent
+        Meta expires_in leaves tokenExpiresAt absent; no personal-token re-exchange occurs.
+        Subsequent classic requests can change the ad-account scope using the business token;
+        force=true requires loginMode=business to reconnect that connection.
 
         **Same-token platforms (facebook, instagram, linkedin, pinterest).** The ads SocialAccount
         (metaads, linkedinads, pinterestads) reuses the OAuth token of the parent posting account,
@@ -19527,6 +19559,16 @@ paths:
 
         Ads accounts appear as regular SocialAccount documents with ads platform values (e.g., metaads, tiktokads) in GET /v1/accounts.
       parameters:
+        - name: loginMode
+          in: query
+          schema: { type: string, enum: [classic, business], default: classic }
+          description: "Meta ads authorization mode. Business login is opt-in for Facebook and Instagram; classic preserves the posting-account flow."
+          example: business
+        - name: pageId
+          in: query
+          schema: { type: string, pattern: '^\d+$' }
+          description: "Business login only. Facebook Page ID to select from the token grants for ad creatives and lead forms."
+          example: "811889972008357"
         - name: platform
           in: path
           required: true
@@ -19536,7 +19578,7 @@ paths:
           description: |
             Platform to connect ads for. Only platforms with ads support are accepted.
 
-            `instagram` requires an Instagram account connected with loginMethod=facebook_login whose
+            In classic mode, `instagram` requires an Instagram account connected with loginMethod=facebook_login whose
             token carries ads_management and ads_read. With an account connected through the default
             instagram_login flow no ads account can be created; do not use this value for those accounts.
         - name: profileId
@@ -19590,7 +19632,9 @@ paths:
           schema: { type: string }
           description: |
             Scope ad sync to a single platform ad account. Without this param,
-            sync covers every ad account the connected token can see. Supported
+            sync covers every ad account the connected token can see. Business-login reconnects
+            preserve the existing scope; supplied IDs are checked against the new grant. To change
+            that scope after migration, call this endpoint with the IDs and omit loginMode. Supported
             on `facebook`/`instagram` (Meta, `act_<digits>`), `linkedin` (bare
             numeric sponsored-account id), `googleads` (bare customer id digits)
             and `twitter` (X Ads, base36 account id). `tiktok` scopes advertisers
@@ -19632,6 +19676,7 @@ paths:
                       platform: { type: string }
                       username: { type: string }
                       displayName: { type: string }
+                      tokenType: { type: string, enum: [system-user], description: "Present for an existing business-login connection." }
                       scopedAdAccountIds:
                         type: array
                         items: { type: string }
@@ -19653,6 +19698,11 @@ paths:
                     platform: "instagram"
                     username: "@mybrand"
                     displayName: "My Brand"
+                businessLogin:
+                  summary: Meta ads business login
+                  value:
+                    authUrl: "https://www.facebook.com/v24.0/dialog/oauth?client_id=APP_ID&config_id=CONFIG_ID&response_type=code&override_default_response_type=true&redirect_uri=https%3A%2F%2Fzernio.com%2Fapi%2Fv1%2Fconnect%2Fmeta-ads%2Fcallback&state=ENCRYPTED_STATE"
+                    state: "ENCRYPTED_STATE"
                 oauthRequired:
                   summary: Separate-token platform (TikTok) needing ads OAuth
                   value:
@@ -19665,6 +19715,35 @@ paths:
           description: "Ads access required (Ads add-on on legacy plans, included on usage-based plans), or no access to profile"
         '404':
           description: "Profile or posting account not found"
+        '409':
+          description: "Reconnect a system-user connection with loginMode=business."
+        '503':
+          description: "Business login is not configured or the platform is temporarily unavailable."
+
+  /v1/connect/meta-ads/callback:
+    get:
+      operationId: completeMetaAdsBusinessLogin
+      summary: Complete Meta business login
+      tags: [Connect]
+      x-platforms: [meta]
+      x-resource-group: "accounts"
+      security: []
+      description: "Facebook Login for Business redirect target. Meta supplies the single-use authorization code and the authenticated state returned by connectAds. The state expires after 30 minutes and binds the user, profile, Page selection and ad-account scope. No bearer token is sent by the browser. Success reconnects only metaads and redirects to the original redirect_url. Invalid state returns 400; inaccessible profiles or missing ads access cannot connect. No token is returned to the browser."
+      parameters:
+        - { name: state, in: query, required: true, schema: { type: string }, description: "Authenticated state from the initial connectAds response.", example: "ENCRYPTED_STATE" }
+        - { name: code, in: query, schema: { type: string }, description: "Single-use authorization code returned by Meta." }
+        - { name: error, in: query, schema: { type: string }, description: "Meta authorization error when the user declines the dialog." }
+      responses:
+        '307':
+          description: "Redirect to the original callback URL with connected=metaads, profileId and accountId on success; authorization denial redirects with an error."
+          headers:
+            Location:
+              schema: { type: string, format: uri }
+              example: "https://example.com/callback?connected=metaads&profileId=PROFILE_ID&accountId=ACCOUNT_ID"
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { description: "Ads access or profile access required." }
+        '409': { description: "The new token grants do not match the existing connection, or its previous grants cannot be verified." }
+        '503': { description: "Business login state signing is not configured." }
 
   /v1/connect/shopify:
     get:
@@ -49787,6 +49866,9 @@ paths:
       description: |
         Returns the platform ad accounts available for the given account (e.g. Meta ad
         accounts, TikTok advertiser IDs, Google Ads customer IDs).
+        Meta business-login accounts use their own system-user token. Fresh Meta discovery
+        includes businessId and businessName from the owning Business Manager when available;
+        cached entries gain these fields after the next discovery refresh.
 
         For TikTok agencies: enumerates every advertiser under every Business Center the token
         can read (paginated server-side), then chunks the lookup against TikTok's
@@ -49818,6 +49900,8 @@ paths:
                         id: { type: string, description: "Platform ad account ID (e.g. act_123)" }
                         name: { type: string }
                         currency: { type: string }
+                        businessId: { type: string, description: "Meta only. Owning Business Manager ID when available on the grant." }
+                        businessName: { type: string, description: "Owning business name when supplied by the platform." }
                         status: { type: string, description: "LinkedIn only. LinkedIn's own ad account status. In practice always `ACTIVE`, because the LinkedIn query filters to active accounts. Meta, Google, TikTok and Pinterest report `accountStatus` instead; X reports `approvalStatus`." }
                         accountStatus:
                           description: |
@@ -51612,11 +51696,11 @@ paths:
       summary: List lead forms
       description: >
         Lists the Lead Gen forms owned by the account. Meta: forms on the
-        connected Facebook Page. LinkedIn: forms owned by the ad account's
+        connected Facebook Page, including a Page selected on a metaads business-login connection. LinkedIn: forms owned by the ad account's
         Company Page. Pass `adAccountId` (LinkedIn forms are org-owned).
         Requires the Ads add-on.
       parameters:
-        - { name: accountId, in: query, required: true, schema: { type: string }, description: Connected facebook or linkedin ads account id. }
+        - { name: accountId, in: query, required: true, schema: { type: string }, description: "Connected Facebook, Meta ads business-login or LinkedIn ads account ID." }
         - { name: adAccountId, in: query, schema: { type: string }, description: "LinkedIn only: the LinkedIn ad account id (used to resolve the owning organization). Required for LinkedIn." }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
         - { name: cursor, in: query, schema: { type: string } }
@@ -51643,7 +51727,8 @@ paths:
       description: >
         Creates a Lead Gen form. The form content goes inside
         `platformSpecificData` for both platforms (the shape is selected by the
-        accountId's platform). Meta: created on the connected Facebook Page
+        accountId's platform). Meta: created on the connected Facebook Page (a
+        facebook account or a metaads business-login account with a selected Page)
         (POST /{page-id}/leadgen_forms); the old top-level Meta fields
         (questions, thankYou*, contextCard, …) are DEPRECATED but still
         accepted while platformSpecificData is absent; mixing both shapes is
@@ -51837,6 +51922,8 @@ paths:
       description: >
         Returns leads for one form. Serves persisted leads (ingested via the
         leadgen webhook) when available, falling back to a live Graph read.
+        Accepts a Facebook account or a metaads business-login account with leads_retrieval
+        access to the form; the latter uses its system-user token without a posting parent.
       parameters:
         - { name: formId, in: path, required: true, schema: { type: string } }
         - { name: accountId, in: query, required: true, schema: { type: string } }

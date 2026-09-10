@@ -356,6 +356,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `connect.update_reddit_subreddits()` | Set default subreddit |
 | `connect.update_youtube_default_playlist()` | Set default YouTube playlist |
 | `connect.assign_google_business_location()` | Assign Google Business Profile location to another profile |
+| `connect.complete_meta_ads_business_login()` | Complete Meta business login |
 | `connect.complete_telegram_connect()` | Check Telegram status |
 | `connect.complete_whats_app_phone_selection()` | Complete number selection |
 | `connect.configure_tik_tok_ads_brand_identity()` | Set TikTok brand identity |

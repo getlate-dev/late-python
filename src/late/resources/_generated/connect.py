@@ -117,6 +117,8 @@ class ConnectResource:
         platform: str,
         profile_id: str,
         *,
+        login_mode: str | None = "classic",
+        page_id: str | None = None,
         account_id: str | None = None,
         redirect_url: str | None = None,
         headless: bool | None = False,
@@ -126,6 +128,8 @@ class ConnectResource:
     ) -> dict[str, Any]:
         """Connect ads for a platform"""
         params = self._build_params(
+            login_mode=login_mode,
+            page_id=page_id,
             profile_id=profile_id,
             account_id=account_id,
             redirect_url=redirect_url,
@@ -135,6 +139,17 @@ class ConnectResource:
             ad_account_ids=ad_account_ids,
         )
         return self._client._get(f"/v1/connect/{platform}/ads", params=params)
+
+    def complete_meta_ads_business_login(
+        self, state: str, *, code: str | None = None, error: str | None = None
+    ) -> dict[str, Any]:
+        """Complete Meta business login"""
+        params = self._build_params(
+            state=state,
+            code=code,
+            error=error,
+        )
+        return self._client._get("/v1/connect/meta-ads/callback", params=params)
 
     def get_shopify_connect_url(
         self, profile_id: str, shop: str, *, redirect_url: str | None = None
@@ -863,6 +878,8 @@ class ConnectResource:
         platform: str,
         profile_id: str,
         *,
+        login_mode: str | None = "classic",
+        page_id: str | None = None,
         account_id: str | None = None,
         redirect_url: str | None = None,
         headless: bool | None = False,
@@ -872,6 +889,8 @@ class ConnectResource:
     ) -> dict[str, Any]:
         """Connect ads for a platform (async)"""
         params = self._build_params(
+            login_mode=login_mode,
+            page_id=page_id,
             profile_id=profile_id,
             account_id=account_id,
             redirect_url=redirect_url,
@@ -881,6 +900,17 @@ class ConnectResource:
             ad_account_ids=ad_account_ids,
         )
         return await self._client._aget(f"/v1/connect/{platform}/ads", params=params)
+
+    async def acomplete_meta_ads_business_login(
+        self, state: str, *, code: str | None = None, error: str | None = None
+    ) -> dict[str, Any]:
+        """Complete Meta business login (async)"""
+        params = self._build_params(
+            state=state,
+            code=code,
+            error=error,
+        )
+        return await self._client._aget("/v1/connect/meta-ads/callback", params=params)
 
     async def aget_shopify_connect_url(
         self, profile_id: str, shop: str, *, redirect_url: str | None = None

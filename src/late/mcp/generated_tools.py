@@ -10744,6 +10744,8 @@ def register_generated_tools(mcp, _get_client):
     def connect_ads(
         platform: str,
         profile_id: str,
+        login_mode: str = "classic",
+        page_id: str | None = None,
         account_id: str | None = None,
         redirect_url: str | None = None,
         headless: bool = False,
@@ -10754,9 +10756,11 @@ def register_generated_tools(mcp, _get_client):
         """Connect ads for a platform
 
             Args:
+                login_mode: Meta ads authorization mode. Business login is opt-in for Facebook and Instagram; classic preserves the posting-account flow.
+                page_id: Business login only. Facebook Page ID to select from the token grants for ad creatives and lead forms.
                 platform: Platform to connect ads for. Only platforms with ads support are accepted.
 
-        `instagram` requires an Instagram account connected with loginMethod=facebook_login whose
+        In classic mode, `instagram` requires an Instagram account connected with loginMethod=facebook_login whose
         token carries ads_management and ads_read. With an account connected through the default
         instagram_login flow no ads account can be created; do not use this value for those accounts.
          (required)
@@ -10788,7 +10792,9 @@ def register_generated_tools(mcp, _get_client):
         Completing the returned OAuth refreshes the stored token
         on the existing posting and ads accounts in place.
                 ad_account_id: Scope ad sync to a single platform ad account. Without this param,
-        sync covers every ad account the connected token can see. Supported
+        sync covers every ad account the connected token can see. Business-login reconnects
+        preserve the existing scope; supplied IDs are checked against the new grant. To change
+        that scope after migration, call this endpoint with the IDs and omit loginMode. Supported
         on `facebook`/`instagram` (Meta, `act_<digits>`), `linkedin` (bare
         numeric sponsored-account id), `googleads` (bare customer id digits)
         and `twitter` (X Ads, base36 account id). `tiktok` scopes advertisers
@@ -10807,6 +10813,8 @@ def register_generated_tools(mcp, _get_client):
         client = _get_client()
         try:
             response = client.connect.connect_ads(
+                login_mode=login_mode,
+                page_id=page_id,
                 platform=platform,
                 profile_id=profile_id,
                 account_id=account_id,
@@ -10815,6 +10823,32 @@ def register_generated_tools(mcp, _get_client):
                 force=force,
                 ad_account_id=ad_account_id,
                 ad_account_ids=ad_account_ids,
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Complete Meta business login",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def connect_complete_meta_ads_business_login(
+        state: str, code: str | None = None, error: str | None = None
+    ) -> str:
+        """Complete Meta business login
+
+        Args:
+            state: Authenticated state from the initial connectAds response. (required)
+            code: Single-use authorization code returned by Meta.
+            error: Meta authorization error when the user declines the dialog."""
+        client = _get_client()
+        try:
+            response = client.connect.complete_meta_ads_business_login(
+                state=state, code=code, error=error
             )
             return _format_response(response)
         except Exception as e:
@@ -14533,7 +14567,7 @@ def register_generated_tools(mcp, _get_client):
         """List lead forms
 
         Args:
-            account_id: Connected facebook or linkedin ads account id. (required)
+            account_id: Connected Facebook, Meta ads business-login or LinkedIn ads account ID. (required)
             ad_account_id: LinkedIn only: the LinkedIn ad account id (used to resolve the owning organization). Required for LinkedIn.
             limit
             cursor"""
