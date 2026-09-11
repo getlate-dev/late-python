@@ -1625,7 +1625,7 @@ def register_generated_tools(mcp, _get_client):
         Args:
             account_id: Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token. (required)
             ad_account_id: Meta ad account id (act_<n>). (required)
-            fields: Comma-separated Graph field override (supports nested {} projections).
+            fields: Comma-separated Graph field override. Supports nested {} projections and Graph field modifiers, so a nested edge can be paged explicitly: without a .limit() modifier the expansion runs at the Meta default page size and the tail is dropped silently.
             limit: Rows per page
             after: Cursor from paging.after of the previous page."""
         client = _get_client()
@@ -3921,7 +3921,7 @@ def register_generated_tools(mcp, _get_client):
         Args:
             ad_set_id: Meta ad set id (platformAdSetId). (required)
             account_id: Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token. (required)
-            fields: Comma-separated Graph field override (supports nested {} projections)."""
+            fields: Comma-separated Graph field override. Supports nested {} projections and Graph field modifiers, so a nested edge can be paged explicitly: without a .limit() modifier the expansion runs at the Meta default page size and the tail is dropped silently."""
         client = _get_client()
         try:
             response = client.ad_campaigns.get_ad_set_details(
@@ -5621,7 +5621,7 @@ def register_generated_tools(mcp, _get_client):
         Args:
             account_id: Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token. (required)
             ad_account_id: Meta ad account id (act_<n>). (required)
-            fields: Comma-separated Graph field override (supports nested {} projections).
+            fields: Comma-separated Graph field override. Supports nested {} projections and Graph field modifiers, so a nested edge can be paged explicitly: without a .limit() modifier the expansion runs at the Meta default page size and the tail is dropped silently.
             limit: Rows per page
             after: Cursor from paging.after of the previous page."""
         client = _get_client()
@@ -5716,7 +5716,7 @@ def register_generated_tools(mcp, _get_client):
         Args:
             creative_id: Platform creative id (required)
             account_id: Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token. (required)
-            fields: Comma-separated Graph field override (supports nested {} projections)."""
+            fields: Comma-separated Graph field override. Supports nested {} projections and Graph field modifiers, so a nested edge can be paged explicitly: without a .limit() modifier the expansion runs at the Meta default page size and the tail is dropped silently."""
         client = _get_client()
         try:
             response = client.ad_creatives.get_ad_creative(
@@ -5828,7 +5828,7 @@ def register_generated_tools(mcp, _get_client):
         Args:
             account_id: Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token. (required)
             ad_account_id: Meta ad account id (act_<n>). (required)
-            fields: Comma-separated Graph field override (supports nested {} projections).
+            fields: Comma-separated Graph field override. Supports nested {} projections and Graph field modifiers, so a nested edge can be paged explicitly: without a .limit() modifier the expansion runs at the Meta default page size and the tail is dropped silently.
             limit: Rows per page
             after: Cursor from paging.after of the previous page."""
         client = _get_client()
@@ -5900,7 +5900,7 @@ def register_generated_tools(mcp, _get_client):
         Args:
             account_id: Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token. (required)
             ad_account_id: Meta ad account id (act_<n>). (required)
-            fields: Comma-separated Graph field override (supports nested {} projections).
+            fields: Comma-separated Graph field override. Supports nested {} projections and Graph field modifiers, so a nested edge can be paged explicitly: without a .limit() modifier the expansion runs at the Meta default page size and the tail is dropped silently.
             limit: Rows per page
             after: Cursor from paging.after of the previous page."""
         client = _get_client()
@@ -6592,7 +6592,7 @@ def register_generated_tools(mcp, _get_client):
             since: Earliest delivery date (YYYY-MM-DD).
             until: Latest delivery date (YYYY-MM-DD).
             search_type: Meta only. Whether q matches words in any order or as an exact phrase (comma-separate phrases to match all of them).
-            fields: Meta only. Raw Graph projection override, e.g. add spend,impressions,demographic_distribution for political ads.
+            fields: Meta only. Comma-separated Graph field override. Supports nested {} projections and Graph field modifiers, so a nested edge can be paged explicitly: without a .limit() modifier the expansion runs at the Meta default page size and the tail is dropped silently.
             limit: Rows per page. LinkedIn accepts at most 25.
             after: paging.after of the previous page."""
         client = _get_client()
