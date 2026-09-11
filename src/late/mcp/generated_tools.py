@@ -4197,6 +4197,7 @@ def register_generated_tools(mcp, _get_client):
         headlines: list[dict[str, Any]] | None = None,
         descriptions: list[dict[str, Any]] | None = None,
         final_urls: list[str] | None = None,
+        asset_group: dict[str, Any] | None = None,
         status: str | None = None,
         budget: dict[str, Any] | None = None,
         targeting: dict[str, Any] | None = None,
@@ -4207,9 +4208,10 @@ def register_generated_tools(mcp, _get_client):
 
             Args:
                 ad_id: (required)
-                headlines: Google RSA only. Replaces the complete headline list. No padding or truncation on update.
-                descriptions: Google RSA only. Replaces the complete description list. No padding or truncation on update.
-                final_urls: Google RSA only. Replaces final URLs. Omitted lists stay unchanged.
+                headlines: Google Search and Display only. Replaces the complete headline list. Search takes 3-15, Display 1-5 and rejects pinnedField; the count is checked once the ad's channel is known. No padding or truncation on update.
+                descriptions: Google Search and Display only. Replaces the complete description list. Search takes 2-4, Display 1-5 and rejects pinnedField. No padding or truncation on update.
+                final_urls: Google Search and Display only. Replaces final URLs. Omitted lists stay unchanged. For Performance Max use assetGroup.finalUrl.
+                asset_group: Google Performance Max only. Replaces whole asset roles on the ad's asset group. Returns 422 on any other platform or channel.
                 status
                 budget
                 targeting: Meta + TikTok (demographics/interests), Google (keyword and device
@@ -4249,6 +4251,7 @@ def register_generated_tools(mcp, _get_client):
                 headlines=headlines,
                 descriptions=descriptions,
                 final_urls=final_urls,
+                asset_group=asset_group,
                 status=status,
                 budget=budget,
                 targeting=targeting,

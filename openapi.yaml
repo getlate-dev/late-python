@@ -9432,6 +9432,70 @@ components:
           landscape: ['https://example.com/landscape.png']
           square: ['https://example.com/square.png']
           logo: ['https://example.com/logo.png']
+    GooglePmaxAssetGroupUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      description: |
+        Replacement assets for an existing Performance Max asset group, sent on PUT /v1/ads/{adId}.
+        Google assets are immutable (AssetService only creates), so each field you send becomes new
+        assets linked to the asset group, and the assets that role held are unlinked in the same
+        atomic request. Send one field or many; a field you omit is left untouched. Re-sending a
+        value the asset group already carries is a no-op for that asset, not a re-upload.
+        Unlinked assets stay in the account's asset library: Google has no asset delete.
+        At least one description must be 60 characters or fewer. Texts within each list must be distinct.
+      properties:
+        finalUrl: { type: string, format: uri, pattern: '^https?://', description: "Replaces the asset group's final URL." }
+        headlines:
+          type: array
+          minItems: 3
+          maxItems: 15
+          uniqueItems: true
+          description: "Replaces every HEADLINE asset on the group."
+          items: { type: string, minLength: 1, maxLength: 30 }
+        longHeadline: { type: string, minLength: 1, maxLength: 90, description: "Replaces the LONG_HEADLINE asset." }
+        descriptions:
+          type: array
+          minItems: 2
+          maxItems: 5
+          uniqueItems: true
+          description: "Replaces every DESCRIPTION asset. At least one must be 60 characters or fewer."
+          items: { type: string, minLength: 1, maxLength: 90 }
+        businessName: { type: string, minLength: 1, maxLength: 25, description: "Replaces the BUSINESS_NAME asset." }
+        images:
+          type: object
+          additionalProperties: false
+          minProperties: 1
+          description: "Public HTTP(S) image URLs. Each role you send replaces that role's images; roles you omit stay. GIF, JPEG or PNG, at most 5120 KB per image."
+          properties:
+            landscape:
+              type: array
+              minItems: 1
+              maxItems: 20
+              description: "Replaces MARKETING_IMAGE assets. Aspect ratio 1.91:1, minimum 600 x 314 pixels."
+              items: { type: string, format: uri, pattern: '^https?://' }
+            square:
+              type: array
+              minItems: 1
+              maxItems: 20
+              description: "Replaces SQUARE_MARKETING_IMAGE assets. Aspect ratio 1:1, minimum 300 x 300 pixels."
+              items: { type: string, format: uri, pattern: '^https?://' }
+            logo:
+              type: array
+              minItems: 1
+              maxItems: 5
+              description: "Replaces LOGO assets. Aspect ratio 1:1, minimum 128 x 128 pixels."
+              items: { type: string, format: uri, pattern: '^https?://' }
+        youtubeVideoIds:
+          type: array
+          minItems: 1
+          maxItems: 5
+          description: "Replaces YOUTUBE_VIDEO assets with existing YouTube video ids. Video uploads and arbitrary video URLs are not supported."
+          items: { type: string, pattern: '^[A-Za-z0-9_-]{11}$' }
+      example:
+        headlines: ['Schedule posts', 'One social API', 'Build with Zernio']
+        images:
+          landscape: ['https://example.com/new-landscape.png']
     GooglePmaxAssetGroup:
       type: object
       required: [id, resourceName, name, status, finalUrls, assets]
@@ -45318,11 +45382,21 @@ paths:
           Each list you send becomes the FULL new set of its kind (criteria not in the
           list are removed); a kind left out is untouched. Any other `targeting` field
           returns 400: Google cannot mutate it post-create without recreating
-          the campaign. RSA text updates use top-level `headlines`, `descriptions` and `finalUrls`.
-          Each supplied array replaces the full list; omit a field to preserve it. Use 3-15 headlines
-          (1-30 characters) and 2-4 descriptions (1-90 characters). Omit an asset to remove it;
-          omit pinnedField on an included asset to unpin it. Updates do not pad or truncate text.
-          The legacy creative fields remain unsupported for Google.
+          the campaign. Creative edits are dispatched on the ad's `advertisingChannelType`,
+          and every supported field replaces a whole set; a field you omit is preserved.
+          - **Search**: top-level `headlines`, `descriptions` and `finalUrls`. Use 3-15 headlines
+            (1-30 characters) and 2-4 descriptions (1-90 characters). Omit an asset to remove it;
+            omit pinnedField on an included asset to unpin it. Updates do not pad or truncate text.
+            The legacy creative fields remain unsupported.
+          - **Display**: top-level `headlines` (1-5, no pinnedField, display ads have no pinned
+            positions), `descriptions` (1-5) and `finalUrls`, plus `creative.longHeadline`,
+            `creative.businessName`, `creative.imageUrl` (the landscape marketing image) and
+            `creative.squareImageUrl`. Each image URL is uploaded as a new Google asset and the ad
+            is pointed at it; Google assets are immutable, so the previous asset stays in the
+            account's asset library.
+          - **Performance Max**: top-level `assetGroup`, which swaps asset roles on the ad's asset
+            group. The other creative fields return 422 for this channel, and `assetGroup` returns
+            422 on any other channel.
         - **LinkedIn**: status, budget, targeting (countries or regions, excludedLocations (countries),
           the B2B facets, and audience segments; applied to the LinkedIn Campaign via
           PARTIAL_UPDATE, and REPLACES the campaign's entire targetingCriteria, not a merge),
@@ -45393,6 +45467,25 @@ paths:
                   - text: Build social publishing into your application.
                   finalUrls:
                   - https://zernio.com
+              googlePmaxAssets:
+                summary: "Swap the headlines and the landscape image on a Performance Max asset group."
+                value:
+                  assetGroup:
+                    headlines: ['Schedule posts', 'One social API', 'Build with Zernio']
+                    images:
+                      landscape: ['https://example.com/new-landscape.png']
+              googleDisplayCreative:
+                summary: "Replace the text and the image on a Google Display ad."
+                value:
+                  headlines:
+                  - text: Schedule posts
+                  - text: One social API
+                  descriptions:
+                  - text: Publish and manage social content through one API.
+                  creative:
+                    longHeadline: Schedule social content from your app with Zernio
+                    imageUrl: 'https://example.com/new-landscape.png'
+                    squareImageUrl: 'https://example.com/new-square.png'
               metaPromotion:
                 summary: "Remove a Meta promotion."
                 value:
@@ -45404,25 +45497,28 @@ paths:
               properties:
                 headlines:
                   type: array
-                  minItems: 3
+                  minItems: 1
                   maxItems: 15
                   items:
                     $ref: '#/components/schemas/GoogleRsaHeadline'
-                  description: "Google RSA only. Replaces the complete headline list. No padding or truncation on update."
+                  description: "Google Search and Display only. Replaces the complete headline list. Search takes 3-15, Display 1-5 and rejects pinnedField; the count is checked once the ad's channel is known. No padding or truncation on update."
                 descriptions:
                   type: array
-                  minItems: 2
-                  maxItems: 4
+                  minItems: 1
+                  maxItems: 5
                   items:
                     $ref: '#/components/schemas/GoogleRsaDescription'
-                  description: "Google RSA only. Replaces the complete description list. No padding or truncation on update."
+                  description: "Google Search and Display only. Replaces the complete description list. Search takes 2-4, Display 1-5 and rejects pinnedField. No padding or truncation on update."
                 finalUrls:
                   type: array
                   minItems: 1
                   items:
                     type: string
                     format: uri
-                  description: "Google RSA only. Replaces final URLs. Omitted lists stay unchanged."
+                  description: "Google Search and Display only. Replaces final URLs. Omitted lists stay unchanged. For Performance Max use assetGroup.finalUrl."
+                assetGroup:
+                  allOf: [{ $ref: '#/components/schemas/GooglePmaxAssetGroupUpdate' }]
+                  description: "Google Performance Max only. Replaces whole asset roles on the ad's asset group. Returns 422 on any other platform or channel."
                 status: { type: string, enum: [active, paused] }
                 budget:
                   type: object
@@ -45542,6 +45638,9 @@ paths:
                     promotion: { $ref: '#/components/schemas/MetaPromotion' }
                     creativeFeatures: { $ref: '#/components/schemas/MetaCreativeFeatures' }
                     headline: { type: string, description: "Meta and LinkedIn (TikTok has no headline slot)" }
+                    longHeadline: { type: string, minLength: 1, maxLength: 90, description: "Google Display only. Replaces the responsive display ad's long headline." }
+                    businessName: { type: string, minLength: 1, maxLength: 25, description: "Google Display only. Replaces the responsive display ad's business name." }
+                    squareImageUrl: { type: string, format: uri, description: "Google Display only. Uploaded as a new square (1:1) marketing image asset that replaces the current one." }
                     body: { type: string }
                     description: { type: string, maxLength: 255, description: "Link description slot (Meta `link_data.description` / `video_data.link_description`, LinkedIn creative description)." }
                     callToAction: { type: string }
@@ -45567,7 +45666,7 @@ paths:
         '403':
           description: 'Returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
         '404': { $ref: '#/components/responses/NotFound' }
-        '422': { description: "The ad has no campaign or ad group on the platform yet, or the Google targeting edit asks for something that is create-only (`locations.customLocations`)" }
+        '422': { description: "The ad has no campaign or ad group on the platform yet, the Google targeting edit asks for something that is create-only (`locations.customLocations`), or a creative field the ad's channel cannot carry: assetGroup on a non-Performance-Max ad, a Google Display field on a Search ad, a pinnedField on a Display headline, or any Google-only field on another platform. A Google creative edit that cannot reach Google at all (the ad has no `platformAdId`, or its ad account cannot be loaded) also returns 422 rather than a 200 that changed nothing." }
         '501': { description: "targeting or creative not supported on the platform (supported on Meta, TikTok, and LinkedIn)" }
         '502': { description: "Meta accepted the request then failed to produce the media (upload session, chunk transfer, processing timeout, or a response with no image hash). Inspect `platformError.reason`." }
     delete:
