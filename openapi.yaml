@@ -175,7 +175,7 @@ x-documentation:
     - `message.failed` - An outgoing message failed delivery (WhatsApp, SMS; on SMS the carrier's error code rides in `error`)
     - `reaction.received` - A participant added or removed an emoji reaction on a message (WhatsApp, Telegram, Slack, Instagram, Facebook Messenger)
     - `referral.received` - Someone opened an existing Instagram/Messenger thread through an ig.me/m.me `ref` link or a returning Messenger ad click; carries Meta's referral object (a referral that rides an inbound message arrives on `message.received` under `metadata.referral` instead)
-    - `comment.received` - New comment received on a post
+    - `comment.received` - New comment received on a post (Instagram, Facebook, Threads, YouTube, LinkedIn, Bluesky, Reddit, TikTok). X/Twitter does NOT fire this event
     - `review.new` - New review posted on a connected account (Google Business Profile)
     - `review.updated` - A Google Business Profile reviewer edited their review text or rating, or a reply was posted through `POST /v1/inbox/reviews/{reviewId}/reply`. A reply written directly in Google's own interface does NOT fire this event, because Google emits no notification for it.
     - `lead.received` - New lead submitted against a Meta Lead Gen (Instant) Form. `lead.fields` is the question-key → answer map; `lead.formId`/`lead.adId` give provenance.
@@ -3144,7 +3144,7 @@ components:
           description: 'UTC time at which Zernio generated this event (set once when the event payload is built, before delivery is queued).'
     WebhookPayloadComment:
       type: object
-      description: 'Webhook payload for comment received events (Instagram, Facebook, X, YouTube, LinkedIn, Bluesky, Reddit, TikTok). TikTok events carry only the author id: the comment.update webhook has no username, picture or owner flag.'
+      description: 'Webhook payload for comment received events (Instagram, Facebook, Threads, YouTube, LinkedIn, Bluesky, Reddit, TikTok). X/Twitter does NOT fire this event. TikTok events carry only the author id: the comment.update webhook has no username, picture or owner flag.'
       required: [id, event, comment, post, account, timestamp]
       properties:
         id:
@@ -3168,7 +3168,7 @@ components:
               description: Platform's post ID
             platform:
               type: string
-              enum: [instagram, facebook, twitter, youtube, linkedin, bluesky, reddit, tiktok]
+              enum: [instagram, facebook, threads, youtube, linkedin, bluesky, reddit, tiktok]
             text:
               type: string
               description: Comment text content
@@ -11168,7 +11168,13 @@ webhooks:
     post:
       operationId: onCommentReceived
       summary: Comment received event
-      description: Fired when a new comment is received on a tracked post.
+      description: |
+        Fired when a new comment is received on a tracked post. Delivered for
+        Instagram, Facebook, Threads, YouTube, LinkedIn, Bluesky, Reddit and
+        TikTok. X/Twitter does NOT fire this event. Instagram, Facebook and
+        TikTok arrive in real time from the platform's own webhook; the rest are
+        poll-driven, so delivery is not instant. TikTok needs an account
+        connected through the TikTok for Business app.
       tags: [Webhook Events]
       requestBody:
         required: true
