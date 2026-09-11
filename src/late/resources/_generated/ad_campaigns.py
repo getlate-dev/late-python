@@ -349,6 +349,16 @@ class AdCampaignsResource:
             f"/v1/ads/campaigns/{campaign_id}/bidding", params=params
         )
 
+    def get_ad_campaign_details(
+        self, campaign_id: str, account_id: str, *, fields: str | None = None
+    ) -> dict[str, Any]:
+        """Get live campaign details"""
+        params = self._build_params(
+            account_id=account_id,
+            fields=fields,
+        )
+        return self._client._get(f"/v1/ads/campaigns/{campaign_id}", params=params)
+
     def update_ad_campaign(
         self,
         campaign_id: str,
@@ -1455,6 +1465,18 @@ class AdCampaignsResource:
         )
         return await self._client._aget(
             f"/v1/ads/campaigns/{campaign_id}/bidding", params=params
+        )
+
+    async def aget_ad_campaign_details(
+        self, campaign_id: str, account_id: str, *, fields: str | None = None
+    ) -> dict[str, Any]:
+        """Get live campaign details (async)"""
+        params = self._build_params(
+            account_id=account_id,
+            fields=fields,
+        )
+        return await self._client._aget(
+            f"/v1/ads/campaigns/{campaign_id}", params=params
         )
 
     async def aupdate_ad_campaign(

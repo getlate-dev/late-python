@@ -3486,6 +3486,32 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
+            title="Get live campaign details",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def ad_campaigns_get_ad_campaign_details(
+        campaign_id: str, account_id: str, fields: str | None = None
+    ) -> str:
+        """Get live campaign details
+
+        Args:
+            campaign_id: Meta campaign id (platformCampaignId). (required)
+            account_id: Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token. (required)
+            fields: Comma-separated Graph field override. Supports nested {} projections and Graph field modifiers."""
+        client = _get_client()
+        try:
+            response = client.ad_campaigns.get_ad_campaign_details(
+                campaign_id=campaign_id, account_id=account_id, fields=fields
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
             title="Update a campaign",
             readOnlyHint=False,
             destructiveHint=True,
@@ -14775,7 +14801,7 @@ def register_generated_tools(mcp, _get_client):
         """List lead forms
 
         Args:
-            account_id: Connected Facebook, Meta ads business-login or LinkedIn ads account ID. (required)
+            account_id: Connected Meta ads, Facebook or LinkedIn ads account ID. A Meta ads connection resolves its Page through the Facebook account linked to the same profile. (required)
             ad_account_id: LinkedIn only: the LinkedIn ad account id (used to resolve the owning organization). Required for LinkedIn.
             limit
             cursor"""
@@ -14869,7 +14895,7 @@ def register_generated_tools(mcp, _get_client):
 
         Args:
             form_id: Numeric form id (Meta leadgen_form id or LinkedIn leadForm id). (required)
-            account_id: Connected facebook or linkedin ads account id (selects the platform). (required)
+            account_id: Connected Meta ads, facebook or linkedin ads account id (selects the platform). A Meta ads connection resolves its Page through the Facebook account linked to the same profile. (required)
             fields: Meta only. A Graph field selection passed through verbatim to GET /{form-id}, replacing the default projection, so fields Meta adds later are reachable without an API change. Field names, commas and {} expansion only; anything else (Graph field modifiers such as .limit(), or characters that could open another query parameter) is a 400. Ownership of the form is verified before the selection runs, so this cannot reach any Page but the one accountId manages. Unknown field names are rejected by Meta as a 400."""
         client = _get_client()
         try:
@@ -14893,7 +14919,7 @@ def register_generated_tools(mcp, _get_client):
 
         Args:
             form_id: Numeric form id (Meta leadgen_form id or LinkedIn leadForm id). (required)
-            account_id: Connected facebook or linkedin ads account id (selects the platform). (required)"""
+            account_id: Connected Meta ads, facebook or linkedin ads account id (selects the platform). A Meta ads connection resolves its Page through the Facebook account linked to the same profile. (required)"""
         client = _get_client()
         try:
             response = client.lead_gen.archive_lead_form(

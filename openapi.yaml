@@ -44182,6 +44182,39 @@ paths:
           description: "Not a Google Ads account: the connection behind accountId resolves to another platform."
 
   /v1/ads/campaigns/{campaignId}:
+    get:
+      x-resource-group: "ads"
+      operationId: getAdCampaignDetails
+      tags: ["Ad Campaigns"]
+      x-platforms: ["meta"]
+      summary: 'Get live campaign details'
+      description: |-
+        Reads one campaign live from Meta, returned verbatim, so a caller that knows a
+        campaign id no longer has to page `GET /v1/ads/campaigns` to find it. The default
+        projection covers name, status, objective, buying type, bid strategy, budgets,
+        spend cap, schedule and `issues_info`. `fields` is a raw-passthrough override;
+        unknown fields return Meta's 400 verbatim. A campaign the resolved connection
+        cannot see comes back as Meta's own 400, not a 404.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: campaignId, in: path, required: true, schema: { type: string }, description: "Meta campaign id (platformCampaignId)." }
+        - { name: accountId, in: query, required: true, schema: { type: string }, description: "Zernio SocialAccount id (posting or ads variant) used to resolve the Meta token." }
+        - { name: fields, in: query, schema: { type: string, example: 'id,name,status,daily_budget' }, description: 'Comma-separated Graph field override. Supports nested {} projections and Graph field modifiers.' }
+      responses:
+        '409': { $ref: '#/components/responses/AccountConnectionRequired' }
+        '404': { $ref: '#/components/responses/AccountUnavailable' }
+        '200':
+          description: The campaign as returned by Meta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  campaign: { type: object, description: "Raw Meta campaign; keys are the requested Graph fields." }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '501': { description: Only supported on Meta (facebook/instagram) }
     put:
       x-resource-group: "ads"
       operationId: updateAdCampaign
@@ -45826,6 +45859,7 @@ paths:
         '403':
           description: 'Returned with code `ads_allowance_exceeded` when the team has no payment method on file and has reached the 500 free live ads: add a card to resume.'
         '404': { $ref: '#/components/responses/NotFound' }
+        '429': { description: "Meta admits one write per 30 seconds to a metered object, ad creatives above all. Zernio waits out two of those windows and replays the call before surfacing this, so it only appears when the object is being edited faster than that. Retry in 30 seconds." }
         '422': { description: "The ad has no campaign or ad group on the platform yet, the Google targeting edit asks for something that is create-only (`locations.customLocations`), or a creative field the ad's channel cannot carry: assetGroup on a non-Performance-Max ad, a Google Display field on a Search ad, a pinnedField on a Display headline, or any Google-only field on another platform. A Google creative edit that cannot reach Google at all (the ad has no `platformAdId`, or its ad account cannot be loaded) also returns 422 rather than a 200 that changed nothing." }
         '501': { description: "targeting or creative not supported on the platform (supported on Meta, TikTok, and LinkedIn)" }
         '502': { description: "Meta accepted the request then failed to produce the media (upload session, chunk transfer, processing timeout, or a response with no image hash). Inspect `platformError.reason`." }
@@ -52508,11 +52542,12 @@ paths:
       summary: List lead forms
       description: >
         Lists the Lead Gen forms owned by the account. Meta: forms on the
-        connected Facebook Page, including a Page selected on a metaads business-login connection. LinkedIn: forms owned by the ad account's
-        Company Page. Pass `adAccountId` (LinkedIn forms are org-owned).
-        Requires the Ads add-on.
+        connected Facebook Page. Pass either the `metaads` ads connection (the
+        Page is taken from the Facebook account linked to it) or the Facebook
+        account itself. LinkedIn: forms owned by the ad account's Company Page.
+        Pass `adAccountId` (LinkedIn forms are org-owned). Requires the Ads add-on.
       parameters:
-        - { name: accountId, in: query, required: true, schema: { type: string }, description: "Connected Facebook, Meta ads business-login or LinkedIn ads account ID." }
+        - { name: accountId, in: query, required: true, schema: { type: string }, description: "Connected Meta ads, Facebook or LinkedIn ads account ID. A Meta ads connection resolves its Page through the Facebook account linked to the same profile." }
         - { name: adAccountId, in: query, schema: { type: string }, description: "LinkedIn only: the LinkedIn ad account id (used to resolve the owning organization). Required for LinkedIn." }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
         - { name: cursor, in: query, schema: { type: string } }
@@ -52539,9 +52574,10 @@ paths:
       description: >
         Creates a Lead Gen form. The form content goes inside
         `platformSpecificData` for both platforms (the shape is selected by the
-        accountId's platform). Meta: created on the connected Facebook Page (a
-        facebook account or a metaads business-login account with a selected Page)
-        (POST /{page-id}/leadgen_forms); the old top-level Meta fields
+        accountId's platform). Meta: created on the connected Facebook Page
+        (POST /{page-id}/leadgen_forms), where `accountId` may be the `metaads`
+        ads connection (its Page comes from the Facebook account linked to the
+        same profile) or the Facebook account itself; the old top-level Meta fields
         (questions, thankYou*, contextCard, …) are DEPRECATED but still
         accepted while platformSpecificData is absent; mixing both shapes is
         a 400. LinkedIn: created on the ad account's Company Page. NOT
@@ -52700,7 +52736,7 @@ paths:
         accountId manages: a form on any other Page is a 404, never a read.
       parameters:
         - { name: formId, in: path, required: true, schema: { type: string }, description: "Numeric form id (Meta leadgen_form id or LinkedIn leadForm id)." }
-        - { name: accountId, in: query, required: true, schema: { type: string }, description: "Connected facebook or linkedin ads account id (selects the platform)." }
+        - { name: accountId, in: query, required: true, schema: { type: string }, description: "Connected Meta ads, facebook or linkedin ads account id (selects the platform). A Meta ads connection resolves its Page through the Facebook account linked to the same profile." }
         - name: fields
           in: query
           schema: { type: string, maxLength: 2000 }
@@ -52739,7 +52775,7 @@ paths:
       description: "Neither platform hard-deletes a form; this archives it (Meta status=ARCHIVED; LinkedIn state=ARCHIVED via PARTIAL_UPDATE). Meta forms must belong to the Page the accountId manages."
       parameters:
         - { name: formId, in: path, required: true, schema: { type: string }, description: "Numeric form id (Meta leadgen_form id or LinkedIn leadForm id)." }
-        - { name: accountId, in: query, required: true, schema: { type: string }, description: "Connected facebook or linkedin ads account id (selects the platform)." }
+        - { name: accountId, in: query, required: true, schema: { type: string }, description: "Connected Meta ads, facebook or linkedin ads account id (selects the platform). A Meta ads connection resolves its Page through the Facebook account linked to the same profile." }
       responses:
         '200':
           description: Archived.
