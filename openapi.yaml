@@ -43988,6 +43988,12 @@ paths:
 
         On Meta this flips the campaign only. An ad set paused in its own right stays paused, so pair this with
         PUT /v1/ads/ad-sets/{adSetId}/status when you also need the ad set switched back on.
+
+        Google keeps an independent on/off switch at campaign, ad group and ad level and the most restrictive
+        one wins, so `active` switches the campaign on TOGETHER with the ad groups and ads Zernio tracks under
+        it, in one mutate. Without that the campaign reads ENABLED while a paused ad group or ad keeps it from
+        serving. `paused` writes the campaign alone, which already stops delivery and leaves each ad's own
+        switch as you set it.
       security:
         - bearerAuth: []
       parameters:
@@ -44498,10 +44504,11 @@ paths:
         (10 minutes fresh, up to 7 days last-good), not always a live read. Google
         only; every other platform returns 501.
 
-        `devices` always lists all four device types with `included` reflecting
-        Google's negative device criteria (a device absent from any negative
-        criterion is included by default). This read has no bid-modifier source,
-        so `bidModifier` is always `null` even for a device with one configured.
+        `devices` lists the device criteria the campaign carries, which depends on
+        its channel: Search campaigns have MOBILE, DESKTOP and TABLET, Display
+        campaigns also have CONNECTED_TV. `bidModifier` is Google's bid adjustment
+        for that device, `null` when it has none, and `0` when the device is
+        switched off; `included` is false for exactly that case.
       security:
         - bearerAuth: []
       parameters:
@@ -44522,7 +44529,7 @@ paths:
                       properties:
                         device: { type: string, enum: [MOBILE, DESKTOP, TABLET, CONNECTED_TV] }
                         included: { type: boolean }
-                        bidModifier: { type: [number, "null"], description: "Always null on this read (see description)." }
+                        bidModifier: { type: [number, "null"], description: "Google's bid adjustment for this device: null when it has none, 0 when the device is switched off, otherwise 0.1 to 10." }
                   locations:
                     type: array
                     items:
@@ -44563,6 +44570,11 @@ paths:
         existing criteria on the campaign (a full set, not a delta). Fields left
         out of the body are untouched. Google only; every other platform returns
         501.
+
+        `devices` is the full set of device bid modifiers: a supported device you
+        leave out is switched off with a bid modifier of 0, since Google cannot
+        remove a device criterion. A device the campaign's channel does not carry,
+        and a set that switches every device off, both return 422.
 
         `locations` accepts the same shapes as campaign creation: a bare array of
         ISO country codes, or an object with `countries`/`regions`/`cities`/`zips`/`metros`
@@ -45423,7 +45435,9 @@ paths:
           `targeting.countries` / `regions` / `cities` / `zips` / `metros`), and LANGUAGE
           edits via `targeting.languages`.
           Each list you send becomes the FULL new set of its kind (criteria not in the
-          list are removed); a kind left out is untouched. Any other `targeting` field
+          list are removed, except devices, which Google cannot remove and which are
+          switched off with a bid modifier of 0 instead); a kind left out is untouched.
+          Any other `targeting` field
           returns 400: Google cannot mutate it post-create without recreating
           the campaign. Creative edits are dispatched on the ad's `advertisingChannelType`,
           and every supported field replaces a whole set; a field you omit is preserved.
@@ -45604,7 +45618,7 @@ paths:
                           - { type: object, required: [text], properties: { text: { type: string, maxLength: 80 }, matchType: { type: string, enum: [exact, phrase, broad] } } }
                     devices:
                       type: array
-                      description: "Google only. The FULL new set of device criteria for the campaign; devices not listed are excluded. Entries are a device name alone (included, no bid adjustment) or { device, bidModifier }."
+                      description: "Google only. The FULL new set of device bid modifiers for the campaign. Entries are a device name alone (targeted, bid modifier reset to 1) or { device, bidModifier }. A supported device you leave out is switched off, written as a bid modifier of 0. Google never removes a device criterion, so an excluded device reads back as bidModifier 0 rather than disappearing, and a set that switches every device off returns 422. Which devices a campaign carries depends on its channel: Search campaigns have MOBILE, DESKTOP and TABLET, Display campaigns also have CONNECTED_TV, and sending a device the campaign does not carry returns 422."
                       items:
                         oneOf:
                           - { type: string, enum: [MOBILE, DESKTOP, TABLET, CONNECTED_TV] }
@@ -45612,7 +45626,7 @@ paths:
                             required: [device]
                             properties:
                               device: { type: string, enum: [MOBILE, DESKTOP, TABLET, CONNECTED_TV] }
-                              bidModifier: { type: number, minimum: 0.1, maximum: 10, description: 'Google device bid modifier, 0.1 to 10 (minus 90% to plus 900%). Omit a device to exclude it.' }
+                              bidModifier: { type: number, minimum: 0, maximum: 10, description: 'Google device bid modifier. 0 switches the device off (minus 100%); otherwise 0.1 to 10 (minus 90% to plus 900%). Google rejects any value between 0 and 0.1.' }
                     ageMin: { type: integer, minimum: 13, maximum: 65 }
                     ageMax: { type: integer, minimum: 13, maximum: 65 }
                     countries: { type: array, items: { type: string }, description: "ISO 3166-1 alpha-2 codes. On Google this is the FULL new country set for the campaign (same contract as `locations`); on LinkedIn it replaces the campaign's geo criteria." }
@@ -51248,11 +51262,11 @@ paths:
                 status:
                   type: string
                   enum: [ACTIVE, PAUSED]
-                  description: "Google Performance Max accepts PAUSED only and always creates a paused campaign. Meta, TikTok, and LinkedIn: publish state of the created entities. Omitted or ACTIVE publishes live (default, back-compat); PAUSED creates them paused so you can review before they spend. On Meta the pause is held on the campaign this call creates, leaving the ad set and ad switched on, so a single PUT /v1/ads/campaigns/{campaignId}/status with `active` brings the whole thing live. It is held at every level instead when the pause cannot rely on the campaign: `existingCampaignId` (that campaign may be running and is never touched) or `campaignStatus: ACTIVE`. On TikTok the whole campaign > ad group > ad hierarchy stays paused. On LinkedIn the whole campaign group, campaign, and creative hierarchy stays PAUSED (intendedStatus PAUSED on each)."
+                  description: "Google Performance Max accepts PAUSED only and always creates a paused campaign. Google Search and Display, Meta, TikTok, and LinkedIn: publish state of the created entities. Omitted or ACTIVE publishes live (default, back-compat); PAUSED creates them paused so you can review before they spend. On Meta the pause is held on the campaign this call creates, leaving the ad set and ad switched on, so a single PUT /v1/ads/campaigns/{campaignId}/status with `active` brings the whole thing live. It is held at every level instead when the pause cannot rely on the campaign: `existingCampaignId` (that campaign may be running and is never touched) or `campaignStatus: ACTIVE`. Google Search and Display follow the same rule, and because Google keeps an independent switch at campaign, ad group and ad level, a PAUSED create leaves the campaign it creates PAUSED at Google. On TikTok the whole campaign > ad group > ad hierarchy stays paused. On LinkedIn the whole campaign group, campaign, and creative hierarchy stays PAUSED (intendedStatus PAUSED on each)."
                 campaignStatus:
                   type: string
                   enum: [ACTIVE, PAUSED]
-                  description: "Meta only. Overrides `status` for the campaign level alone, so you can create a live campaign whose ad set and ad stay paused, or the reverse. Omitted, it follows `status`."
+                  description: "Meta and Google. Overrides `status` for the campaign level alone, so you can create a live campaign whose ad set and ad stay paused, or the reverse. Omitted, it follows `status`."
                 budgetLevel:
                   type: string
                   enum: [adset, campaign]
@@ -52276,7 +52290,7 @@ paths:
                       properties:
                         node: { type: string, enum: [campaign, adSet, creative, ad, performanceMaxCampaign] }
                         status: { type: string, enum: [validated, skipped] }
-                        reason: { type: string, description: "Why the node could not be validated (only on skipped)." }
+                        reason: { type: string, description: "Why the node could not be validated (on skipped), or what the dry run could not check and what the request would do as sent (on validated). A Performance Max validation with no location targeting reports here that the campaign would run worldwide." }
                   message: { type: string }
         '201':
           description: Ad(s) created
