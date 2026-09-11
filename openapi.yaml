@@ -9238,10 +9238,10 @@ components:
             properties:
               id: { type: string }
               name: { type: string }
-        industries: { type: array, items: { type: string }, description: "LinkedIn B2B only. Industry URN id fragments." }
-        companySizes: { type: array, items: { type: string }, description: "LinkedIn B2B only." }
-        seniorities: { type: array, items: { type: string }, description: "LinkedIn B2B only." }
-        jobFunctions: { type: array, items: { type: string }, description: "LinkedIn B2B only." }
+        industries: { type: array, items: { type: string }, description: "LinkedIn B2B only. Industry URN id fragments, or the full urn:li:industry:* URN from /v1/ads/targeting/search?dimension=industry." }
+        companySizes: { type: array, items: { type: string }, description: "LinkedIn B2B only. Single-letter size codes (A to I), or the full urn:li:staffCountRange:* URN from /v1/ads/targeting/search?dimension=companySize." }
+        seniorities: { type: array, items: { type: string }, description: "LinkedIn B2B only. Seniority URN id fragments, or the full urn:li:seniority:* URN from /v1/ads/targeting/search?dimension=seniority." }
+        jobFunctions: { type: array, items: { type: string }, description: "LinkedIn B2B only. Function URN id fragments, or the full urn:li:function:* URN from /v1/ads/targeting/search?dimension=jobFunction." }
         audienceInclude: { type: array, items: { type: string }, description: 'Platform audience IDs to include, as returned by GET /v1/ads/audiences (Meta custom audience ids, TikTok audience ids, Pinterest customer list ids, LinkedIn segment ids (the platformAudienceId from GET /v1/ads/audiences; Zernio resolves it to the targetable LinkedIn ad segment, an unknown id returns 400), Google user list ids, X custom audience ids). Not supported on OpenAI (400).' }
         audienceExclude: { type: array, items: { type: string }, description: 'Platform audience IDs to exclude; same ID formats as audienceInclude. Not supported on OpenAI (400).' }
     MetaCreativeFeatures:
@@ -52814,6 +52814,8 @@ paths:
         - `language`: Google-only
         - `workPosition`, `workEmployer`, `workIndustry`: the Meta-only work demographics, whose
           ids feed `TargetingSpec.workPositions`/`workEmployers`/`workIndustries`
+        - `industry`, `jobFunction`, `seniority`, `companySize`: the LinkedIn-only B2B facets, whose
+          URNs feed `TargetingSpec.industries`/`jobFunctions`/`seniorities`/`companySizes`
 
         Availability of each dimension varies by platform (e.g. behaviours are Meta/TikTok only).
         Work industries are a fixed ~30-entry Meta catalog with no server-side query,
@@ -52837,6 +52839,15 @@ paths:
         filter on. Every result has `type` set to `location`, and its id is a
         `urn:li:geo:*` URN usable as a `regions[].key` on `POST /v1/ads/create`,
         `POST /v1/ads/boost` and `POST /v1/ads/targeting/reach-estimate`.
+
+        LinkedIn B2B searches (`industry`, `jobFunction`, `seniority`, `companySize`) return the
+        full URN to pass straight back, so no URN id fragment has to be assembled by hand:
+        `urn:li:industry:4`, `urn:li:function:8`, `urn:li:seniority:6`,
+        `urn:li:staffCountRange:(51,200)`. Only `industry` is a server-side name search
+        (LinkedIn's typeahead finder). LinkedIn exposes no typeahead for job functions,
+        seniorities and company sizes, so Zernio fetches each whole table (26, 10 and 9 entries),
+        caches it, and does the matching, ranking and `limit` cutoff itself. Those three never
+        carry `audienceSize`, and `countryCode` and `geoType` are not applied to any of the four.
 
         Google geo searches resolve against Google's geoTargetConstants and return
         every matching level in one list; `geoType` is not applied (Google's
@@ -52875,7 +52886,7 @@ paths:
       parameters:
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Account ID (a connected account on the target ad platform)." }
         - { name: q, in: query, required: true, schema: { type: string }, description: "Search query. For geo, the locality name only (no region/country suffix)." }
-        - { name: dimension, in: query, required: false, schema: { type: string, enum: [geo, interest, behavior, income, language, workPosition, workEmployer, workIndustry], default: interest }, description: "What to search. `geo` resolves locations (scope further with `geoType`), `interest`/`behavior` resolve audience entities, `income` resolves income-tier options, `language` resolves Google's targetable language_constant table (Google only), `workPosition`/`workEmployer`/`workIndustry` resolve Meta work demographics. Defaults to `interest` for backward compatibility with the deprecated /v1/ads/interests alias." }
+        - { name: dimension, in: query, required: false, schema: { type: string, enum: [geo, interest, behavior, income, language, workPosition, workEmployer, workIndustry, industry, jobFunction, seniority, companySize], default: interest }, description: "What to search. `geo` resolves locations (scope further with `geoType`), `interest`/`behavior` resolve audience entities, `income` resolves income-tier options, `language` resolves Google's targetable language_constant table (Google only), `workPosition`/`workEmployer`/`workIndustry` resolve Meta work demographics, `industry`/`jobFunction`/`seniority`/`companySize` resolve LinkedIn B2B facets (LinkedIn only). Defaults to `interest` for backward compatibility with the deprecated /v1/ads/interests alias." }
         - { name: geoType, in: query, required: false, schema: { type: string, enum: [all, country, region, city, subcity, neighborhood, place, zip, metro_area, geo_market], default: city }, description: "Only used when `dimension=geo`. The kind of location to resolve. `all` searches every type in one relevance-ranked call. Defaults to `city`." }
         - { name: countryCode, in: query, required: false, schema: { type: string, minLength: 2, maxLength: 2 }, description: "ISO 3166-1 alpha-2 country code (e.g. NL) to scope a geo search." }
         - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 25 }, description: "Maximum results to return." }
@@ -52896,7 +52907,7 @@ paths:
                       properties:
                         id: { type: string, description: "The platform's opaque id. Use as a geo `key` (regions/cities/zips/metros) or an entity `id` (interests/behaviors) in TargetingSpec." }
                         name: { type: string, description: "Human-readable label." }
-                        type: { type: string, description: "What the result is (e.g. city, region, country, zip, metro, location, interest, behavior, income)." }
+                        type: { type: string, description: "What the result is (e.g. city, region, country, zip, metro, location, interest, behavior, income, industry, jobFunction, seniority, companySize)." }
                         path: { type: array, items: { type: string }, description: "Optional breadcrumb of parent labels (e.g. ['United States', 'California', 'Los Angeles']). Disambiguates same-named results." }
                         audienceSize: { type: [integer, "null"], description: "Optional estimated reachable users for this option, when the platform returns it." }
         '400':
