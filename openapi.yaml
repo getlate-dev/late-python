@@ -113,7 +113,7 @@ x-documentation:
     | Instagram | Yes | Yes | Yes | Yes |
     | Facebook | Yes | Stories | Yes | Yes |
     | LinkedIn | Yes | - | Partial | - |
-    | TikTok | Yes | - | Yes | - |
+    | TikTok | Yes | - | Yes | Comments |
     | YouTube | Yes | Shorts | Yes | Yes |
     | Pinterest | Yes | - | Yes | - |
     | Reddit | Yes | - | Partial | Yes |
@@ -129,6 +129,8 @@ x-documentation:
 
     > **Google Business Profile Analytics Note:** Per-post analytics for Google Business Profile are deprecated by Google with no replacement, so Google Business Profile posts always report `syncStatus: "unavailable"` with an explanatory `errorMessage`. Location-level metrics (impressions, clicks, calls, directions, bookings) are available via the dedicated `/v1/analytics/googlebusiness/performance` endpoint.
 
+    > **TikTok Inbox Note:** Comment management (read, reply, hide, pin, like, delete) needs an account connected through the TikTok for Business app, which is what every new TikTok connection now uses. It does not require the TikTok account itself to be a Business Account. An account connected earlier through the TikTok developer app returns 400 `PLATFORM_LIMITATION` on the comment routes until it is reconnected. TikTok direct messages are not generally available: on top of the same connection they need a real TikTok Business Account whose sign-up region is outside the EEA, Switzerland and the UK, plus TikTok messaging approval for the calling app, and TikTok reports every one of those as a misleading "access token is invalid". Do not treat that as an expired token.
+
     ## Rate Limits
 
     API request throughput is rate-limited per minute on a sliding window. Limits scale with your team's total connected accounts:
@@ -140,6 +142,8 @@ x-documentation:
     Legacy AppSumo lifetime tiers get a flat 600 req/min regardless of tier.
 
     Posts themselves are unlimited on every connected account; the rate limit applies only to API request throughput. Zernio also applies per-account daily publish caps as an anti-abuse safeguard (Instagram 100/day, Facebook 100/day, Threads 250/day, X 50/day, Pinterest 25/day, 50/day for every other platform), plus a 25-posts-per-hour per-account velocity cap.
+
+    TikTok caps accounts connected through the TikTok for Business app lower than any of those: 15 videos and 15 photo posts per account per day, counted separately. Zernio enforces it as a trailing 24 hour window rather than a calendar day, and a post over the cap is not rejected. It is held and published automatically once the oldest post of the same kind leaves the window, so `scheduledFor` on that platform entry moves to the time it will go out.
 
     All responses include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers. Read these instead of hard-coding limits, since your tier may be configured higher than the default.
 
@@ -6813,7 +6817,7 @@ components:
         videoCoverImageUrl:
           type: string
           format: uri
-          description: 'Optional for video posts. URL of a custom thumbnail image (JPG, PNG, or WebP, max 20MB). The image is stitched as a single frame at the start of the video and used as the cover. Accounts connected through the TikTok for Business app instead pass the URL to TikTok as the cover directly, with no stitching, and the URL must resolve on a domain we have verified with TikTok. Overrides videoCoverTimestampMs when provided.'
+          description: 'Optional for video posts. URL of a custom thumbnail image (JPG, PNG, or WebP, max 20MB). Any downloadable URL works: we rehost it ourselves. The image is stitched as a single frame at the start of the video to serve as the cover. Accounts connected through the TikTok for Business app hand it to TikTok as the cover instead, with no stitching, falling back to videoCoverTimestampMs without it. Overrides videoCoverTimestampMs when provided.'
         photoCoverIndex:
           type: integer
           description: Optional for photo carousels. Index of image to use as cover, 0-based (defaults to 0/first image).
@@ -16370,7 +16374,7 @@ paths:
                 dryRun:
                   type: boolean
                   default: false
-                  description: 'TikTok only. Preview whether each `tiktok` entry in `platforms` could publish right now under the TikTok Direct Post daily limits, without creating, scheduling or publishing anything: no post is persisted and no upload slot is claimed, so it can be repeated freely. The request still goes through auth, the payment gate and body validation, then returns HTTP 200 with `{ dryRun: true, canPublish, tiktok: [...] }` instead of 201. Only `tiktok` entries are evaluated; other platforms in the body are ignored, and a body with no `tiktok` entry is rejected with 400 `invalid_field_value` on `platforms`. An entry with `platformSpecificData.tiktokSettings.draft: true` (Creator Inbox upload) is not subject to the limit and always reports `canPublish: true`.'
+                  description: 'TikTok only. Preview whether each `tiktok` entry in `platforms` could publish right now under the TikTok Direct Post daily limits, without creating, scheduling or publishing anything: no post is persisted and no upload slot is claimed, so it can be repeated freely. The request still goes through auth, the payment gate and body validation, then returns HTTP 200 with `{ dryRun: true, canPublish, tiktok: [...] }` instead of 201. Only `tiktok` entries are evaluated; other platforms in the body are ignored, and a body with no `tiktok` entry is rejected with 400 `invalid_field_value` on `platforms`. An entry with `platformSpecificData.tiktokSettings.draft: true` (Creator Inbox upload) is not subject to the limit and always reports `canPublish: true`. Accounts connected through the TikTok for Business app do not go through these limits at all and also always report `canPublish: true`, so on those accounts a dry run confirms the request is well-formed rather than gating it.'
                 timezone:
                   type: string
                   default: UTC
@@ -19445,6 +19449,15 @@ paths:
       description: |
         Initiate an OAuth connection flow. Returns an authUrl to redirect the user to.
         Standard flow: Zernio hosts the selection UI, then redirects to your redirect_url. Headless mode (headless=true): user is redirected to your redirect_url with OAuth data for custom UI. Use the platform-specific selection endpoints to complete.
+
+        TikTok: every connection now goes through the TikTok for Business app. One TikTok account per
+        profile, so connecting on a profile that already holds one replaces it. Reconnecting the SAME
+        account keeps it and all of its history; authorizing a DIFFERENT TikTok account takes the slot
+        over and permanently deletes the previous account's analytics, inbox and DM history. The two
+        are told apart by the `@handle` stored at the last connect, so an account whose handle has
+        been renamed on TikTok since then reads as a different account. An authorization that leaves
+        out a permission the connected account needs changes nothing at all and comes back as
+        `missing_tiktok_permissions`; connect again and accept every permission on TikTok's screen.
       parameters:
         - name: platform
           in: path
@@ -19475,8 +19488,8 @@ paths:
             OAuth and callback:
               oauth_denied, invalid_callback, invalid_state, unsupported_platform, connection_failed,
               internal_error, token_exchange_failed, byok_config_error, personal_account_not_supported,
-              missing_google_permissions, platform_requires_destination, reconnect_account_mismatch,
-              invalid_request
+              missing_google_permissions, missing_tiktok_permissions, platform_requires_destination,
+              reconnect_account_mismatch, invalid_request
 
             Access and limits:
               profile_not_found, invalid_profile_id, access_denied, account_limit_exceeded,
@@ -19516,6 +19529,10 @@ paths:
             2. On the tiktok and twitter ads flows `platform` carries the ads platform id
             (`tiktokads`, `xads`), not the value used in the request path. The googleads and shopify
             flows report `googleads` and `shopify`.
+
+            3. `missing_tiktok_permissions` means the TikTok authorization left out a permission the
+            already-connected account needs, so nothing was changed and it keeps working as before.
+            It is user-fixable: connect again and accept every permission on TikTok's screen.
         - name: headless
           in: query
           schema: { type: boolean, default: false }
