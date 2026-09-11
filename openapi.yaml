@@ -866,6 +866,92 @@ components:
             properties:
               key: { type: string }
               value: { type: string }
+    MetaLeadForm:
+      type: object
+      description: >
+        A Meta Lead Gen form as Graph returns it, in Meta's own snake_case. Read
+        through GET /v1/ads/lead-forms/{formId}. Every setting POST
+        /v1/ads/lead-forms writes is present here, so a form can be diffed
+        against what was created and drift from edits made in Meta's form
+        builder is detectable. A compound field is omitted entirely when the
+        form has no value for it, and `fields` narrows the selection.
+      properties:
+        id: { type: string }
+        name: { type: string }
+        status: { type: string, description: 'One of ACTIVE, ARCHIVED, DELETED or DRAFT.' }
+        locale: { type: string, example: en_US }
+        created_time: { type: string, format: date-time }
+        page_id: { type: string, description: "Owning Facebook Page. A form on any other Page is a 404, whether read or archived." }
+        leads_count: { type: integer }
+        organic_leads_count: { type: integer }
+        expired_leads_count: { type: integer, description: 'Leads Meta has aged out of the retention window.' }
+        privacy_policy_url: { type: string, format: uri }
+        follow_up_action_url: { type: string, format: uri }
+        follow_up_action_text: { type: string }
+        question_page_custom_headline: { type: string }
+        is_optimized_for_quality: { type: boolean }
+        block_display_for_non_targeted_viewer: { type: boolean }
+        allow_organic_lead: { type: boolean, description: 'Whether the form can also be submitted from an organic Page post.' }
+        tracking_parameters:
+          type: array
+          description: 'Custom key/value pairs attached to every lead of this form.'
+          items:
+            type: object
+            properties:
+              key: { type: string }
+              value: { type: string }
+        legal_content:
+          type: object
+          description: 'Privacy policy and custom disclaimer as Meta stores them.'
+          properties:
+            id: { type: string }
+            privacy_policy:
+              type: object
+              properties:
+                url: { type: string, format: uri }
+                link_text: { type: string }
+            custom_disclaimer: { type: object, description: 'Set in Meta form builder only; there is no create parameter for it.' }
+        context_card:
+          type: object
+          properties:
+            id: { type: string }
+            title: { type: string }
+            style: { type: string, enum: [LIST_STYLE, PARAGRAPH_STYLE] }
+            content: { type: array, items: { type: string } }
+            button_text: { type: string }
+            cover_photo: { type: object, properties: { id: { type: string } } }
+        thank_you_page:
+          type: object
+          description: >
+            The form's single ending page, mirroring the thankYou* create
+            fields. Meta has exactly one per form; there is no multiple-ending-page
+            API (thank_you_pages and ending_pages are not Graph fields).
+          properties:
+            id: { type: string }
+            title: { type: string }
+            body: { type: string }
+            button_text: { type: string }
+            button_type: { type: string, example: VIEW_WEBSITE }
+            website_url: { type: string, format: uri }
+            enable_messenger: { type: boolean }
+            status: { type: string }
+            lead_gen_use_case: { type: string }
+            business_phone_number: { type: string }
+            country_code: { type: string }
+        questions:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              key: { type: string }
+              label: { type: string }
+              type: { type: string, description: "EMAIL, PHONE, FULL_NAME, CUSTOM, ..." }
+              inline_context: { type: string }
+              options: { type: array, items: { type: object, properties: { key: { type: string }, value: { type: string } } } }
+              conditional_questions_group_id: { type: string, description: 'READ-ONLY. Conditional logic can only be authored in Meta form builder; Meta has no create parameter for it.' }
+              conditional_questions_choices: { type: array, items: { type: object }, description: 'READ-ONLY. Which answers reveal the conditional group.' }
+              dependent_conditional_questions: { type: array, items: { type: object }, description: 'READ-ONLY. Questions revealed by the conditional group.' }
     MetaInstagramIdentityRef:
       type: object
       required: [igUserId, username]
@@ -52608,24 +52694,49 @@ paths:
       tags: ["Lead Gen"]
       x-platforms: ["meta", "linkedin"]
       summary: Get a lead form
+      description: >
+        Returns the full form, including the thank-you page, so a form can be
+        diffed against what was created. Meta forms are scoped to the Page the
+        accountId manages: a form on any other Page is a 404, never a read.
       parameters:
         - { name: formId, in: path, required: true, schema: { type: string }, description: "Numeric form id (Meta leadgen_form id or LinkedIn leadForm id)." }
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Connected facebook or linkedin ads account id (selects the platform)." }
+        - name: fields
+          in: query
+          schema: { type: string, maxLength: 2000 }
+          description: >
+            Meta only. A Graph field selection passed through verbatim to
+            GET /{form-id}, replacing the default projection, so fields Meta
+            adds later are reachable without an API change. Field names, commas
+            and {} expansion only; anything else (Graph field modifiers such as
+            .limit(), or characters that could open another query parameter) is
+            a 400. Ownership of the form is verified before the selection runs,
+            so this cannot reach any Page but the one accountId manages.
+            Unknown field names are rejected by Meta as a 400.
+          example: 'name,thank_you_page{title,body,button_type,website_url}'
       responses:
         '200':
-          description: Form metadata.
+          description: Form metadata. Meta forms follow MetaLeadForm; LinkedIn forms return LinkedIn's own adForm shape.
           content:
             application/json:
-              schema: { type: object, properties: { status: { type: string }, form: { type: object } } }
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  form:
+                    oneOf:
+                      - $ref: '#/components/schemas/MetaLeadForm'
+                      - type: object
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: "No lead form with that id on the Page this account manages." }
     delete:
       x-resource-group: "ads"
       operationId: archiveLeadForm
       tags: ["Lead Gen"]
       x-platforms: ["meta", "linkedin"]
       summary: Archive a lead form
-      description: "Neither platform hard-deletes a form; this archives it (Meta status=ARCHIVED; LinkedIn state=ARCHIVED via PARTIAL_UPDATE)."
+      description: "Neither platform hard-deletes a form; this archives it (Meta status=ARCHIVED; LinkedIn state=ARCHIVED via PARTIAL_UPDATE). Meta forms must belong to the Page the accountId manages."
       parameters:
         - { name: formId, in: path, required: true, schema: { type: string }, description: "Numeric form id (Meta leadgen_form id or LinkedIn leadForm id)." }
         - { name: accountId, in: query, required: true, schema: { type: string }, description: "Connected facebook or linkedin ads account id (selects the platform)." }
@@ -52637,6 +52748,7 @@ paths:
               schema: { type: object, properties: { status: { type: string }, formId: { type: string }, archived: { type: boolean } } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: "No lead form with that id on the Page this account manages." }
 
   /v1/ads/lead-forms/{formId}/leads:
     get:

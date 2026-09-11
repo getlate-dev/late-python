@@ -14862,16 +14862,19 @@ def register_generated_tools(mcp, _get_client):
             openWorldHint=False,
         )
     )
-    def lead_gen_get_lead_form(form_id: str, account_id: str) -> str:
+    def lead_gen_get_lead_form(
+        form_id: str, account_id: str, fields: str | None = None
+    ) -> str:
         """Get a lead form
 
         Args:
             form_id: Numeric form id (Meta leadgen_form id or LinkedIn leadForm id). (required)
-            account_id: Connected facebook or linkedin ads account id (selects the platform). (required)"""
+            account_id: Connected facebook or linkedin ads account id (selects the platform). (required)
+            fields: Meta only. A Graph field selection passed through verbatim to GET /{form-id}, replacing the default projection, so fields Meta adds later are reachable without an API change. Field names, commas and {} expansion only; anything else (Graph field modifiers such as .limit(), or characters that could open another query parameter) is a 400. Ownership of the form is verified before the selection runs, so this cannot reach any Page but the one accountId manages. Unknown field names are rejected by Meta as a 400."""
         client = _get_client()
         try:
             response = client.lead_gen.get_lead_form(
-                form_id=form_id, account_id=account_id
+                form_id=form_id, account_id=account_id, fields=fields
             )
             return _format_response(response)
         except Exception as e:

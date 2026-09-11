@@ -148,10 +148,13 @@ class LeadGenResource:
         )
         return self._client._post("/v1/ads/lead-forms", data=payload)
 
-    def get_lead_form(self, form_id: str, account_id: str) -> dict[str, Any]:
+    def get_lead_form(
+        self, form_id: str, account_id: str, *, fields: str | None = None
+    ) -> dict[str, Any]:
         """Get a lead form"""
         params = self._build_params(
             account_id=account_id,
+            fields=fields,
         )
         return self._client._get(f"/v1/ads/lead-forms/{form_id}", params=params)
 
@@ -267,10 +270,13 @@ class LeadGenResource:
         )
         return await self._client._apost("/v1/ads/lead-forms", data=payload)
 
-    async def aget_lead_form(self, form_id: str, account_id: str) -> dict[str, Any]:
+    async def aget_lead_form(
+        self, form_id: str, account_id: str, *, fields: str | None = None
+    ) -> dict[str, Any]:
         """Get a lead form (async)"""
         params = self._build_params(
             account_id=account_id,
+            fields=fields,
         )
         return await self._client._aget(f"/v1/ads/lead-forms/{form_id}", params=params)
 
