@@ -4168,18 +4168,15 @@ def register_generated_tools(mcp, _get_client):
             openWorldHint=False,
         )
     )
-    def ad_campaigns_get_ad(ad_id: str, refresh_promotion: bool = False) -> str:
+    def ad_campaigns_get_ad(ad_id: str) -> str:
         """Get ad details
 
            Args:
-               refresh_promotion: Meta only. Read current promotion metadata from Meta and include promotionStatus. Omit for stored creative settings with no promotion-specific Graph call.
                ad_id: Zernio `_id` (hex), Meta `platformAdId` (numeric), or one of the creative's effective story/media IDs. See description for details.
         (required)"""
         client = _get_client()
         try:
-            response = client.ad_campaigns.get_ad(
-                refresh_promotion=refresh_promotion, ad_id=ad_id
-            )
+            response = client.ad_campaigns.get_ad(ad_id=ad_id)
             return _format_response(response)
         except Exception as e:
             return f"Error: {e}"
@@ -4230,10 +4227,9 @@ def register_generated_tools(mcp, _get_client):
           GET /v1/ads/creatives and ignores every other field. Meta creatives are
           immutable, so any change creates a new creative and repoints the ad; the old
           creative is retained on the ad account for historical reporting.
-          `promotion` and `creativeFeatures` are Meta-only. Omitted settings are
-          preserved from the live creative, including full rebuilds. Send
-          `promotion: null` to remove the explicit offer from the replacement.
-          A supplied creativeFeatures map overrides individual existing keys.
+          `creativeFeatures` is Meta-only. Omitted settings are preserved from the
+          live creative, including full rebuilds. A supplied creativeFeatures map
+          overrides individual existing keys.
         - **TikTok**: patch-style. Pass any subset; `headline` is ignored (TikTok creatives
           have no headline slot). `body` becomes the in-feed `ad_text`; `linkUrl` becomes
           `landing_page_url`; `videoUrl` triggers a fresh upload. `description`, `videoId`
@@ -4996,8 +4992,8 @@ def register_generated_tools(mcp, _get_client):
                 billing_event: Meta only. Explicit ad-set `billing_event`. Defaults to `IMPRESSIONS`. Forwarded verbatim to Meta, which validates compatibility with the optimization goal.
                 buying_type: Meta only. Defaults to AUCTION and is explicitly sent on new campaigns, including validateOnly. Reusing existingCampaignId does not change the campaign. RESERVED = Reach & Frequency: requires `rfPredictionId` (a RESERVED prediction from /v1/ads/rf-predictions + /reserve). Budget, schedule and pricing come from the reservation, so budgetAmount/budgetType are not required and bid fields are ignored. Only the plain single-ad shape (no creatives[], adSetId, existingCampaignId or dynamicCreative).
                 rf_prediction_id: Meta only. The RESERVED prediction id the R&F ad set runs on (reserving mints a new id, so pass that one). Requires buyingType RESERVED.
-                promotion
-                creative_features: Meta only. Applied to each new creative, including standalone and attach shapes. With creatives[], these are defaults; an item replaces the whole feature map, including an empty map. auto_promotion_tag is an enhancement; an explicit offer uses promotion.
+                promotion: Not supported. Meta validates creative_sourcing_spec.promotion_metadata_spec on the create call and then discards it, so a Promotion set through the Marketing API never reaches the creative. Any object is rejected with 400 invalid_field_value. Send null or omit the field, and set the Promotion on the ad in Ads Manager. Verified on 2026-09-11 across Graph v19.0 to v25.0 and every write path.
+                creative_features: Meta only. Applied to each new creative, including standalone and attach shapes. With creatives[], these are defaults; an item replaces the whole feature map, including an empty map. auto_promotion_tag is an Advantage+ enhancement, not the Ads Manager Promotion setting.
                 multi_advertiser: Meta only. Multi-advertiser ads: whether Meta may show this ad alongside other advertisers' in one unit. Meta auto-enrols since Aug 2024, so send OPT_OUT to leave. It is a top-level creative field, NOT a `creativeFeatures` key, and Meta rejects it there.
                 validate_only: Google Performance Max validates the complete atomic campaign and asset group with no resource creation or local persistence. Google validation still downloads image URLs and consumes quota. On Meta, validates the complete inline campaign, ad set, creative and ad with execution_options validate_only. Nothing is uploaded or created, and validation bypasses Idempotency-Key storage. Supports a single image, all-image placementAssets with per-rule copy, existing video.id or existingCreativeId; other media pools, new video uploads, creatives[], adSetId and RESERVED buying return 400. Placement validation uses existing Instagram identities only. Existing campaign or creative nodes are marked skipped. Success returns 200 with per-node results; Meta rejection returns an error.
                 budget_amount: Budget in WHOLE currency units (USD: 50 = $50.00), NOT cents. Meta's own Marketing API takes this same number in minor units, so it is an easy and expensive mix-up. Required on legacy, multi-creative and Performance Max shapes. Inherited on attach. OpenAI Ads requires a $1 minimum (its budget is lifetime-only, see budgetType).
@@ -5678,8 +5674,8 @@ def register_generated_tools(mcp, _get_client):
             image_hash: Existing library image hash (POST /v1/ads/images or GET /v1/ads/images).
             carousel_cards
             url_tags: Appended to every outbound URL (e.g. utm_source=fb).
-            promotion
-            creative_features: Meta only. Applied to each new creative, including standalone and attach shapes. With creatives[], these are defaults; an item replaces the whole feature map, including an empty map. auto_promotion_tag is an enhancement; an explicit offer uses promotion.
+            promotion: Not supported. Meta validates creative_sourcing_spec.promotion_metadata_spec on the create call and then discards it, so a Promotion set through the Marketing API never reaches the creative. Any object is rejected with 400 invalid_field_value. Send null or omit the field, and set the Promotion on the ad in Ads Manager. Verified on 2026-09-11 across Graph v19.0 to v25.0 and every write path.
+            creative_features: Meta only. Applied to each new creative, including standalone and attach shapes. With creatives[], these are defaults; an item replaces the whole feature map, including an empty map. auto_promotion_tag is an Advantage+ enhancement, not the Ads Manager Promotion setting.
             multi_advertiser: Meta only. Multi-advertiser ads: whether Meta may show this ad alongside other advertisers' in one unit. Meta auto-enrols since Aug 2024, so send OPT_OUT to leave. It is a top-level creative field, NOT a `creativeFeatures` key, and Meta rejects it there."""
         client = _get_client()
         try:

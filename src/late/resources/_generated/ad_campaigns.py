@@ -695,14 +695,9 @@ class AdCampaignsResource:
         )
         return self._client._get("/v1/ads/timeline", params=params)
 
-    def get_ad(
-        self, ad_id: str, *, refresh_promotion: bool | None = False
-    ) -> dict[str, Any]:
+    def get_ad(self, ad_id: str) -> dict[str, Any]:
         """Get ad details"""
-        params = self._build_params(
-            refresh_promotion=refresh_promotion,
-        )
-        return self._client._get(f"/v1/ads/{ad_id}", params=params)
+        return self._client._get(f"/v1/ads/{ad_id}")
 
     def update_ad(
         self,
@@ -1814,14 +1809,9 @@ class AdCampaignsResource:
         )
         return await self._client._aget("/v1/ads/timeline", params=params)
 
-    async def aget_ad(
-        self, ad_id: str, *, refresh_promotion: bool | None = False
-    ) -> dict[str, Any]:
+    async def aget_ad(self, ad_id: str) -> dict[str, Any]:
         """Get ad details (async)"""
-        params = self._build_params(
-            refresh_promotion=refresh_promotion,
-        )
-        return await self._client._aget(f"/v1/ads/{ad_id}", params=params)
+        return await self._client._aget(f"/v1/ads/{ad_id}")
 
     async def aupdate_ad(
         self,
