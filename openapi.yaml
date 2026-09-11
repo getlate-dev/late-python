@@ -11595,7 +11595,11 @@ webhooks:
         regulated number order. The number stays pending (nothing was rejected);
         the customer can provide the missing information from the dashboard, or
         via the remediation endpoint. `reason` carries the regulator's request
-        verbatim when available.
+        verbatim when available. `requirements` lists every requirement on the
+        order with the reviewer's current verdict; the `declined` ones are what to
+        fix, keyed by the same `requirementId` the remediation endpoint uses.
+        Verdicts only change when a reviewer acts, so they describe the review at
+        `reviewedAt`, the time of the reviewer's last comment.
       tags: [Webhook Events]
       requestBody:
         required: true
@@ -11611,6 +11615,21 @@ webhooks:
                   format: date-time
                   description: 'UTC time at which Zernio generated this event (set once when the event payload is built, before delivery is queued). Retries and redeliveries keep the original value, so it reflects the event, not the delivery attempt.'
                 reason: { type: string }
+                requirements:
+                  type: array
+                  description: "Every requirement on the order with the reviewer's current verdict. Omitted when the order's requirements could not be read."
+                  items:
+                    type: object
+                    properties:
+                      requirementId:
+                        type: string
+                        description: 'Same id as fields[].requirementId on the remediation endpoint.'
+                      label: { type: string }
+                      status: { type: string, enum: [approved, pending, declined] }
+                reviewedAt:
+                  type: string
+                  format: date-time
+                  description: 'When the reviewer last commented on the order. Omitted when there is no reviewer comment.'
                 number:
                   type: object
                   properties:
