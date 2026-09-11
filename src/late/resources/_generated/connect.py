@@ -592,6 +592,14 @@ class ConnectResource:
         )
         return self._client._patch("/v1/connect/telegram", params=params)
 
+    def get_page_webhook_subscription(self, account_id: str) -> dict[str, Any]:
+        """Read a Facebook Page's webhook subscription"""
+        return self._client._get(f"/v1/accounts/{account_id}/webhook-subscription")
+
+    def resync_page_webhook_subscription(self, account_id: str) -> dict[str, Any]:
+        """Re-subscribe a Facebook Page to Zernio's webhooks"""
+        return self._client._post(f"/v1/accounts/{account_id}/webhook-subscription")
+
     def get_facebook_pages(
         self, account_id: str, *, refresh: bool | None = None
     ) -> dict[str, Any]:
@@ -1366,6 +1374,20 @@ class ConnectResource:
             code=code,
         )
         return await self._client._apatch("/v1/connect/telegram", params=params)
+
+    async def aget_page_webhook_subscription(self, account_id: str) -> dict[str, Any]:
+        """Read a Facebook Page's webhook subscription (async)"""
+        return await self._client._aget(
+            f"/v1/accounts/{account_id}/webhook-subscription"
+        )
+
+    async def aresync_page_webhook_subscription(
+        self, account_id: str
+    ) -> dict[str, Any]:
+        """Re-subscribe a Facebook Page to Zernio's webhooks (async)"""
+        return await self._client._apost(
+            f"/v1/accounts/{account_id}/webhook-subscription"
+        )
 
     async def aget_facebook_pages(
         self, account_id: str, *, refresh: bool | None = None

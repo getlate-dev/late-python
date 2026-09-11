@@ -11871,6 +11871,50 @@ def register_generated_tools(mcp, _get_client):
 
     @mcp.tool(
         annotations=ToolAnnotations(
+            title="Read a Facebook Page's webhook subscription",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        )
+    )
+    def connect_get_page_webhook_subscription(account_id: str) -> str:
+        """Read a Facebook Page's webhook subscription
+
+        Args:
+            account_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.connect.get_page_webhook_subscription(
+                account_id=account_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Re-subscribe a Facebook Page to Zernio's webhooks",
+            readOnlyHint=False,
+            destructiveHint=True,
+            openWorldHint=True,
+        )
+    )
+    def connect_resync_page_webhook_subscription(account_id: str) -> str:
+        """Re-subscribe a Facebook Page to Zernio's webhooks
+
+        Args:
+            account_id: (required)"""
+        client = _get_client()
+        try:
+            response = client.connect.resync_page_webhook_subscription(
+                account_id=account_id
+            )
+            return _format_response(response)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
             title="List Facebook pages",
             readOnlyHint=True,
             destructiveHint=False,

@@ -24210,6 +24210,73 @@ paths:
         '404': { description: Code not found }
         '500': { description: Internal error }
 
+  /v1/accounts/{accountId}/webhook-subscription:
+    get:
+      x-resource-group: "accounts"
+      operationId: getPageWebhookSubscription
+      tags: [Connect]
+      summary: Read a Facebook Page's webhook subscription
+      description: |
+        Returns the webhook fields Zernio's app is subscribed to on the connected Page, read live from Meta.
+        Use it to confirm `leadgen` is present: a Page missing it keeps delivering every other event while
+        lead ads stop arriving, with nothing to indicate it.
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The Page's current subscription
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pageId: { type: string }
+                  appSubscribed: { type: boolean, description: 'False when the Page carries no subscription for our app at all.' }
+                  leadgen: { type: boolean, description: 'Whether lead ads submitted on this Page reach Zernio in real time.' }
+                  subscribedFields: { type: array, items: { type: string } }
+                  warning: { type: [string, 'null'], description: 'Present only when leadgen is missing.' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The connection has no selected Page
+    post:
+      x-resource-group: "accounts"
+      operationId: resyncPageWebhookSubscription
+      tags: [Connect]
+      summary: Re-subscribe a Facebook Page to Zernio's webhooks
+      description: |
+        Re-sends the full field set to Meta and returns the subscription read back afterwards.
+        Meta only honours the field set sent at subscribe time, so a Page connected before a field
+        existed stays without it until this runs. The response reflects what Meta actually granted,
+        not what was requested.
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The subscription after re-subscribing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resubscribed: { type: boolean }
+                  pageId: { type: string }
+                  appSubscribed: { type: boolean }
+                  leadgen: { type: boolean }
+                  subscribedFields: { type: array, items: { type: string } }
+                  warning: { type: [string, 'null'] }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The connection has no selected Page
+        '502':
+          description: Meta rejected the subscription
   /v1/accounts/{accountId}/facebook-page:
     get:
       x-resource-group: "accounts"

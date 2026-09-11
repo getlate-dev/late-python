@@ -344,6 +344,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `connect.get_facebook_pages()` | List Facebook pages |
 | `connect.get_gmb_locations()` | List Google Business Profile locations |
 | `connect.get_linked_in_organizations()` | List LinkedIn orgs |
+| `connect.get_page_webhook_subscription()` | Read a Facebook Page's webhook subscription |
 | `connect.get_pending_o_auth_data()` | Get pending OAuth data |
 | `connect.get_pinterest_boards()` | List Pinterest boards |
 | `connect.get_reddit_flairs()` | List subreddit flairs |
@@ -375,6 +376,7 @@ Both `from zernio import ...` and `from late import ...` work identically. The `
 | `connect.connect_whats_app_embedded_signup()` | Connect WhatsApp from Embedded Signup |
 | `connect.handle_o_auth_callback()` | Complete OAuth callback |
 | `connect.initiate_telegram_connect()` | Connect Telegram directly |
+| `connect.resync_page_webhook_subscription()` | Re-subscribe a Facebook Page to Zernio's webhooks |
 | `connect.select_facebook_page()` | Select Facebook page |
 | `connect.select_google_business_location()` | Select Google Business Profile location |
 | `connect.select_instagram_account()` | Select the Page whose Instagram account to connect |
